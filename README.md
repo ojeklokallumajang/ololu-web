@@ -2,19 +2,32 @@
 <img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
 </div>
 
-# Run and deploy your AI Studio app
+# Ololu Lumajang - Progressive Web App
 
-This contains everything you need to run your app locally.
+Aplikasi ojek dan pengantaran logistik lokal khusus Kabupaten Lumajang.
 
-View your app in AI Studio: https://ai.studio/apps/1417b00d-0cdd-4d3b-b5a8-a2ac3627a43d
+## 🚀 Fitur Utama
+- **Login Cepat:** Nomor HP + Kata Sandi.
+- **OTP WhatsApp:** Verifikasi pendaftaran via Fonnte API Nyata.
+- **One-Step Registration:** Pendaftaran mitra rider langsung lengkap dengan dokumen (KTP, SIM, STNK, dll).
+- **Tempat & Tanggal Lahir:** Pendataan identitas lengkap sejak awal pendaftaran.
+- **Realtime Radar:** Pelacakan posisi rider di peta Lumajang secara instan menggunakan Supabase Realtime.
+- **Admin Dashboard:** Kendali penuh untuk Superuser dan Sub-Admin dengan Audit Log.
 
-## Run Locally
+## 🛠️ Teknologi
+- **Frontend:** React, Vite, Tailwind CSS.
+- **Backend:** Supabase (PostgreSQL, Realtime).
+- **Hosting:** Cloudflare Pages.
+- **WhatsApp API:** Fonnte.
 
-**Prerequisites:**  Node.js
+## 📦 Cara Menjalankan Lokal
+1. **Install dependencies:** `npm install`
+2. **Setup .env:** Isi `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, dan `VITE_GOOGLE_MAPS_PLATFORM_KEY`.
+3. **Run development:** `npm run dev`
 
+## 🌍 Deployment
+Aplikasi ini di-deploy otomatis ke Cloudflare Pages dari branch `main`. Pastikan Environment Variables sudah diatur di dashboard Cloudflare.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 📄 Dokumentasi
+- [Product Requirements Document (PRD)](PRD.md)
+- [Database Schema (SQL)](supabase_schema.sql)

@@ -18,8 +18,8 @@ Pemegang kendali penuh platform (Nomor Utama: `6285156766317`) yang bertugas mem
 
 ## 4. Fitur Utama
 ### 4.1. Manajemen Akun & Otentikasi
-- **Pendaftaran Akun:** Menggunakan Nomor HP (WhatsApp 62xxx), Nama Lengkap, Foto Profil, dan Kata Sandi.
-- **Verifikasi OTP:** Kode 6-digit dikirim via WhatsApp (Fonnte) **hanya satu kali** pada saat pendaftaran akun baru.
+- **Pendaftaran Akun:** Menggunakan Nomor HP (WhatsApp 62xxx), Nama Lengkap, Tempat & Tanggal Lahir, Foto Profil, dan Kata Sandi.
+- **Verifikasi OTP:** Kode 6-digit dikirim via WhatsApp (Fonnte API Nyata) **hanya satu kali** pada saat pendaftaran akun baru.
 - **Login Cepat:** Pengguna yang sudah terdaftar cukup masuk menggunakan **Nomor HP + Kata Sandi**.
 - **Reset Password:** Fitur lupa kata sandi menggunakan verifikasi OTP WhatsApp untuk mengganti kunci masuk tanpa menghapus data riwayat.
 - **Sesi Persisten:** Login otomatis tersimpan di perangkat hingga pengguna menekan tombol "Logout".
@@ -27,7 +27,7 @@ Pemegang kendali penuh platform (Nomor Utama: `6285156766317`) yang bertugas mem
 ### 4.2. Pendaftaran Mitra Rider/Driver (1-Step)
 Calon mitra wajib mengunggah data lengkap dalam satu formulir:
 1. Foto Profil (Wajah jelas).
-2. Data Identitas (Nama & HP).
+2. Data Identitas (Nama, HP, Tempat & Tanggal Lahir).
 3. Berkas Legal: Foto KTP, SIM, STNK.
 4. Data Kendaraan: Foto Motor, Nomor Plat, Merek/Tipe Motor.
 5. Opsi Kemampuan: Pilihan "Bisa bawa barang besar / Bak motor".
@@ -61,7 +61,7 @@ Calon mitra wajib mengunggah data lengkap dalam satu formulir:
 - **Backend/Database:** Supabase (PostgreSQL).
 - **Realtime Service:** Supabase Realtime Channels.
 - **Hosting:** Cloudflare Pages.
-- **WhatsApp API:** Fonnte API.
+- **WhatsApp API:** Fonnte API (Production Key Ready).
 - **Maps API:** Google Maps JavaScript SDK.
 
 ---
