@@ -407,60 +407,55 @@ export default function App() {
       {/* CORE WRAPPER TO MERGE THE VIEWS DYNAMICALLY ACCORDING TO USER'S DEVICE */}
       <div className="flex-grow w-full max-w-7xl mx-auto p-0 md:p-4 lg:p-6 flex flex-col justify-center items-center">
         
-        {role === 'admin' ? (
-          <div className="w-full flex flex-col xl:flex-row items-stretch justify-center gap-6">
-            
-            {/* Live Operational Control Telemetry - PC Only */}
-            <div className="hidden xl:flex w-[400px] shrink-0">
-              <DesktopDashboard />
-            </div>
-
-            {/* Main Admin Panel Database & Configurations */}
-            <div className="flex-1 bg-white shadow-xl rounded-none md:rounded-3xl border-none md:border md:border-gray-100 overflow-hidden">
-              <div className="p-4 md:p-6">
-                <AdminView />
+        {!showLogin && (
+          <>
+            {role === 'admin' ? (
+              <div className="w-full flex flex-col xl:flex-row items-stretch justify-center gap-6">
+                {/* Live Operational Control Telemetry - PC Only */}
+                <div className="hidden xl:flex w-[400px] shrink-0">
+                  <DesktopDashboard />
+                </div>
+                {/* Main Admin Panel Database & Configurations */}
+                <div className="flex-1 bg-white shadow-xl rounded-none md:rounded-3xl border-none md:border md:border-gray-100 overflow-hidden">
+                  <div className="p-4 md:p-6">
+                    <AdminView />
+                  </div>
+                </div>
               </div>
-            </div>
-
-          </div>
-        ) : (
-          /* For PASSENGER, DRIVER, or GUIDE: Render a beautiful, premium, clean mobile card viewport on PC or full-width on mobile */
-          <div className="w-full md:max-w-[420px] min-h-screen md:min-h-[780px] md:h-[780px] bg-white md:shadow-2xl md:rounded-[36px] border-none md:border md:border-gray-100 flex flex-col relative overflow-hidden self-center">
-            
-            {/* COMPACT SUB-HEADER */}
-            <div className="bg-[#E6F4EC] px-5 py-2.5 flex items-center justify-between text-[9px] text-[#046A38] font-bold uppercase tracking-widest shrink-0">
-              <span className="flex items-center space-x-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#059669] inline-block animate-pulse"></span>
-                <span>Realtime Active</span>
-              </span>
-              <span>PT Ololu Lumajang</span>
-            </div>
-
-            <div className="flex-1 overflow-y-auto pb-14 relative scrollbar-none">
-              {role === 'penumpang' && (
-                <PassengerView
-                  onNotifyAdminPanic={handleNotifyPanic}
-                  onLogout={handleLogout}
-                  onRoleChange={(r) => setRole(r)}
-                />
-              )}
-
-              {role === 'sopir' && (
-                <DriverView
-                  onNotifyAdminPanic={handleNotifyPanic}
-                  onLogout={handleLogout}
-                />
-              )}
-            </div>
-
-            {/* FOOTER INFORMASI DENGAN PALETTE HIJAU & EMAS */}
-            <footer className="absolute bottom-0 left-0 right-0 bg-[#E6F4EC] border-t border-emerald-950/5 py-2.5 text-center text-[8px] text-[#046A38] font-bold tracking-widest uppercase shrink-0">
-              © 2026 PT Ololu Pengantaran Nusantara Lumajang
-            </footer>
-
-          </div>
+            ) : (
+              /* For PASSENGER, DRIVER, or GUIDE: Render a beautiful, premium, clean mobile card viewport on PC or full-width on mobile */
+              <div className="w-full md:max-w-[420px] min-h-screen md:min-h-[780px] md:h-[780px] bg-white md:shadow-2xl md:rounded-[36px] border-none md:border md:border-gray-100 flex flex-col relative overflow-hidden self-center">
+                {/* COMPACT SUB-HEADER */}
+                <div className="bg-[#E6F4EC] px-5 py-2.5 flex items-center justify-between text-[9px] text-[#046A38] font-bold uppercase tracking-widest shrink-0">
+                  <span className="flex items-center space-x-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#059669] inline-block animate-pulse"></span>
+                    <span>Realtime Active</span>
+                  </span>
+                  <span>PT Ololu Lumajang</span>
+                </div>
+                <div className="flex-1 overflow-y-auto pb-14 relative scrollbar-none">
+                  {role === 'penumpang' && (
+                    <PassengerView
+                      onNotifyAdminPanic={handleNotifyPanic}
+                      onLogout={handleLogout}
+                      onRoleChange={(r) => setRole(r)}
+                    />
+                  )}
+                  {role === 'sopir' && (
+                    <DriverView
+                      onNotifyAdminPanic={handleNotifyPanic}
+                      onLogout={handleLogout}
+                    />
+                  )}
+                </div>
+                {/* FOOTER INFORMASI DENGAN PALETTE HIJAU & EMAS */}
+                <footer className="absolute bottom-0 left-0 right-0 bg-[#E6F4EC] border-t border-emerald-950/5 py-2.5 text-center text-[8px] text-[#046A38] font-bold tracking-widest uppercase shrink-0">
+                  © 2026 PT Ololu Pengantaran Nusantara Lumajang
+                </footer>
+              </div>
+            )}
+          </>
         )}
-
       </div>
 
     </div>
