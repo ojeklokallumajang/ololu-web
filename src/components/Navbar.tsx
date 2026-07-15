@@ -17,81 +17,84 @@ interface NavbarProps {
 export default function Navbar({ currentRole, onRoleChange }: NavbarProps) {
   const profile = OloluStore.getProfilLogin();
   const driver = OloluStore.getSopirLogin();
+  const isSuperUser = profile?.nomorHp === '6285156766317';
 
   return (
-    <header className="sticky top-0 z-50 bg-[#046A38] text-white border-b-3 border-[#D4AF37] shadow-md px-4 py-3">
+    <header className="sticky top-0 z-50 bg-[#046A38] text-white border-b-2 border-[#D4AF37] shadow-md px-3 py-2">
       <div className="max-w-5xl mx-auto w-full flex items-center justify-between">
         
         {/* LOGO & NAMA APLIKASI */}
-        <OloluLogo variant="badge" light={true} />
+        <div className="flex items-center space-x-2">
+          <OloluLogo variant="badge" light={true} />
+        </div>
 
         {/* SELECTOR PERAN / NAVIGASI */}
-        <nav className="flex items-center space-x-1 sm:space-x-2">
-          <button
-            id="nav-btn-penumpang"
-            onClick={() => onRoleChange('penumpang')}
-            className={`flex flex-col items-center justify-center p-1.5 px-2.5 rounded-lg transition-all ${
-              currentRole === 'penumpang'
-                ? 'bg-[#034F2A] text-[#D4AF37] font-bold shadow-inner'
-                : 'hover:bg-[#034F2A]/50 text-[#FAFBF9]'
-            }`}
-            title="Sesi Penumpang"
-          >
-            <User size={18} className="mb-0.5" />
-            <span className="text-[10px] tracking-tight">Penumpang</span>
-          </button>
+        <nav className="flex items-center space-x-1">
+          {/* Menu Admin HANYA muncul jika Superuser */}
+          {isSuperUser && (
+            <button
+              onClick={() => onRoleChange('admin')}
+              className={`flex flex-col items-center justify-center p-1.5 px-3 rounded-lg transition-all ${
+                currentRole === 'admin'
+                  ? 'bg-white text-[#046A38] font-black shadow-lg scale-105'
+                  : 'hover:bg-[#034F2A] text-white/80'
+              }`}
+            >
+              <ShieldCheck size={16} />
+              <span className="text-[9px] font-bold uppercase tracking-tighter">Admin</span>
+            </button>
+          )}
 
-          <button
-            id="nav-btn-sopir"
-            onClick={() => onRoleChange('sopir')}
-            className={`flex flex-col items-center justify-center p-1.5 px-2.5 rounded-lg transition-all ${
-              currentRole === 'sopir'
-                ? 'bg-[#034F2A] text-[#D4AF37] font-bold shadow-inner'
-                : 'hover:bg-[#034F2A]/50 text-[#FAFBF9]'
-            }`}
-            title="Sesi Sopir"
-          >
-            <div className="relative">
-              <Bike size={18} className="mb-0.5" />
-              {driver?.statusOnline && (
-                <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#059669] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#059669]"></span>
-                </span>
+          {/* Menu Penumpang (Sembunyi jika sedang di panel Admin) */}
+          {currentRole !== 'admin' && (
+            <>
+              <button
+                onClick={() => onRoleChange('penumpang')}
+                className={`flex flex-col items-center justify-center p-1.5 px-3 rounded-lg transition-all ${
+                  currentRole === 'penumpang'
+                    ? 'bg-white text-[#046A38] font-black shadow-lg'
+                    : 'hover:bg-[#034F2A] text-white/80'
+                }`}
+              >
+                <User size={16} />
+                <span className="text-[9px] font-bold uppercase tracking-tighter">Penumpang</span>
+              </button>
+
+              {/* Tampilkan Menu Sopir jika akun terverifikasi sopir */}
+              {(profile?.peran === 'sopir' || isSuperUser) && (
+                <button
+                  onClick={() => onRoleChange('sopir')}
+                  className={`flex flex-col items-center justify-center p-1.5 px-3 rounded-lg transition-all ${
+                    currentRole === 'sopir'
+                      ? 'bg-white text-[#046A38] font-black shadow-lg'
+                      : 'hover:bg-[#034F2A] text-white/80'
+                  }`}
+                >
+                  <div className="relative">
+                    <Bike size={16} />
+                    {driver?.statusOnline && (
+                      <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#34D399] opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-[#34D399]"></span>
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[9px] font-bold uppercase tracking-tighter">Sopir</span>
+                </button>
               )}
-            </div>
-            <span className="text-[10px] tracking-tight">Sopir</span>
-          </button>
+            </>
+          )}
 
-          <button
-            id="nav-btn-admin"
-            onClick={() => onRoleChange('admin')}
-            className={`flex flex-col items-center justify-center p-1.5 px-2.5 rounded-lg transition-all ${
-              currentRole === 'admin'
-                ? 'bg-[#034F2A] text-[#D4AF37] font-bold shadow-inner'
-                : 'hover:bg-[#034F2A]/50 text-[#FAFBF9]'
-            }`}
-            title="Sesi Admin"
-          >
-            <ShieldCheck size={18} className="mb-0.5" />
-            <span className="text-[10px] tracking-tight">Admin</span>
-          </button>
-
-          <button
-            id="nav-btn-panduan"
-            onClick={() => onRoleChange('guide')}
-            className={`flex flex-col items-center justify-center p-1.5 px-2.5 rounded-lg transition-all ${
-              currentRole === 'guide'
-                ? 'bg-[#034F2A] text-[#D4AF37] font-bold shadow-inner'
-                : 'hover:bg-[#034F2A]/50 text-[#FAFBF9]'
-            }`}
-            title="Panduan Supabase"
-          >
-            <HelpCircle size={18} className="mb-0.5" />
-            <span className="text-[10px] tracking-tight">Panduan</span>
-          </button>
+          {/* Tombol Back ke App dari Admin */}
+          {currentRole === 'admin' && (
+            <button
+              onClick={() => onRoleChange('penumpang')}
+              className="flex items-center space-x-1.5 px-3 py-1.5 bg-[#D4AF37] text-[#046A38] rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm hover:bg-[#B8941F]"
+            >
+              <span>Kembali Ke App</span>
+            </button>
+          )}
         </nav>
-
       </div>
     </header>
   );
