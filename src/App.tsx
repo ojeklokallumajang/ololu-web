@@ -12,15 +12,15 @@ import { PeranPengguna } from './types';
 import { OloluStore } from './services/store';
 import { ShieldAlert, AlertTriangle, Info, BellRing, Phone, ShieldCheck, UserPlus, LogIn, Camera, Check, ArrowRight, Upload, KeyRound, ArrowLeft } from 'lucide-react';
 import OloluLogo from './components/OloluLogo';
-import DesktopDashboard from './components/DesktopDashboard';
 
 export default function App() {
-  const [sesi, setSesi] = useState(OloluStore.getSesi());
-  const [role, setRole] = useState<PeranPengguna>(sesi?.role || 'penumpang');
-  const [showLogin, setShowLogin] = useState(!sesi);
+  const [sesi, setSesi] = useState<{ userId: string; role: PeranPengguna } | null>(null);
+  const [role, setRole] = useState<PeranPengguna>('penumpang');
+  const [showLogin, setShowLogin] = useState(true);
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [loginStep, setLoginStep] = useState<'peran' | 'form' | 'otp' | 'reset'>('peran');
   const [selectedRole, setSelectedRole] = useState<PeranPengguna>('penumpang');
+  const [initializing, setInitializing] = useState(true);
 
   // States
   const [profilePic, setProfilePic] = useState<string | null>(null);
@@ -48,9 +48,21 @@ export default function App() {
     tipe: string;
   }>({ show: false, pelapor: '', tipe: '' });
 
+  // 1. Initial Load Session
   useEffect(() => {
-    const unsubscribe = OloluStore.subscribeToStore(() => {
-      const currentSesi = OloluStore.getSesi();
+    async function checkSession() {
+      const s = await OloluStore.getSesi();
+      if (s) {
+        setSesi(s);
+        setRole(s.role);
+        setShowLogin(false);
+      }
+      setInitializing(false);
+    }
+    checkSession();
+
+    const unsubscribe = OloluStore.subscribeToStore(async () => {
+      const currentSesi = await OloluStore.getSesi();
       setSesi(currentSesi);
       if (!currentSesi) setShowLogin(true);
     });
@@ -67,13 +79,13 @@ export default function App() {
     setError('');
   };
 
-  const handleLoginSubmit = () => {
+  const handleLoginSubmit = async () => {
     if (!phone || !password) {
       setError('Masukkan nomor HP dan kata sandi');
       return;
     }
     setLoading(true);
-    const res = OloluStore.loginPengguna(phone, password);
+    const res = await OloluStore.loginPengguna(phone, password);
     if (res.success && res.profil) {
       OloluStore.setSesi({ userId: res.profil.id, role: res.profil.peran });
       setRole(res.profil.peran);
@@ -122,7 +134,7 @@ export default function App() {
     }, 1500);
   };
 
-  const handleVerifyOtp = () => {
+  const handleVerifyOtp = async () => {
     if (otp.length < 6) {
       setError('Masukkan 6 digit kode OTP');
       return;
@@ -136,17 +148,22 @@ export default function App() {
       } else {
         let finalRole = selectedRole;
         if (phone === '6285156766317') finalRole = 'admin';
-        const profil = OloluStore.registerPengguna(name, phone, finalRole, password);
-        if (profilePic) profil.fotoProfil = profilePic;
-        if (finalRole === 'sopir' || finalRole === 'admin') {
-          OloluStore.updateSopirDokumen(profil.id, {
-            fotoKtp: docKtp || '', fotoSim: docSim || '', fotoStnk: docStnk || '',
-            fotoKendaraan: docVehicle || '', platNomor, jenisMotor, bisaBarangBesar
-          });
+        const res = await OloluStore.registerPengguna(name, phone, finalRole, password);
+        if (res.success && res.profil) {
+          const profil = res.profil;
+          if (profilePic) profil.fotoProfil = profilePic;
+          if (finalRole === 'sopir' || finalRole === 'admin') {
+            await OloluStore.updateSopirDokumen(profil.id, {
+              fotoKtp: docKtp || '', fotoSim: docSim || '', fotoStnk: docStnk || '',
+              fotoKendaraan: docVehicle || '', platNomor, jenisMotor, bisaBarangBesar
+            });
+          }
+          OloluStore.setSesi({ userId: profil.id, role: profil.peran });
+          setRole(profil.peran);
+          setShowLogin(false);
+        } else {
+          setError(res.error || "Gagal mendaftar");
         }
-        OloluStore.setSesi({ userId: profil.id, role: profil.peran });
-        setRole(profil.peran);
-        setShowLogin(false);
         setLoading(false);
       }
     } else {
@@ -155,13 +172,13 @@ export default function App() {
     }
   };
 
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
     if (!password || password !== confirmPassword) {
       setError('Kata sandi baru tidak cocok');
       return;
     }
     setLoading(true);
-    const res = OloluStore.resetPassword(phone, password);
+    const res = await OloluStore.resetPassword(phone, password);
     if (res.success) {
       alert("Kata sandi berhasil diperbarui. Silakan login kembali.");
       setAuthMode('login');
@@ -196,16 +213,22 @@ export default function App() {
   };
 
   const handleNotifyPanic = () => {
-    const latest = OloluStore.getAllEmergency().find(e => e.status === 'baru');
-    if (latest) {
-      setGlobalPanicNotification({ show: true, pelapor: latest.namaPelapor, tipe: latest.peranPelapor });
-    }
+    // Audit logs handled in store now
   };
 
   const handleGotoAdminPanicRoom = () => {
     setGlobalPanicNotification({ show: false, pelapor: '', tipe: '' });
     setRole('admin');
   };
+
+  if (initializing) {
+    return (
+      <div className="min-h-screen bg-[#046A38] flex flex-col items-center justify-center text-white">
+        <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
+        <p className="text-xs font-bold tracking-widest uppercase">Ololu Memuat Sistem...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFBF9] text-[#1A1A1A] font-sans antialiased selection:bg-[#046A38] selection:text-[#D4AF37] flex flex-col">
@@ -216,7 +239,7 @@ export default function App() {
 
             <div className="bg-[#E6F4EC] p-6 text-center border-b border-emerald-100">
               <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-3 border border-emerald-50">
-                <OloluLogo className="w-10 h-10 text-[#046A38]" />
+                <ShieldCheck className="w-10 h-10 text-[#046A38]" />
               </div>
               <h1 className="text-xl font-black text-[#046A38] tracking-tight">Ololu Lumajang</h1>
             </div>
@@ -325,6 +348,20 @@ export default function App() {
                   <button onClick={handleVerifyOtp} disabled={loading} className="w-full py-4 bg-[#046A38] text-white font-black rounded-2xl text-xs tracking-widest uppercase shadow-lg transition-all">{loading ? "Memproses..." : "Konfirmasi"}</button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {globalPanicNotification.show && (
+        <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border-4 border-[#DC2626] p-6 max-w-sm w-full text-center space-y-4 animate-bounce shadow-2xl">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-600 border-2 border-red-500 animate-pulse"><AlertTriangle size={36} className="text-[#DC2626]" /></div>
+            <h2 className="text-[#DC2626] font-black text-lg tracking-wide uppercase">🚨 SINYAL DARURAT DIAKTIFKAN 🚨</h2>
+            <p className="text-sm text-gray-700 leading-relaxed">Sinyal darurat <strong>PANIC BUTTON</strong> dipicu oleh <strong>{globalPanicNotification.pelapor}</strong> ({globalPanicNotification.tipe.toUpperCase()})!</p>
+            <div className="space-y-2 pt-2">
+              <button onClick={handleGotoAdminPanicRoom} className="w-full py-3 bg-[#DC2626] text-white font-black rounded-xl text-xs tracking-wider uppercase shadow-md transition-all">Buka Radar Penyelamatan</button>
+              <button onClick={() => setGlobalPanicNotification({ show: false, pelapor: '', tipe: '' })} className="w-full py-2 bg-gray-100 text-gray-500 font-bold rounded-lg text-xs">Tutup</button>
             </div>
           </div>
         </div>
