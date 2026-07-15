@@ -41,12 +41,14 @@ Calon mitra wajib mengunggah data lengkap dalam satu formulir:
 - **Wisata:** Jasa antar ke tempat wisata Lumajang (tarif khusus).
 - **Market:** Jasa ambil barang COD dari marketplace lokal.
 
-### 4.4. Panel Admin (Eksklusif Superuser)
+### 4.4. Panel Admin (Eksklusif Superuser & Sub-Admin)
 - **Verifikasi Mitra:** Meninjau dokumen Rider baru dan memberikan persetujuan/penolakan.
 - **Dashboard Operasional:** Memantau statistik pendapatan, jumlah order, dan pertumbuhan pengguna.
 - **Radar Realtime:** Melihat posisi Rider yang sedang aktif di peta Lumajang.
 - **Pengaturan Tarif:** Mengubah harga dasar, tarif per km, dan komisi aplikasi secara dinamis.
 - **Audit Riwayat:** Melihat detail setiap transaksi dan chat internal antara pengguna dan rider.
+- **Kelola Admin (Expansion Ready):** Superuser dapat menambahkan atau menghapus hak akses Admin (Sub-Admin) untuk pegawai tambahan.
+- **Log Audit & Akuntabilitas:** Sistem mencatat secara otomatis setiap perubahan pengaturan atau status oleh admin (Siapa, Kapan, Aksi) untuk pertanggungjawaban internal.
 
 ## 5. Aturan Bisnis & Teknis
 - **Branding:** Menggunakan identitas "Ololu-Ride" dan "Ololu-Send".
