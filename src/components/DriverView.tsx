@@ -89,7 +89,6 @@ export default function DriverView({ onNotifyAdminPanic, onLogout }: DriverViewP
   // TABS FOR FINANCE VS ORDER HISTORY
   const [activeHistoryTab, setActiveHistoryTab] = useState<'finance' | 'orders'>('orders');
 
-  // EFECT UNTUK SYNC STATE REALTIME DARI DATABASE
   useEffect(() => {
     const syncDriverData = () => {
       const p = OloluStore.getProfilLogin();
@@ -97,8 +96,17 @@ export default function DriverView({ onNotifyAdminPanic, onLogout }: DriverViewP
       if (p) {
         const detail = OloluStore.getSopir(p.id);
         setDriverDetail(detail || null);
+        if (detail) {
+          setPlatNomor(detail.platNomor || '');
+          setJenisMotor(detail.jenisMotor || '');
+          setBisaBarangBesar(detail.bisaBarangBesar || false);
+        }
+        setActiveOrder(OloluStore.getPesananAktifSopir(p.id));
+        setTransactions(OloluStore.getTransaksiSopir(p.id));
+      }
     };
 
+    syncDriverData();
     const unsubscribe = OloluStore.subscribeToStore(syncDriverData);
     return () => unsubscribe();
   }, []);
