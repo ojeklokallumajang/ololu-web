@@ -97,29 +97,6 @@ export default function DriverView({ onNotifyAdminPanic, onLogout }: DriverViewP
       if (p) {
         const detail = OloluStore.getSopir(p.id);
         setDriverDetail(detail || null);
-        if (detail) {
-          setPlatNomor(detail.platNomor || '');
-          setJenisMotor(detail.jenisMotor || '');
-          setBisaBarangBesar(detail.bisaBarangBesar || false);
-        }
-        setActiveOrder(OloluStore.getPesananAktifSopir(p.id));
-        setTransactions(OloluStore.getTransaksiSopir(p.id));
-      }
-    };
-      const sesi = OloluStore.getSesi();
-      if (sesi && sesi.role === 'sopir') {
-        const det = OloluStore.getSopir(sesi.userId);
-        setDriverDetail(det);
-        if (det) {
-          setPlatNomor(det.platNomor || '');
-          setJenisMotor(det.jenisMotor || '');
-          setBisaBarangBesar(det.bisaBarangBesar || false);
-          
-          // Get active order & wallet logs
-          setActiveOrder(OloluStore.getPesananAktifSopir(det.id));
-          setTransactions(OloluStore.getTransaksiSopir(det.id));
-        }
-      }
     };
 
     syncDriverData();
