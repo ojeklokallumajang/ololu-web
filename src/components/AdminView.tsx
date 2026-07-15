@@ -80,7 +80,7 @@ export default function AdminView() {
     );
   }
 
-  const [activeTab, setActiveTab] = useState<'stats' | 'sopir' | 'penumpang' | 'pesanan' | 'dompet' | 'tarif' | 'darurat' | 'rating'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'sopir' | 'penumpang' | 'pesanan' | 'dompet' | 'tarif' | 'darurat' | 'rating' | 'admins' | 'logs'>('stats');
   
   // STATE DATA REALTIME
   const [pesananList, setPesananList] = useState<Pesanan[]>([]);
@@ -90,12 +90,19 @@ export default function AdminView() {
   const [transaksiList, setTransaksiList] = useState<TransaksiDompet[]>([]);
   const [ratingList, setRatingList] = useState<RatingUlasan[]>([]);
   const [config, setConfig] = useState<PengaturanTarif>(OloluStore.getPengaturan());
+  const [adminList, setAdminList] = useState<ProfilPengguna[]>([]);
+  const [auditLogs, setAuditLogs] = useState<LogAudit[]>([]);
 
   // UI DETAIL EXPANSIONS
   const [selectedOrder, setSelectedOrder] = useState<Pesanan | null>(null);
   const [selectedSopir, setSelectedSopir] = useState<DetailSopir | null>(null);
   const [complaintFilter, setComplaintFilter] = useState<string>('semua');
   
+  // FORM ADD SUB-ADMIN
+  const [newAdminPhone, setNewAdminPhone] = useState('');
+  const [newAdminName, setNewAdminName] = useState('');
+  const [newAdminPass, setNewAdminNamePass] = useState('');
+
   // FORM EDIT TARIF STATE
   const [tempConfig, setTempConfig] = useState<PengaturanTarif>(OloluStore.getPengaturan());
 
@@ -113,7 +120,9 @@ export default function AdminView() {
       setEmergencyList(OloluStore.getAllEmergency());
       setTransaksiList(OloluStore.getAllTransaksi());
       setRatingList(OloluStore.getAllRating());
-      
+      setAdminList(OloluStore.getAllAdmins());
+      setAuditLogs(OloluStore.getAuditLogs());
+
       const conf = OloluStore.getPengaturan();
       setConfig(conf);
 
@@ -236,14 +245,39 @@ export default function AdminView() {
   
   // VERIFIKASI SOPIR
   const handleApproveSopir = (sopirId: string, setuju: boolean) => {
+    const prof = profilList.find(p => p.id === sopirId);
     if (setuju) {
       OloluStore.verifikasiSopir(sopirId, true);
+      OloluStore.addAuditLog(profile!.id, profile!.nama, "Menyetujui Sopir", `Admin menyetujui dokumen mitra: ${prof?.nama} (${prof?.nomorHp})`);
       alert("Akun Sopir Berhasil Disetujui! Sopir kini bisa login dan mengaktifkan mode Online.");
     } else {
       const alasan = prompt("Masukkan alasan penolakan berkas:") || "Dokumen kurang terbaca jelas";
       OloluStore.verifikasiSopir(sopirId, false, alasan);
+      OloluStore.addAuditLog(profile!.id, profile!.nama, "Menolak Sopir", `Admin menolak dokumen mitra: ${prof?.nama} (${prof?.nomorHp}) Alasan: ${alasan}`);
       alert("Berkas lamaran sopir ditolak.");
     }
+  };
+
+  const handleAddAdmin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAdminPhone || !newAdminName) return;
+    OloluStore.tambahSubAdmin(newAdminPhone, newAdminName);
+    OloluStore.addAuditLog(profile!.id, profile!.nama, "Menambah Sub-Admin", `Admin baru ditambahkan: ${newAdminName} (${newAdminPhone})`);
+    setNewAdminPhone(''); setNewAdminName('');
+    alert("Sub-Admin berhasil ditambahkan!");
+  };
+
+  const handleRemoveAdmin = (id: string, name: string) => {
+    if (confirm(`Hapus hak akses admin untuk ${name}?`)) {
+      OloluStore.hapusSubAdmin(id);
+      OloluStore.addAuditLog(profile!.id, profile!.nama, "Menghapus Sub-Admin", `Akses admin dicabut dari: ${name}`);
+      alert("Akses Admin dicabut.");
+    }
+  };
+
+  const saveConfigWithLog = () => {
+    OloluStore.savePengaturan(tempConfig, profile!.id, profile!.nama);
+    alert("Pengaturan berhasil disimpan dan dicatat dalam log audit.");
   };
 
   // MATIKAN ONLINE SOPIR SECARA PAKSA (REMOTE)
@@ -557,7 +591,9 @@ export default function AdminView() {
           { id: 'dompet', label: '💸 Tarik Dana' },
           { id: 'tarif', label: '⚙️ Tarif & Layanan' },
           { id: 'darurat', label: '🚨 SOS Darurat' },
-          { id: 'rating', label: '⭐ Rating Ulasan' }
+          { id: 'rating', label: '⭐ Rating Ulasan' },
+          { id: 'admins', label: '🔑 Kelola Admin' },
+          { id: 'logs', label: '📜 Log Audit' }
         ].map((t) => (
           <button
             key={t.id}
@@ -1668,7 +1704,83 @@ export default function AdminView() {
                   );
                 })}
               </div>
-            )}
+            </div>
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB 9: KELOLA SUB-ADMIN
+            ===================================================================== */}
+        {activeTab === 'admins' && (
+          <div className="space-y-4 text-left">
+            <h3 className="text-xs font-bold text-[#1A1A1A] border-b pb-1.5 uppercase">Manajemen Hak Akses Admin</h3>
+
+            <form onSubmit={handleAddAdmin} className="bg-white p-4 rounded-xl border shadow-sm space-y-3">
+              <p className="text-[10px] font-bold text-gray-400 uppercase">Tambah Admin Baru</p>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text" placeholder="Nama Admin" value={newAdminName}
+                  onChange={(e)=>setNewAdminName(e.target.value)}
+                  className="p-2 bg-gray-50 border rounded text-xs outline-none focus:border-[#046A38]"
+                />
+                <input
+                  type="tel" placeholder="WhatsApp (628xx)" value={newAdminPhone}
+                  onChange={(e)=>setNewAdminPhone(e.target.value)}
+                  className="p-2 bg-gray-50 border rounded text-xs outline-none focus:border-[#046A38]"
+                />
+              </div>
+              <button type="submit" className="w-full py-2 bg-[#046A38] text-white rounded-lg text-xs font-bold shadow-sm">
+                BERIKAN AKSES ADMIN
+              </button>
+            </form>
+
+            <div className="space-y-2">
+              {adminList.map(adm => (
+                <div key={adm.id} className="bg-white p-3 rounded-xl border flex items-center justify-between shadow-xs">
+                  <div>
+                    <p className="text-xs font-black text-gray-800">{adm.nama}</p>
+                    <p className="text-[10px] text-gray-500 font-mono">{adm.nomorHp} {adm.nomorHp === '6285156766317' && '(Owner)'}</p>
+                  </div>
+                  {adm.nomorHp !== '6285156766317' && (
+                    <button
+                      onClick={() => handleRemoveAdmin(adm.id, adm.nama)}
+                      className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* =====================================================================
+            TAB 10: LOG AUDIT SISTEM
+            ===================================================================== */}
+        {activeTab === 'logs' && (
+          <div className="space-y-4 text-left">
+            <h3 className="text-xs font-bold text-[#1A1A1A] border-b pb-1.5 uppercase">Log Aktivitas & Perubahan Sistem</h3>
+            <p className="text-[10px] text-gray-500 leading-relaxed italic">
+              Setiap perubahan tarif, persetujuan driver, atau penambahan admin dicatat di sini untuk pertanggungjawaban.
+            </p>
+
+            <div className="space-y-2">
+              {auditLogs.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-8">Belum ada catatan aktivitas.</p>
+              ) : (
+                auditLogs.map(log => (
+                  <div key={log.id} className="bg-white p-3 rounded-xl border-l-4 border-[#046A38] shadow-xs space-y-1">
+                    <div className="flex justify-between items-start">
+                      <span className="text-[10px] font-black text-[#046A38] uppercase">{log.aksi}</span>
+                      <span className="text-[9px] text-gray-400 font-mono">{new Date(log.timestamp).toLocaleString('id-ID')}</span>
+                    </div>
+                    <p className="text-[11px] font-bold text-gray-800">{log.detail}</p>
+                    <p className="text-[9px] text-gray-400 font-medium">Oleh: <span className="text-[#D4AF37]">{log.adminNama}</span></p>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         )}
 

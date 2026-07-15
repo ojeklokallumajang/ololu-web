@@ -16,6 +16,16 @@ export interface ProfilPengguna {
   terverifikasi: boolean;
   tanggalDaftar: string;
   fotoProfil?: string;
+  isSubAdmin?: boolean; // Menandai jika user adalah admin tambahan
+}
+
+export interface LogAudit {
+  id: string;
+  adminId: string;
+  adminNama: string;
+  aksi: string; // Misal: "Mengubah Tarif Ojek", "Menyetujui Sopir"
+  detail: string;
+  timestamp: string;
 }
 
 export interface DetailSopir {

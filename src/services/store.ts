@@ -158,6 +158,7 @@ let transaksiList = loadData<TransaksiDompet[]>('ololu_transaksi', []);
 let emergencyList = loadData<LaporanDarurat[]>('ololu_emergency', []);
 let ratingList = loadData<RatingUlasan[]>('ololu_rating', []);
 let chatMessagesList = loadData<ChatMessage[]>('ololu_chat_messages', []);
+let auditLogs = loadData<LogAudit[]>('ololu_audit_logs', []);
 let sesiAktif = loadData<{ userId: string; role: PeranPengguna } | null>('ololu_sesi', null);
 
 // REPOSITORY DATA (GETTER/SETTER)
@@ -172,12 +173,59 @@ export const OloluStore = {
   getPengaturan(): PengaturanTarif {
     return pengaturans;
   },
-  savePengaturan(config: PengaturanTarif) {
+  savePengaturan(config: PengaturanTarif, adminId: string, adminNama: string) {
     pengaturans = config;
     saveData('ololu_pengaturan', pengaturans);
+    this.addAuditLog(adminId, adminNama, "Mengubah Pengaturan Sistem", "Admin memperbarui konfigurasi tarif atau jadwal layanan.");
   },
   saveConfig(config: PengaturanTarif) {
-    this.savePengaturan(config);
+    // Legacy support - assume superuser if no info provided
+    this.savePengaturan(config, 'admin-superuser', 'Superuser');
+  },
+
+  // AUDIT LOGS
+  getAuditLogs(): LogAudit[] {
+    return auditLogs;
+  },
+  addAuditLog(adminId: string, adminNama: string, aksi: string, detail: string) {
+    const log: LogAudit = {
+      id: `log-${Math.random().toString(36).substr(2, 9)}`,
+      adminId,
+      adminNama,
+      aksi,
+      detail,
+      timestamp: new Date().toISOString()
+    };
+    auditLogs.unshift(log); // Log terbaru di atas
+    if (auditLogs.length > 500) auditLogs.pop(); // Batasi 500 log terbaru
+    saveData('ololu_audit_logs', auditLogs);
+  },
+
+  // SUB-ADMIN MANAGEMENT
+  getAllAdmins(): ProfilPengguna[] {
+    return profilPenggunas.filter(p => p.peran === 'admin' || p.isSubAdmin);
+  },
+  tambahSubAdmin(nomorHp: string, nama: string, password?: string) {
+    const existing = profilPenggunas.find(p => p.nomorHp === nomorHp);
+    if (existing) {
+      existing.peran = 'admin';
+      existing.isSubAdmin = true;
+    } else {
+      this.registerPengguna(nama, nomorHp, 'admin', password || 'admin123');
+      const newlyCreated = profilPenggunas.find(p => p.nomorHp === nomorHp);
+      if (newlyCreated) newlyCreated.isSubAdmin = true;
+    }
+    saveData('ololu_profil', profilPenggunas);
+  },
+  hapusSubAdmin(adminId: string) {
+    if (adminId === 'admin-superuser') return; // Jangan hapus superuser
+    profilPenggunas = profilPenggunas.map(p => {
+      if (p.id === adminId) {
+        return { ...p, peran: 'penumpang' as PeranPengguna, isSubAdmin: false };
+      }
+      return p;
+    });
+    saveData('ololu_profil', profilPenggunas);
   },
 
   // SESI LOGIN UTAMA
