@@ -49,12 +49,18 @@ import {
   Store,
   ShoppingCart,
   Bike,
-  History
+  History,
+  User,
+  ShieldCheck,
+  ChevronRight,
+  ArrowRight
 } from 'lucide-react';
 import OloluLogo from './OloluLogo';
 
 interface PassengerViewProps {
   onNotifyAdminPanic: () => void;
+  onLogout: () => void;
+  onRoleChange: (role: any) => void;
 }
 
 // Daftar tempat populer di Lumajang sebagai rekomendasi cepat & fallback offline
