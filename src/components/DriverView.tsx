@@ -99,7 +99,6 @@ export default function DriverView({ onNotifyAdminPanic, onLogout }: DriverViewP
         setDriverDetail(detail || null);
     };
 
-    syncDriverData();
     const unsubscribe = OloluStore.subscribeToStore(syncDriverData);
     return () => unsubscribe();
   }, []);
