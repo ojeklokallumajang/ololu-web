@@ -8,7 +8,6 @@ import Navbar from './components/Navbar';
 import PassengerView from './components/PassengerView';
 import DriverView from './components/DriverView';
 import AdminView from './components/AdminView';
-import SupabaseGuide from './components/SupabaseGuide';
 import { PeranPengguna } from './types';
 import { OloluStore } from './services/store';
 import { ShieldAlert, AlertTriangle, Info, BellRing, Phone, ShieldCheck, UserPlus, LogIn } from 'lucide-react';
@@ -17,7 +16,7 @@ import DesktopDashboard from './components/DesktopDashboard';
 
 export default function App() {
   const [sesi, setSesi] = useState(OloluStore.getSesi());
-  const [role, setRole] = useState<PeranPengguna | 'guide'>(sesi?.role || 'penumpang');
+  const [role, setRole] = useState<PeranPengguna>(sesi?.role || 'penumpang');
   const [showLogin, setShowLogin] = useState(!sesi);
   const [loginStep, setLoginStep] = useState<'peran' | 'form' | 'otp'>('peran');
   const [selectedRole, setSelectedRole] = useState<PeranPengguna>('penumpang');
@@ -190,13 +189,6 @@ export default function App() {
                       </div>
                     </div>
                   </button>
-
-                  <button
-                    onClick={() => { setRole('guide'); setShowLogin(false); }}
-                    className="w-full mt-4 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-[#046A38] transition-colors"
-                  >
-                    Lihat Panduan Developer
-                  </button>
                 </div>
               )}
 
@@ -362,10 +354,6 @@ export default function App() {
 
               {role === 'sopir' && (
                 <DriverView onNotifyAdminPanic={handleNotifyPanic} />
-              )}
-
-              {role === 'guide' && (
-                <SupabaseGuide />
               )}
             </div>
 
