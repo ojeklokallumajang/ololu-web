@@ -494,11 +494,13 @@ function LiveDriversMap() {
 interface PassengerViewProps {
   onNotifyAdminPanic: () => void;
   onLogout: () => void;
+  onRoleChange: (role: any) => void;
 }
 
-export default function PassengerView({ onNotifyAdminPanic, onLogout }: PassengerViewProps) {
+export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChange }: PassengerViewProps) {
   // --- IN-APP STATE SINKRONISASI ---
   const [profile, setProfile] = useState(OloluStore.getProfilLogin());
+  const isSuperUser = profile?.nomorHp === '6285156766317';
   const [activeOrder, setActiveOrder] = useState<Pesanan | null>(null);
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [ratingsSubmitted, setRatingsSubmitted] = useState<boolean>(false);
@@ -2135,7 +2137,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout }: Passenge
               <span className="text-2xl mt-1">🛵</span>
             </div>
 
-            <div className="pt-1 border-t border-gray-100 flex flex-col sm:flex-row gap-2">
+            <div className="pt-1 border-t border-gray-100 flex flex-col gap-2">
               <button
                 onClick={() => {
                   selectSubLayanan('ojek');
@@ -2146,6 +2148,17 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout }: Passenge
                 <span>Mulai Order Sekarang</span>
                 <span className="text-[10px] opacity-85 font-normal">→</span>
               </button>
+
+              {/* TOMBOL DASHBOARD ADMIN - KHUSUS SUPERUSER */}
+              {isSuperUser && (
+                <button
+                  onClick={() => onRoleChange('admin')}
+                  className="flex-1 py-3 px-4 bg-amber-500 hover:bg-amber-600 text-[#046A38] font-black rounded-2xl shadow-md transition-all active:scale-[0.98] flex items-center justify-center space-x-2 text-xs uppercase tracking-wider border-b-4 border-amber-700"
+                >
+                  <ShieldCheck size={16} />
+                  <span>Buka Dashboard Admin</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

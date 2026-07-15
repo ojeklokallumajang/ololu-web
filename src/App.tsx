@@ -436,14 +436,20 @@ export default function App() {
               <span>PT Ololu Lumajang</span>
             </div>
 
-            {/* SCROLLABLE INNER VIEWPORT CONTAINER */}
             <div className="flex-1 overflow-y-auto pb-14 relative scrollbar-none">
               {role === 'penumpang' && (
-                <PassengerView onNotifyAdminPanic={handleNotifyPanic} onLogout={handleLogout} />
+                <PassengerView
+                  onNotifyAdminPanic={handleNotifyPanic}
+                  onLogout={handleLogout}
+                  onRoleChange={(r) => setRole(r)}
+                />
               )}
 
               {role === 'sopir' && (
-                <DriverView onNotifyAdminPanic={handleNotifyPanic} onLogout={handleLogout} />
+                <DriverView
+                  onNotifyAdminPanic={handleNotifyPanic}
+                  onLogout={handleLogout}
+                />
               )}
             </div>
 
