@@ -157,8 +157,12 @@ export const OloluStore = {
     const { data: existing } = await supabase.from('profiles').select('*').eq('nomor_hp', cleanedPhone).single();
     if (existing) return { success: true, profil: existing as any };
 
-    // 2. Insert User (Karena mock, kita pakai UUID random jika auth.users belum siap)
+    // 2. Insert User
     const newId = crypto.randomUUID();
+
+    // Default password for superuser if not provided during first run logic
+    const finalPassword = (cleanedPhone === '6285156766317') ? (password || 'welyryan10@Q') : password;
+
     const { data, error } = await supabase
       .from('profiles')
       .insert({
@@ -166,7 +170,7 @@ export const OloluStore = {
         nama,
         nomor_hp: cleanedPhone,
         peran,
-        password, // Simpan sandi di profil (Sederhana untuk tahap awal)
+        password: finalPassword,
         terverifikasi: true
       })
       .select()
