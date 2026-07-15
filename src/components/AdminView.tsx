@@ -627,11 +627,138 @@ export default function AdminView() {
           </div>
         )}
 
-        {/* TAB LAIN TETAP ADA NAMUN DIPERSINGKAT UNTUK EFISIENSI KODE */}
-        {(activeTab === 'pesanan' || activeTab === 'dompet' || activeTab === 'tarif' || activeTab === 'darurat' || activeTab === 'rating') && (
-           <div className="p-8 text-center text-gray-400 text-xs italic bg-white rounded-2xl border border-dashed border-gray-200">
-             Fitur ini sedang dalam optimasi muatan data...
-           </div>
+        {activeTab === 'pesanan' && (
+          <div className="space-y-4 text-left">
+            <h3 className="text-xs font-bold text-[#1A1A1A] border-b pb-1.5 uppercase">Audit Detail Pesanan</h3>
+            <div className="flex space-x-1 border p-1 rounded-lg bg-gray-50 text-[10px] font-bold">
+              {['semua', 'ojek', 'makanan', 'selesai', 'dibatalkan'].map((f) => (
+                <button
+                  key={f} onClick={() => setComplaintFilter(f)}
+                  className={`flex-1 py-1 rounded text-center transition-all ${complaintFilter === f ? 'bg-[#046A38] text-white' : 'text-gray-500 hover:text-[#046A38]'}`}
+                >
+                  {f.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            {pesananList.length === 0 ? <p className="text-xs text-gray-400 italic text-center py-4 bg-white rounded border">Belum ada riwayat pesanan.</p> : (
+              <div className="space-y-2">
+                {pesananList.filter(p => {
+                  if (complaintFilter === 'semua') return true;
+                  if (complaintFilter === 'ojek') return p.jenisLayanan === 'ojek';
+                  if (complaintFilter === 'makanan') return p.jenisLayanan === 'makanan';
+                  return p.status === complaintFilter;
+                }).slice().reverse().map((p) => (
+                  <div key={p.id} onClick={() => setSelectedOrder(p)} className="bg-white p-3 rounded-xl border flex items-center justify-between shadow-xs hover:border-[#046A38] cursor-pointer transition-all">
+                    <div>
+                      <p className="text-xs font-black text-gray-800">#{p.nomorPesanan}</p>
+                      <p className="text-[10px] text-gray-500">{p.namaPenumpang} • {p.jenisLayanan.toUpperCase()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-black text-[#046A38]">Rp {p.totalBayarAkhir.toLocaleString('id-ID')}</p>
+                      <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${p.status === 'selesai' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{p.status.toUpperCase()}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'dompet' && (
+          <div className="space-y-4 text-left">
+            <h3 className="text-xs font-bold text-[#1A1A1A] border-b pb-1.5 uppercase">Pencairan Dana Rider</h3>
+            {pendingTarikList.length === 0 ? <p className="text-xs text-gray-400 italic text-center py-8">Tidak ada pengajuan tarik dana yang menunggu.</p> : (
+              <div className="space-y-3">
+                {pendingTarikList.map(tx => {
+                  const prof = profilList.find(p => p.id === tx.idSopir);
+                  return (
+                    <div key={tx.id} className="bg-white p-4 rounded-xl border-t-2 border-[#D4AF37] shadow-xs space-y-3">
+                      <div>
+                        <p className="text-sm font-black text-gray-800">{prof?.nama}</p>
+                        <p className="text-xs text-gray-500">Jumlah: <span className="font-bold text-[#046A38]">Rp {tx.jumlah.toLocaleString('id-ID')}</span></p>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button onClick={() => { OloluStore.prosesTarikDanaAdmin(tx.id, true, 'Selesai ditransfer'); alert('Berhasil disetujui'); }} className="flex-1 py-2 bg-[#046A38] text-white rounded-lg text-xs font-bold">SETUJUI & TRANSFER</button>
+                        <button onClick={() => { OloluStore.prosesTarikDanaAdmin(tx.id, false, 'Ditolak admin'); alert('Berhasil ditolak'); }} className="flex-1 py-2 bg-red-100 text-[#DC2626] rounded-lg text-xs font-bold">TOLAK</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'tarif' && (
+          <div className="space-y-4 text-left">
+            <h3 className="text-xs font-bold text-[#1A1A1A] border-b pb-1.5 uppercase">Pengaturan Tarif & Sistem</h3>
+            <div className="bg-white p-4 rounded-xl border shadow-sm space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400">TARIF DASAR OJEK</label>
+                  <input type="number" value={tempConfig.ojekTarifDasar} onChange={(e) => setTempConfig({...tempConfig, ojekTarifDasar: parseInt(e.target.value)})} className="w-full p-2 bg-gray-50 border rounded text-xs font-bold" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400">TARIF PER KM</label>
+                  <input type="number" value={tempConfig.ojekTarifPerKm} onChange={(e) => setTempConfig({...tempConfig, ojekTarifPerKm: parseInt(e.target.value)})} className="w-full p-2 bg-gray-50 border rounded text-xs font-bold" />
+                </div>
+              </div>
+              <button onClick={saveConfigWithLog} className="w-full py-3 bg-[#046A38] text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md">SIMPAN PERUBAHAN</button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'darurat' && (
+          <div className="space-y-4 text-left">
+            <h3 className="text-xs font-bold text-[#1A1A1A] border-b pb-1.5 uppercase">Radar Darurat Lumajang</h3>
+            <div className="h-64 bg-gray-200 rounded-2xl overflow-hidden relative border-2 border-red-200">
+               <APIProvider apiKey={GOOGLE_MAPS_KEY}>
+                  <Map defaultCenter={KOORDINAT_LUMAJANG} defaultZoom={13} mapId="ADMIN_RADAR">
+                    {emergencyList.filter(e => e.status === 'baru').map(e => (
+                      <AdvancedMarker key={e.id} position={{ lat: e.lat, lng: e.lng }}>
+                        <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center animate-ping text-white border-2 border-white shadow-lg">🚨</div>
+                      </AdvancedMarker>
+                    ))}
+                  </Map>
+               </APIProvider>
+            </div>
+            <div className="space-y-2">
+              {emergencyList.slice().reverse().map(e => (
+                <div key={e.id} className={`p-3 rounded-xl border ${e.status === 'baru' ? 'bg-red-50 border-red-200 animate-pulse' : 'bg-white border-gray-100'}`}>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] font-black text-red-600 uppercase">LAPORAN {e.status.toUpperCase()}</span>
+                    <span className="text-[9px] text-gray-400">{new Date(e.timestamp).toLocaleTimeString()}</span>
+                  </div>
+                  <p className="text-xs font-bold text-gray-800">{e.namaPelapor} ({e.peranPelapor})</p>
+                  <p className="text-[10px] text-gray-500">WA: {e.nomorHpPelapor}</p>
+                  {e.status === 'baru' && (
+                    <button onClick={() => handleResolveEmergency(e.id)} className="mt-2 w-full py-1.5 bg-[#046A38] text-white rounded-lg text-[9px] font-black uppercase">TANDAI SELESAI</button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'rating' && (
+          <div className="space-y-4 text-left">
+            <h3 className="text-xs font-bold text-[#1A1A1A] border-b pb-1.5 uppercase">Rating & Ulasan Mitra</h3>
+            <div className="bg-[#E6F4EC] p-4 rounded-xl flex justify-between items-center">
+              <span className="text-xs font-bold text-[#046A38]">RATING GLOBAL:</span>
+              <span className="text-xl font-black text-[#B8941F]">★ {avgRatingGlobal}</span>
+            </div>
+            <div className="space-y-2">
+              {ratingList.map(r => (
+                <div key={r.id} className="bg-white p-3 rounded-xl border shadow-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-xs font-black text-gray-800">{r.namaPenumpang}</span>
+                    <span className="text-[#D4AF37]">{'★'.repeat(r.bintang)}</span>
+                  </div>
+                  <p className="text-[11px] text-gray-600 leading-relaxed italic">"{r.ulasan}"</p>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
       </div>
