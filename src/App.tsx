@@ -21,6 +21,7 @@ export default function App() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [loginStep, setLoginStep] = useState<'peran' | 'form' | 'otp'>('peran');
   const [selectedRole, setSelectedRole] = useState<PeranPengguna>('penumpang');
+  const [profilePic, setProfilePic] = useState<string | null>(null);
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -51,6 +52,7 @@ export default function App() {
     setSelectedRole(peran);
     setAuthMode('register');
     setLoginStep('form');
+    setProfilePic(null);
   };
 
   const handleLoginSubmit = () => {
@@ -69,6 +71,72 @@ export default function App() {
       setError(res.error || 'Gagal masuk');
     }
     setLoading(false);
+  };
+
+  const handleRegisterSubmit = () => {
+    if (!name || !phone || !password) {
+      setError('Lengkapi semua data pendaftaran');
+      return;
+    }
+    if (selectedRole === 'sopir' && !profilePic) {
+      setError('Foto profil wajib diunggah untuk mitra sopir');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Konfirmasi kata sandi tidak cocok');
+      return;
+    }
+    setLoading(true);
+    setError('');
+
+    // Kirim OTP via Fonnte hanya saat pendaftaran
+    OloluStore.kirimFonnteOtp(phone);
+
+    setTimeout(() => {
+      setLoading(false);
+      setLoginStep('otp');
+    }, 1500);
+  };
+
+  const handleVerifyOtp = () => {
+    if (otp.length < 6) {
+      setError('Masukkan 6 digit kode OTP');
+      return;
+    }
+
+    setLoading(true);
+    if (OloluStore.verifikasiOtp(phone, otp)) {
+      // Cek apakah nomor HP adalah superuser
+      let finalRole = selectedRole;
+      if (phone === '6285156766317') {
+        finalRole = 'admin';
+      }
+
+      // Register (Sekarang dengan password dan foto profil)
+      const profil = OloluStore.registerPengguna(name, phone, finalRole, password);
+      if (profilePic) {
+        profil.fotoProfil = profilePic;
+      }
+
+      OloluStore.setSesi({ userId: profil.id, role: profil.peran });
+      setRole(profil.peran);
+      setShowLogin(false);
+      setLoading(false);
+    } else {
+      setError('Kode OTP salah atau kedaluwarsa');
+      setLoading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePic(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleRegisterSubmit = () => {
@@ -278,6 +346,36 @@ export default function App() {
 
               {authMode === 'register' && loginStep === 'form' && (
                 <div className="space-y-4">
+                  {/* Foto Profil Field */}
+                  <div className="flex flex-col items-center space-y-2 mb-4">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase">
+                      Foto Profil {selectedRole === 'sopir' ? '(Wajib)' : '(Opsional)'}
+                    </label>
+                    <div className="relative group cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
+                      />
+                      <div className="w-20 h-20 bg-gray-50 border-2 border-dashed border-gray-200 rounded-full flex items-center justify-center overflow-hidden group-hover:border-[#046A38] transition-all">
+                        {profilePic ? (
+                          <img src={profilePic} alt="Preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <Camera size={24} className="text-gray-300 group-hover:text-[#046A38]" />
+                        )}
+                      </div>
+                      {profilePic && (
+                        <div className="absolute -bottom-1 -right-1 bg-[#046A38] text-white p-1 rounded-full border-2 border-white shadow-sm">
+                          <Check size={10} />
+                        </div>
+                      )}
+                    </div>
+                    {selectedRole === 'sopir' && !profilePic && (
+                      <p className="text-[9px] text-red-500 font-bold italic">Wajah harus terlihat jelas</p>
+                    )}
+                  </div>
+
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Nama Lengkap (Sesuai KTP)</label>
                     <input
