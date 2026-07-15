@@ -139,56 +139,10 @@ export default function App() {
     }
   };
 
-  const handleRegisterSubmit = () => {
-    if (!name || !phone || !password) {
-      setError('Lengkapi semua data pendaftaran');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('Konfirmasi kata sandi tidak cocok');
-      return;
-    }
-    setLoading(true);
-    setError('');
-
-    // Kirim OTP via Fonnte hanya saat pendaftaran
-    OloluStore.kirimFonnteOtp(phone);
-
-    setTimeout(() => {
-      setLoading(false);
-      setLoginStep('otp');
-    }, 1500);
-  };
-
-  const handleVerifyOtp = () => {
-    if (otp.length < 6) {
-      setError('Masukkan 6 digit kode OTP');
-      return;
-    }
-
-    setLoading(true);
-    if (OloluStore.verifikasiOtp(phone, otp)) {
-      // Cek apakah nomor HP adalah superuser
-      let finalRole = selectedRole;
-      if (phone === '6285156766317') {
-        finalRole = 'admin';
-      }
-
-      // Register atau Login
-      const profil = OloluStore.registerPengguna(name, phone, finalRole, password);
-      OloluStore.setSesi({ userId: profil.id, role: profil.peran });
-      setRole(profil.peran);
-      setShowLogin(false);
-      setLoading(false);
-    } else {
-      setError('Kode OTP salah atau kedaluwarsa');
-      setLoading(false);
-    }
-  };
-
   const handleLogout = () => {
     OloluStore.setSesi(null);
     setShowLogin(true);
+    setAuthMode('login');
     setLoginStep('peran');
   };
 
