@@ -82,68 +82,18 @@ export const DEFAULT_PENGATURAN_TARIF: PengaturanTarif = {
   ]
 };
 
-// SIMULASI AKUN SOPIR BAWAAN AGAR SISTEM AUTOBID LANGSUNG BISA DIUJI
-const SOPIR_MOCK_AWAL: DetailSopir[] = [
-  {
-    id: "sopir-joko",
-    fotoKtp: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23ccc'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'>KTP Joko</text></svg>",
-    fotoSim: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23ccc'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'>SIM Joko</text></svg>",
-    fotoStnk: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23ccc'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'>STNK Joko</text></svg>",
-    fotoKendaraan: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23ccc'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'>Motor Joko</text></svg>",
-    platNomor: "N 4556 YZ",
-    jenisMotor: "Honda Vario 150",
-    bisaBarangBesar: true,
-    disetujuiAdmin: true,
-    ditolakAdmin: false,
-    statusOnline: true,
-    saldoDompet: 55000,
-    ratingRataRata: 4.9,
-    jumlahPesananSelesai: 142,
-    lokasiSaatIni: { lat: -8.1310, lng: 113.2215 } // Sangat dekat Alun-alun
-  },
-  {
-    id: "sopir-budi",
-    fotoKtp: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23ccc'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'>KTP Budi</text></svg>",
-    fotoSim: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23ccc'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'>SIM Budi</text></svg>",
-    fotoStnk: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23ccc'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'>STNK Budi</text></svg>",
-    fotoKendaraan: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23ccc'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'>Motor Budi</text></svg>",
-    platNomor: "N 2199 AX",
-    jenisMotor: "Yamaha NMAX 155",
-    bisaBarangBesar: false,
-    disetujuiAdmin: true,
-    ditolakAdmin: false,
-    statusOnline: true,
-    saldoDompet: 25000,
-    ratingRataRata: 4.7,
-    jumlahPesananSelesai: 88,
-    lokasiSaatIni: { lat: -8.1350, lng: 113.2260 } // Dekat Alun-alun
-  }
-];
+// DATA AWAL KOSONG UNTUK PRODUKSI
+const SOPIR_MOCK_AWAL: DetailSopir[] = [];
 
 const PROFIL_MOCK_AWAL: ProfilPengguna[] = [
   {
-    id: "sopir-joko",
-    nama: "Joko Susilo",
-    nomorHp: "628123456780",
-    peran: "sopir",
-    terverifikasi: true,
-    tanggalDaftar: "2026-05-10T10:00:00-07:00"
-  },
-  {
-    id: "sopir-budi",
-    nama: "Budi Setiawan",
-    nomorHp: "628123456781",
-    peran: "sopir",
-    terverifikasi: true,
-    tanggalDaftar: "2026-06-15T11:30:00-07:00"
-  },
-  {
-    id: "admin-ololu",
-    nama: "Admin Utama",
-    nomorHp: "6288212818616",
+    id: "admin-superuser",
+    nama: "Welly Ryan Jatmiko",
+    nomorHp: "6285156766317",
+    password: "admin", // Admin default password
     peran: "admin",
     terverifikasi: true,
-    tanggalDaftar: "2026-01-01T00:00:00-07:00"
+    tanggalDaftar: new Date().toISOString()
   }
 ];
 

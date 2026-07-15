@@ -143,6 +143,81 @@ function MapPickerSearch({
     }
   };
 
+  // --- VIEW: PROFILE ---
+  if (viewMode === 'profile' && profile) {
+    return (
+      <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20">
+        <div className="bg-[#046A38] text-white p-8 rounded-b-[40px] text-center shadow-lg relative">
+           <button
+            onClick={() => setViewMode('home')}
+            className="absolute left-6 top-6 bg-white/10 hover:bg-white/20 text-white font-bold text-[9px] px-3 py-1 rounded-full transition-all uppercase tracking-wider border border-white/20"
+          >
+            ← Beranda
+          </button>
+
+          <div className="w-24 h-24 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-white/30 overflow-hidden">
+            <User size={48} className="text-white" />
+          </div>
+          <h2 className="text-xl font-black">{profile.nama}</h2>
+          <p className="text-emerald-100 text-xs font-bold mt-1">{profile.nomorHp}</p>
+          <div className="mt-3 inline-block px-3 py-1 bg-[#D4AF37] text-[#046A38] rounded-full text-[10px] font-black uppercase">
+            {profile.peran === 'admin' ? 'Superuser' : 'Penumpang Setia'}
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <User size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Edit Profil</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <ShieldCheck size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Keamanan Akun</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+          </div>
+
+          <button
+            onClick={onLogout}
+            className="w-full py-4 bg-red-50 text-red-600 font-black rounded-[24px] text-xs tracking-widest uppercase border-2 border-red-100 hover:bg-red-600 hover:text-white transition-all"
+          >
+            Keluar Akun (Logout)
+          </button>
+        </div>
+
+        {/* BOTTOM TAB BAR */}
+        <div className="fixed bottom-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-t border-gray-100 flex items-center px-6 z-50 max-w-[420px] mx-auto shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+          <button onClick={() => setViewMode('home')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Home size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Beranda</span>
+          </button>
+          <button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Bike size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Ojek</span>
+          </button>
+          <button onClick={() => setViewMode('history')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <History size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Riwayat</span>
+          </button>
+          <button className="flex-1 flex flex-col items-center justify-center text-[#046A38] font-bold">
+            <User size={18} />
+            <span className="text-[8px] mt-0.5">Profil</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
       <div className="flex space-x-1.5">
@@ -266,6 +341,81 @@ function LiveDriversMap() {
     return () => clearInterval(interval);
   }, []);
 
+  // --- VIEW: PROFILE ---
+  if (viewMode === 'profile' && profile) {
+    return (
+      <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20">
+        <div className="bg-[#046A38] text-white p-8 rounded-b-[40px] text-center shadow-lg relative">
+           <button
+            onClick={() => setViewMode('home')}
+            className="absolute left-6 top-6 bg-white/10 hover:bg-white/20 text-white font-bold text-[9px] px-3 py-1 rounded-full transition-all uppercase tracking-wider border border-white/20"
+          >
+            ← Beranda
+          </button>
+
+          <div className="w-24 h-24 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-white/30 overflow-hidden">
+            <User size={48} className="text-white" />
+          </div>
+          <h2 className="text-xl font-black">{profile.nama}</h2>
+          <p className="text-emerald-100 text-xs font-bold mt-1">{profile.nomorHp}</p>
+          <div className="mt-3 inline-block px-3 py-1 bg-[#D4AF37] text-[#046A38] rounded-full text-[10px] font-black uppercase">
+            {profile.peran === 'admin' ? 'Superuser' : 'Penumpang Setia'}
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <User size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Edit Profil</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <ShieldCheck size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Keamanan Akun</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+          </div>
+
+          <button
+            onClick={onLogout}
+            className="w-full py-4 bg-red-50 text-red-600 font-black rounded-[24px] text-xs tracking-widest uppercase border-2 border-red-100 hover:bg-red-600 hover:text-white transition-all"
+          >
+            Keluar Akun (Logout)
+          </button>
+        </div>
+
+        {/* BOTTOM TAB BAR */}
+        <div className="fixed bottom-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-t border-gray-100 flex items-center px-6 z-50 max-w-[420px] mx-auto shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+          <button onClick={() => setViewMode('home')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Home size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Beranda</span>
+          </button>
+          <button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Bike size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Ojek</span>
+          </button>
+          <button onClick={() => setViewMode('history')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <History size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Riwayat</span>
+          </button>
+          <button className="flex-1 flex flex-col items-center justify-center text-[#046A38] font-bold">
+            <User size={18} />
+            <span className="text-[8px] mt-0.5">Profil</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white p-4 rounded-3xl border border-gray-150 shadow-[0_4px_16px_rgba(4,106,56,0.04)] space-y-3.5 text-left">
       <div className="flex items-center justify-between">
@@ -341,7 +491,12 @@ function LiveDriversMap() {
   );
 }
 
-export default function PassengerView({ onNotifyAdminPanic }: PassengerViewProps) {
+interface PassengerViewProps {
+  onNotifyAdminPanic: () => void;
+  onLogout: () => void;
+}
+
+export default function PassengerView({ onNotifyAdminPanic, onLogout }: PassengerViewProps) {
   // --- IN-APP STATE SINKRONISASI ---
   const [profile, setProfile] = useState(OloluStore.getProfilLogin());
   const [activeOrder, setActiveOrder] = useState<Pesanan | null>(null);
@@ -351,7 +506,7 @@ export default function PassengerView({ onNotifyAdminPanic }: PassengerViewProps
   const [reviewText, setReviewText] = useState<string>('');
   
   // FORM PEMESANAN STATE
-  const [viewMode, setViewMode] = useState<'home' | 'booking' | 'history'>('home');
+  const [viewMode, setViewMode] = useState<'home' | 'booking' | 'history' | 'profile'>('home');
   const [subLayanan, setSubLayanan] = useState<'ojek' | 'kirim' | 'belanja' | 'makanan' | 'wisata' | 'market'>('ojek');
   const [selectedLayanan, setSelectedLayanan] = useState<'ojek' | 'makanan' | 'paket' | 'barang_besar'>('ojek');
   const [asalAlamat, setAsalAlamat] = useState<string>('Alun-Alun Lumajang (Jl. Alun-Alun Barat)');
@@ -845,7 +1000,82 @@ export default function PassengerView({ onNotifyAdminPanic }: PassengerViewProps
 
   // JIKA PENUMPANG BELUM DAFTAR / LOGIN SIMULASI
   if (!profile) {
+    // --- VIEW: PROFILE ---
+  if (viewMode === 'profile' && profile) {
     return (
+      <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20">
+        <div className="bg-[#046A38] text-white p-8 rounded-b-[40px] text-center shadow-lg relative">
+           <button
+            onClick={() => setViewMode('home')}
+            className="absolute left-6 top-6 bg-white/10 hover:bg-white/20 text-white font-bold text-[9px] px-3 py-1 rounded-full transition-all uppercase tracking-wider border border-white/20"
+          >
+            ← Beranda
+          </button>
+
+          <div className="w-24 h-24 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-white/30 overflow-hidden">
+            <User size={48} className="text-white" />
+          </div>
+          <h2 className="text-xl font-black">{profile.nama}</h2>
+          <p className="text-emerald-100 text-xs font-bold mt-1">{profile.nomorHp}</p>
+          <div className="mt-3 inline-block px-3 py-1 bg-[#D4AF37] text-[#046A38] rounded-full text-[10px] font-black uppercase">
+            {profile.peran === 'admin' ? 'Superuser' : 'Penumpang Setia'}
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <User size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Edit Profil</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <ShieldCheck size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Keamanan Akun</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+          </div>
+
+          <button
+            onClick={onLogout}
+            className="w-full py-4 bg-red-50 text-red-600 font-black rounded-[24px] text-xs tracking-widest uppercase border-2 border-red-100 hover:bg-red-600 hover:text-white transition-all"
+          >
+            Keluar Akun (Logout)
+          </button>
+        </div>
+
+        {/* BOTTOM TAB BAR */}
+        <div className="fixed bottom-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-t border-gray-100 flex items-center px-6 z-50 max-w-[420px] mx-auto shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+          <button onClick={() => setViewMode('home')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Home size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Beranda</span>
+          </button>
+          <button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Bike size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Ojek</span>
+          </button>
+          <button onClick={() => setViewMode('history')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <History size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Riwayat</span>
+          </button>
+          <button className="flex-1 flex flex-col items-center justify-center text-[#046A38] font-bold">
+            <User size={18} />
+            <span className="text-[8px] mt-0.5">Profil</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
       <div className="max-w-md mx-auto p-4 space-y-4">
         <div className="bg-white p-6 rounded-2xl border-t-2 border-[#D4AF37] shadow-sm text-center">
           <span className="text-4xl">👋</span>
@@ -937,7 +1167,82 @@ export default function PassengerView({ onNotifyAdminPanic }: PassengerViewProps
     const activeDriver = activeOrder.idSopir ? OloluStore.getSopir(activeOrder.idSopir) : null;
     const currentLoc = activeDriver?.lokasiSaatIni || { lat: activeOrder.asalLat, lng: activeOrder.asalLng };
 
+    // --- VIEW: PROFILE ---
+  if (viewMode === 'profile' && profile) {
     return (
+      <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20">
+        <div className="bg-[#046A38] text-white p-8 rounded-b-[40px] text-center shadow-lg relative">
+           <button
+            onClick={() => setViewMode('home')}
+            className="absolute left-6 top-6 bg-white/10 hover:bg-white/20 text-white font-bold text-[9px] px-3 py-1 rounded-full transition-all uppercase tracking-wider border border-white/20"
+          >
+            ← Beranda
+          </button>
+
+          <div className="w-24 h-24 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-white/30 overflow-hidden">
+            <User size={48} className="text-white" />
+          </div>
+          <h2 className="text-xl font-black">{profile.nama}</h2>
+          <p className="text-emerald-100 text-xs font-bold mt-1">{profile.nomorHp}</p>
+          <div className="mt-3 inline-block px-3 py-1 bg-[#D4AF37] text-[#046A38] rounded-full text-[10px] font-black uppercase">
+            {profile.peran === 'admin' ? 'Superuser' : 'Penumpang Setia'}
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <User size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Edit Profil</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <ShieldCheck size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Keamanan Akun</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+          </div>
+
+          <button
+            onClick={onLogout}
+            className="w-full py-4 bg-red-50 text-red-600 font-black rounded-[24px] text-xs tracking-widest uppercase border-2 border-red-100 hover:bg-red-600 hover:text-white transition-all"
+          >
+            Keluar Akun (Logout)
+          </button>
+        </div>
+
+        {/* BOTTOM TAB BAR */}
+        <div className="fixed bottom-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-t border-gray-100 flex items-center px-6 z-50 max-w-[420px] mx-auto shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+          <button onClick={() => setViewMode('home')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Home size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Beranda</span>
+          </button>
+          <button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Bike size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Ojek</span>
+          </button>
+          <button onClick={() => setViewMode('history')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <History size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Riwayat</span>
+          </button>
+          <button className="flex-1 flex flex-col items-center justify-center text-[#046A38] font-bold">
+            <User size={18} />
+            <span className="text-[8px] mt-0.5">Profil</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
       <div id="order-lacing-container" className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20 relative">
         
         {/* BANNER STATUS UTAMA */}
@@ -1092,7 +1397,82 @@ export default function PassengerView({ onNotifyAdminPanic }: PassengerViewProps
                 const isStopSelesai = stop.status === 'selesai';
                 const isAktif = sIdx === activeOrder.tahapAktif && activeOrder.status === 'dalam_perjalanan';
 
-                return (
+                // --- VIEW: PROFILE ---
+  if (viewMode === 'profile' && profile) {
+    return (
+      <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20">
+        <div className="bg-[#046A38] text-white p-8 rounded-b-[40px] text-center shadow-lg relative">
+           <button
+            onClick={() => setViewMode('home')}
+            className="absolute left-6 top-6 bg-white/10 hover:bg-white/20 text-white font-bold text-[9px] px-3 py-1 rounded-full transition-all uppercase tracking-wider border border-white/20"
+          >
+            ← Beranda
+          </button>
+
+          <div className="w-24 h-24 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-white/30 overflow-hidden">
+            <User size={48} className="text-white" />
+          </div>
+          <h2 className="text-xl font-black">{profile.nama}</h2>
+          <p className="text-emerald-100 text-xs font-bold mt-1">{profile.nomorHp}</p>
+          <div className="mt-3 inline-block px-3 py-1 bg-[#D4AF37] text-[#046A38] rounded-full text-[10px] font-black uppercase">
+            {profile.peran === 'admin' ? 'Superuser' : 'Penumpang Setia'}
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <User size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Edit Profil</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <ShieldCheck size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Keamanan Akun</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+          </div>
+
+          <button
+            onClick={onLogout}
+            className="w-full py-4 bg-red-50 text-red-600 font-black rounded-[24px] text-xs tracking-widest uppercase border-2 border-red-100 hover:bg-red-600 hover:text-white transition-all"
+          >
+            Keluar Akun (Logout)
+          </button>
+        </div>
+
+        {/* BOTTOM TAB BAR */}
+        <div className="fixed bottom-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-t border-gray-100 flex items-center px-6 z-50 max-w-[420px] mx-auto shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+          <button onClick={() => setViewMode('home')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Home size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Beranda</span>
+          </button>
+          <button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Bike size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Ojek</span>
+          </button>
+          <button onClick={() => setViewMode('history')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <History size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Riwayat</span>
+          </button>
+          <button className="flex-1 flex flex-col items-center justify-center text-[#046A38] font-bold">
+            <User size={18} />
+            <span className="text-[8px] mt-0.5">Profil</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
                   <div key={stop.id} className="flex items-start space-x-3 text-xs">
                     <div className="flex flex-col items-center">
                       <span className={`w-5 h-5 rounded-full font-bold flex items-center justify-center text-[9px] ${
@@ -1298,7 +1678,82 @@ export default function PassengerView({ onNotifyAdminPanic }: PassengerViewProps
   if (viewMode === 'history') {
     const passengerOrders = OloluStore.getAllPesanan().filter(p => p.idPenumpang === profile?.id);
     
+    // --- VIEW: PROFILE ---
+  if (viewMode === 'profile' && profile) {
     return (
+      <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20">
+        <div className="bg-[#046A38] text-white p-8 rounded-b-[40px] text-center shadow-lg relative">
+           <button
+            onClick={() => setViewMode('home')}
+            className="absolute left-6 top-6 bg-white/10 hover:bg-white/20 text-white font-bold text-[9px] px-3 py-1 rounded-full transition-all uppercase tracking-wider border border-white/20"
+          >
+            ← Beranda
+          </button>
+
+          <div className="w-24 h-24 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-white/30 overflow-hidden">
+            <User size={48} className="text-white" />
+          </div>
+          <h2 className="text-xl font-black">{profile.nama}</h2>
+          <p className="text-emerald-100 text-xs font-bold mt-1">{profile.nomorHp}</p>
+          <div className="mt-3 inline-block px-3 py-1 bg-[#D4AF37] text-[#046A38] rounded-full text-[10px] font-black uppercase">
+            {profile.peran === 'admin' ? 'Superuser' : 'Penumpang Setia'}
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <User size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Edit Profil</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <ShieldCheck size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Keamanan Akun</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+          </div>
+
+          <button
+            onClick={onLogout}
+            className="w-full py-4 bg-red-50 text-red-600 font-black rounded-[24px] text-xs tracking-widest uppercase border-2 border-red-100 hover:bg-red-600 hover:text-white transition-all"
+          >
+            Keluar Akun (Logout)
+          </button>
+        </div>
+
+        {/* BOTTOM TAB BAR */}
+        <div className="fixed bottom-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-t border-gray-100 flex items-center px-6 z-50 max-w-[420px] mx-auto shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+          <button onClick={() => setViewMode('home')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Home size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Beranda</span>
+          </button>
+          <button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Bike size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Ojek</span>
+          </button>
+          <button onClick={() => setViewMode('history')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <History size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Riwayat</span>
+          </button>
+          <button className="flex-1 flex flex-col items-center justify-center text-[#046A38] font-bold">
+            <User size={18} />
+            <span className="text-[8px] mt-0.5">Profil</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
       <div id="passenger-history" className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-[calc(100px+env(safe-area-inset-bottom,16px))] font-sans relative overflow-x-hidden text-left">
         {/* HEADER */}
         <div className="bg-gradient-to-br from-[#046A38] to-[#0A8A4E] text-white p-5 rounded-b-3xl border-b border-[#D4AF37] space-y-1 relative">
@@ -1368,7 +1823,82 @@ export default function PassengerView({ onNotifyAdminPanic }: PassengerViewProps
                   serviceIcon = "🚗";
                 }
 
-                return (
+                // --- VIEW: PROFILE ---
+  if (viewMode === 'profile' && profile) {
+    return (
+      <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20">
+        <div className="bg-[#046A38] text-white p-8 rounded-b-[40px] text-center shadow-lg relative">
+           <button
+            onClick={() => setViewMode('home')}
+            className="absolute left-6 top-6 bg-white/10 hover:bg-white/20 text-white font-bold text-[9px] px-3 py-1 rounded-full transition-all uppercase tracking-wider border border-white/20"
+          >
+            ← Beranda
+          </button>
+
+          <div className="w-24 h-24 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-white/30 overflow-hidden">
+            <User size={48} className="text-white" />
+          </div>
+          <h2 className="text-xl font-black">{profile.nama}</h2>
+          <p className="text-emerald-100 text-xs font-bold mt-1">{profile.nomorHp}</p>
+          <div className="mt-3 inline-block px-3 py-1 bg-[#D4AF37] text-[#046A38] rounded-full text-[10px] font-black uppercase">
+            {profile.peran === 'admin' ? 'Superuser' : 'Penumpang Setia'}
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <User size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Edit Profil</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <ShieldCheck size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Keamanan Akun</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+          </div>
+
+          <button
+            onClick={onLogout}
+            className="w-full py-4 bg-red-50 text-red-600 font-black rounded-[24px] text-xs tracking-widest uppercase border-2 border-red-100 hover:bg-red-600 hover:text-white transition-all"
+          >
+            Keluar Akun (Logout)
+          </button>
+        </div>
+
+        {/* BOTTOM TAB BAR */}
+        <div className="fixed bottom-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-t border-gray-100 flex items-center px-6 z-50 max-w-[420px] mx-auto shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+          <button onClick={() => setViewMode('home')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Home size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Beranda</span>
+          </button>
+          <button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Bike size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Ojek</span>
+          </button>
+          <button onClick={() => setViewMode('history')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <History size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Riwayat</span>
+          </button>
+          <button className="flex-1 flex flex-col items-center justify-center text-[#046A38] font-bold">
+            <User size={18} />
+            <span className="text-[8px] mt-0.5">Profil</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
                   <div key={p.id} className="bg-white p-4 rounded-2xl border border-gray-150 shadow-xs space-y-3 hover:border-gray-300 transition-all">
                     <div className="flex justify-between items-center pb-2.5 border-b border-gray-100">
                       <div className="flex items-center space-x-2">
@@ -1490,28 +2020,101 @@ export default function PassengerView({ onNotifyAdminPanic }: PassengerViewProps
 
           <button 
             onClick={() => setViewMode('history')} 
-            className="flex-1 flex flex-col items-center justify-center text-[#046A38] transition-all"
+            className={`flex-1 flex flex-col items-center justify-center transition-all ${viewMode === 'history' ? 'text-[#046A38]' : 'text-gray-400 hover:text-[#046A38]'}`}
           >
             <History size={18} />
             <span className="text-[8px] font-extrabold mt-0.5">Riwayat</span>
           </button>
 
-          <a 
-            href="https://wa.me/6288212818616?text=Halo%20Admin%20Ololu%2C%20saya%20tertarik%20menggunakan%20layanan%20ojek%20Lokal%20Lumajang."
-            target="_blank"
-            rel="noreferrer"
-            className="flex-1 flex flex-col items-center justify-center text-[#10B981] hover:scale-105 transition-all"
+          <button
+            onClick={() => setViewMode('profile')}
+            className={`flex-1 flex flex-col items-center justify-center transition-all ${viewMode === 'profile' ? 'text-[#046A38]' : 'text-gray-400 hover:text-[#046A38]'}`}
           >
-            <MessageCircle size={18} />
-            <span className="text-[8px] font-bold mt-0.5">WA</span>
-          </a>
+            <User size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Profil</span>
+          </button>
         </div>
       </div>
     );
   }
 
   if (viewMode === 'home') {
+    // --- VIEW: PROFILE ---
+  if (viewMode === 'profile' && profile) {
     return (
+      <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20">
+        <div className="bg-[#046A38] text-white p-8 rounded-b-[40px] text-center shadow-lg relative">
+           <button
+            onClick={() => setViewMode('home')}
+            className="absolute left-6 top-6 bg-white/10 hover:bg-white/20 text-white font-bold text-[9px] px-3 py-1 rounded-full transition-all uppercase tracking-wider border border-white/20"
+          >
+            ← Beranda
+          </button>
+
+          <div className="w-24 h-24 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-white/30 overflow-hidden">
+            <User size={48} className="text-white" />
+          </div>
+          <h2 className="text-xl font-black">{profile.nama}</h2>
+          <p className="text-emerald-100 text-xs font-bold mt-1">{profile.nomorHp}</p>
+          <div className="mt-3 inline-block px-3 py-1 bg-[#D4AF37] text-[#046A38] rounded-full text-[10px] font-black uppercase">
+            {profile.peran === 'admin' ? 'Superuser' : 'Penumpang Setia'}
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <User size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Edit Profil</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <ShieldCheck size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Keamanan Akun</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+          </div>
+
+          <button
+            onClick={onLogout}
+            className="w-full py-4 bg-red-50 text-red-600 font-black rounded-[24px] text-xs tracking-widest uppercase border-2 border-red-100 hover:bg-red-600 hover:text-white transition-all"
+          >
+            Keluar Akun (Logout)
+          </button>
+        </div>
+
+        {/* BOTTOM TAB BAR */}
+        <div className="fixed bottom-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-t border-gray-100 flex items-center px-6 z-50 max-w-[420px] mx-auto shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+          <button onClick={() => setViewMode('home')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Home size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Beranda</span>
+          </button>
+          <button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Bike size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Ojek</span>
+          </button>
+          <button onClick={() => setViewMode('history')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <History size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Riwayat</span>
+          </button>
+          <button className="flex-1 flex flex-col items-center justify-center text-[#046A38] font-bold">
+            <User size={18} />
+            <span className="text-[8px] mt-0.5">Profil</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
       <div id="home-dashboard" className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-[calc(100px+env(safe-area-inset-bottom,16px))] font-sans relative overflow-x-hidden text-center pt-2">
         
         {/* SALAM & CTA MULAI ORDER */}
@@ -1589,24 +2192,242 @@ export default function PassengerView({ onNotifyAdminPanic }: PassengerViewProps
 
           <button 
             onClick={() => setViewMode('history')} 
-            className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all"
+            className={`flex-1 flex flex-col items-center justify-center transition-all ${viewMode === 'history' ? 'text-[#046A38]' : 'text-gray-400 hover:text-[#046A38]'}`}
           >
             <History size={18} />
             <span className="text-[8px] font-bold mt-0.5">Riwayat</span>
           </button>
 
-          <a 
-            href="https://wa.me/6288212818616?text=Halo%20Admin%20Ololu%2C%20saya%20tertarik%20menggunakan%20layanan%20ojek%20Lokal%20Lumajang."
-            target="_blank"
-            rel="noreferrer"
-            className="flex-1 flex flex-col items-center justify-center text-[#10B981] hover:scale-105 transition-all"
+          <button
+            onClick={() => setViewMode('profile')}
+            className={`flex-1 flex flex-col items-center justify-center transition-all ${viewMode === 'profile' ? 'text-[#046A38]' : 'text-gray-400 hover:text-[#046A38]'}`}
           >
-            <MessageCircle size={18} />
-            <span className="text-[8px] font-bold mt-0.5">WA</span>
-          </a>
+            <User size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Profil</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
+  // --- VIEW: PROFILE ---
+  if (viewMode === 'profile') {
+    // --- VIEW: PROFILE ---
+  if (viewMode === 'profile' && profile) {
+    return (
+      <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20">
+        <div className="bg-[#046A38] text-white p-8 rounded-b-[40px] text-center shadow-lg relative">
+           <button
+            onClick={() => setViewMode('home')}
+            className="absolute left-6 top-6 bg-white/10 hover:bg-white/20 text-white font-bold text-[9px] px-3 py-1 rounded-full transition-all uppercase tracking-wider border border-white/20"
+          >
+            ← Beranda
+          </button>
+
+          <div className="w-24 h-24 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-white/30 overflow-hidden">
+            <User size={48} className="text-white" />
+          </div>
+          <h2 className="text-xl font-black">{profile.nama}</h2>
+          <p className="text-emerald-100 text-xs font-bold mt-1">{profile.nomorHp}</p>
+          <div className="mt-3 inline-block px-3 py-1 bg-[#D4AF37] text-[#046A38] rounded-full text-[10px] font-black uppercase">
+            {profile.peran === 'admin' ? 'Superuser' : 'Penumpang Setia'}
+          </div>
         </div>
 
+        <div className="p-6 space-y-4">
+          <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <User size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Edit Profil</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <ShieldCheck size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Keamanan Akun</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+          </div>
+
+          <button
+            onClick={onLogout}
+            className="w-full py-4 bg-red-50 text-red-600 font-black rounded-[24px] text-xs tracking-widest uppercase border-2 border-red-100 hover:bg-red-600 hover:text-white transition-all"
+          >
+            Keluar Akun (Logout)
+          </button>
+        </div>
+
+        {/* BOTTOM TAB BAR */}
+        <div className="fixed bottom-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-t border-gray-100 flex items-center px-6 z-50 max-w-[420px] mx-auto shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+          <button onClick={() => setViewMode('home')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Home size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Beranda</span>
+          </button>
+          <button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Bike size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Ojek</span>
+          </button>
+          <button onClick={() => setViewMode('history')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <History size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Riwayat</span>
+          </button>
+          <button className="flex-1 flex flex-col items-center justify-center text-[#046A38] font-bold">
+            <User size={18} />
+            <span className="text-[8px] mt-0.5">Profil</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+      <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20">
+        <div className="bg-[#046A38] text-white p-8 rounded-b-[40px] text-center shadow-lg">
+          <div className="w-24 h-24 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-white/30 overflow-hidden">
+            {profile.fotoProfil ? (
+              <img src={profile.fotoProfil} className="w-full h-full object-cover" />
+            ) : (
+              <User size={48} className="text-white" />
+            )}
+          </div>
+          <h2 className="text-xl font-black">{profile.nama}</h2>
+          <p className="text-emerald-100 text-xs font-bold mt-1">{profile.nomorHp}</p>
+          <div className="mt-3 inline-block px-3 py-1 bg-[#D4AF37] text-[#046A38] rounded-full text-[10px] font-black uppercase">
+            {profile.peran === 'admin' ? 'Superuser' : 'Penumpang Setia'}
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <User size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Edit Profil</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <ShieldCheck size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Keamanan Akun</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+          </div>
+
+          <button
+            onClick={onLogout}
+            className="w-full py-4 bg-red-50 text-red-600 font-black rounded-[24px] text-xs tracking-widest uppercase border-2 border-red-100 hover:bg-red-600 hover:text-white transition-all"
+          >
+            Keluar Akun (Logout)
+          </button>
+        </div>
+
+        {/* BOTTOM TAB BAR */}
+        <div className="fixed bottom-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-t border-gray-100 flex items-center px-6 z-50 max-w-[420px] mx-auto">
+          <button onClick={() => setViewMode('home')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Home size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Beranda</span>
+          </button>
+          <button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Bike size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Ojek</span>
+          </button>
+          <button onClick={() => setViewMode('history')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <History size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Riwayat</span>
+          </button>
+          <button className="flex-1 flex flex-col items-center justify-center text-[#046A38] font-bold">
+            <User size={18} />
+            <span className="text-[8px] mt-0.5">Profil</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // --- VIEW: PROFILE ---
+  if (viewMode === 'profile' && profile) {
+    return (
+      <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20">
+        <div className="bg-[#046A38] text-white p-8 rounded-b-[40px] text-center shadow-lg relative">
+           <button
+            onClick={() => setViewMode('home')}
+            className="absolute left-6 top-6 bg-white/10 hover:bg-white/20 text-white font-bold text-[9px] px-3 py-1 rounded-full transition-all uppercase tracking-wider border border-white/20"
+          >
+            ← Beranda
+          </button>
+
+          <div className="w-24 h-24 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-white/30 overflow-hidden">
+            <User size={48} className="text-white" />
+          </div>
+          <h2 className="text-xl font-black">{profile.nama}</h2>
+          <p className="text-emerald-100 text-xs font-bold mt-1">{profile.nomorHp}</p>
+          <div className="mt-3 inline-block px-3 py-1 bg-[#D4AF37] text-[#046A38] rounded-full text-[10px] font-black uppercase">
+            {profile.peran === 'admin' ? 'Superuser' : 'Penumpang Setia'}
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm space-y-4">
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <User size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Edit Profil</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+            <button className="w-full flex items-center justify-between group">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[#046A38] group-hover:text-white transition-all">
+                  <ShieldCheck size={20} />
+                </div>
+                <span className="text-sm font-bold text-gray-700">Keamanan Akun</span>
+              </div>
+              <ChevronRight size={16} className="text-gray-300" />
+            </button>
+          </div>
+
+          <button
+            onClick={onLogout}
+            className="w-full py-4 bg-red-50 text-red-600 font-black rounded-[24px] text-xs tracking-widest uppercase border-2 border-red-100 hover:bg-red-600 hover:text-white transition-all"
+          >
+            Keluar Akun (Logout)
+          </button>
+        </div>
+
+        {/* BOTTOM TAB BAR */}
+        <div className="fixed bottom-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-t border-gray-100 flex items-center px-6 z-50 max-w-[420px] mx-auto shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+          <button onClick={() => setViewMode('home')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Home size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Beranda</span>
+          </button>
+          <button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <Bike size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Ojek</span>
+          </button>
+          <button onClick={() => setViewMode('history')} className="flex-1 flex flex-col items-center justify-center text-gray-400 hover:text-[#046A38] transition-all">
+            <History size={18} />
+            <span className="text-[8px] font-bold mt-0.5">Riwayat</span>
+          </button>
+          <button className="flex-1 flex flex-col items-center justify-center text-[#046A38] font-bold">
+            <User size={18} />
+            <span className="text-[8px] mt-0.5">Profil</span>
+          </button>
+        </div>
       </div>
     );
   }
