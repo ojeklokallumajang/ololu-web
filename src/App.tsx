@@ -10,7 +10,7 @@ import DriverView from './components/DriverView';
 import AdminView from './components/AdminView';
 import { PeranPengguna } from './types';
 import { OloluStore } from './services/store';
-import { ShieldAlert, AlertTriangle, Info, BellRing, Phone, ShieldCheck, UserPlus, LogIn, Camera, Check, ArrowRight, Upload, KeyRound, ArrowLeft } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Info, BellRing, Phone, ShieldCheck, UserPlus, LogIn, Camera, Check, ArrowRight, Upload, KeyRound, ArrowLeft, Calendar, MapPin as MapPinIcon } from 'lucide-react';
 import OloluLogo from './components/OloluLogo';
 
 export default function App() {
@@ -22,10 +22,12 @@ export default function App() {
   const [selectedRole, setSelectedRole] = useState<PeranPengguna>('penumpang');
   const [initializing, setInitializing] = useState(true);
 
-  // States
+  // Registration States
   const [profilePic, setProfilePic] = useState<string | null>(null);
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
+  const [tempatLahir, setTempatLahir] = useState('');
+  const [tanggalLahir, setTanggalLahir] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -48,7 +50,6 @@ export default function App() {
     tipe: string;
   }>({ show: false, pelapor: '', tipe: '' });
 
-  // 1. Initial Load Session
   useEffect(() => {
     async function checkSession() {
       const s = await OloluStore.getSesi();
@@ -74,6 +75,7 @@ export default function App() {
     setAuthMode('register');
     setLoginStep('form');
     setProfilePic(null);
+    setTempatLahir(''); setTanggalLahir('');
     setDocKtp(null); setDocSim(null); setDocStnk(null); setDocVehicle(null);
     setPlatNomor(''); setJenisMotor(''); setBisaBarangBesar(false);
     setError('');
@@ -97,8 +99,8 @@ export default function App() {
     setLoading(false);
   };
 
-  const handleRegisterSubmit = () => {
-    if (!name || !phone || !password) {
+  const handleRegisterSubmit = async () => {
+    if (!name || !phone || !password || !tempatLahir || !tanggalLahir) {
       setError('Lengkapi data akun pendaftaran');
       return;
     }
@@ -113,25 +115,21 @@ export default function App() {
     }
     setLoading(true);
     setError('');
-    OloluStore.kirimFonnteOtp(phone);
-    setTimeout(() => {
-      setLoading(false);
-      setLoginStep('otp');
-    }, 1500);
+    await OloluStore.kirimFonnteOtp(phone);
+    setLoading(false);
+    setLoginStep('otp');
   };
 
-  const handleForgotSubmit = () => {
+  const handleForgotSubmit = async () => {
     if (!phone) {
       setError('Masukkan nomor HP terdaftar');
       return;
     }
     setLoading(true);
     setError('');
-    OloluStore.kirimFonnteOtp(phone);
-    setTimeout(() => {
-      setLoading(false);
-      setLoginStep('otp');
-    }, 1500);
+    await OloluStore.kirimFonnteOtp(phone);
+    setLoading(false);
+    setLoginStep('otp');
   };
 
   const handleVerifyOtp = async () => {
@@ -148,7 +146,7 @@ export default function App() {
       } else {
         let finalRole = selectedRole;
         if (phone === '6285156766317') finalRole = 'admin';
-        const res = await OloluStore.registerPengguna(name, phone, finalRole, password);
+        const res = await OloluStore.registerPengguna(name, phone, finalRole, password, tempatLahir, tanggalLahir);
         if (res.success && res.profil) {
           const profil = res.profil;
           if (profilePic) profil.fotoProfil = profilePic;
@@ -212,10 +210,6 @@ export default function App() {
     setLoginStep('form');
   };
 
-  const handleNotifyPanic = () => {
-    // Audit logs handled in store now
-  };
-
   const handleGotoAdminPanicRoom = () => {
     setGlobalPanicNotification({ show: false, pelapor: '', tipe: '' });
     setRole('admin');
@@ -244,7 +238,7 @@ export default function App() {
               <h1 className="text-xl font-black text-[#046A38] tracking-tight">Ololu Lumajang</h1>
             </div>
 
-            <div className="p-6 max-h-[75vh] overflow-y-auto scrollbar-none">
+            <div className="p-6 max-h-[80vh] overflow-y-auto scrollbar-none">
               {error && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl flex items-center space-x-2 text-red-600">
                   <AlertTriangle size={14} />
@@ -318,12 +312,41 @@ export default function App() {
                     </div>
                     <label className="text-[8px] font-bold text-gray-400 uppercase">Foto Profil {selectedRole === 'sopir' && '(Wajib)'}</label>
                   </div>
-                  <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nama Lengkap" className="w-full p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-xl outline-none text-xs font-bold" />
-                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="WhatsApp (628xxx)" className="w-full p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-xl outline-none text-xs font-bold" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Sandi" className="w-full p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-xl outline-none text-xs font-bold" />
-                    <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Ulangi" className="w-full p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-xl outline-none text-xs font-bold" />
+
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <UserPlus size={14} className="absolute left-3 top-3.5 text-gray-400" />
+                      <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nama Lengkap" className="w-full pl-9 p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-xl outline-none text-xs font-bold" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="relative">
+                        <MapPinIcon size={14} className="absolute left-3 top-3.5 text-gray-400" />
+                        <input type="text" value={tempatLahir} onChange={(e) => setTempatLahir(e.target.value)} placeholder="Tempat Lahir" className="w-full pl-9 p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-xl outline-none text-[10px] font-bold" />
+                      </div>
+                      <div className="relative">
+                        <Calendar size={14} className="absolute left-3 top-3.5 text-gray-400" />
+                        <input type="date" value={tanggalLahir} onChange={(e) => setTanggalLahir(e.target.value)} className="w-full pl-9 p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-xl outline-none text-[10px] font-bold" />
+                      </div>
+                    </div>
+
+                    <div className="relative">
+                      <Phone size={14} className="absolute left-3 top-3.5 text-gray-400" />
+                      <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="WhatsApp (628xxx)" className="w-full pl-9 p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-xl outline-none text-xs font-bold" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="relative">
+                        <KeyRound size={14} className="absolute left-3 top-3.5 text-gray-400" />
+                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Sandi" className="w-full pl-9 p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-xl outline-none text-xs font-bold" />
+                      </div>
+                      <div className="relative">
+                        <KeyRound size={14} className="absolute left-3 top-3.5 text-gray-400" />
+                        <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Ulangi" className="w-full pl-9 p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-xl outline-none text-xs font-bold" />
+                      </div>
+                    </div>
                   </div>
+
                   {selectedRole === 'sopir' && (
                     <div className="space-y-3 pt-2 border-t border-dashed">
                       <div className="grid grid-cols-2 gap-2">
@@ -348,20 +371,6 @@ export default function App() {
                   <button onClick={handleVerifyOtp} disabled={loading} className="w-full py-4 bg-[#046A38] text-white font-black rounded-2xl text-xs tracking-widest uppercase shadow-lg transition-all">{loading ? "Memproses..." : "Konfirmasi"}</button>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {globalPanicNotification.show && (
-        <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl border-4 border-[#DC2626] p-6 max-w-sm w-full text-center space-y-4 animate-bounce shadow-2xl">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-600 border-2 border-red-500 animate-pulse"><AlertTriangle size={36} className="text-[#DC2626]" /></div>
-            <h2 className="text-[#DC2626] font-black text-lg tracking-wide uppercase">🚨 SINYAL DARURAT DIAKTIFKAN 🚨</h2>
-            <p className="text-sm text-gray-700 leading-relaxed">Sinyal darurat <strong>PANIC BUTTON</strong> dipicu oleh <strong>{globalPanicNotification.pelapor}</strong> ({globalPanicNotification.tipe.toUpperCase()})!</p>
-            <div className="space-y-2 pt-2">
-              <button onClick={handleGotoAdminPanicRoom} className="w-full py-3 bg-[#DC2626] text-white font-black rounded-xl text-xs tracking-wider uppercase shadow-md transition-all">Buka Radar Penyelamatan</button>
-              <button onClick={() => setGlobalPanicNotification({ show: false, pelapor: '', tipe: '' })} className="w-full py-2 bg-gray-100 text-gray-500 font-bold rounded-lg text-xs">Tutup</button>
             </div>
           </div>
         </div>

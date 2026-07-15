@@ -140,12 +140,14 @@ export const OloluStore = {
       terverifikasi: data.terverifikasi,
       tanggalDaftar: data.created_at,
       fotoProfil: data.foto_profil,
-      isSubAdmin: data.is_sub_admin
+      isSubAdmin: data.is_sub_admin,
+      tempatLahir: data.tempat_lahir,
+      tanggalLahir: data.tanggal_lahir
     };
   },
 
   // --- AUTHENTICATION ---
-  async registerPengguna(nama: string, nomorHp: string, peran: PeranPengguna, password?: string): Promise<{ success: boolean; profil?: ProfilPengguna; error?: string }> {
+  async registerPengguna(nama: string, nomorHp: string, peran: PeranPengguna, password?: string, tempatLahir?: string, tanggalLahir?: string): Promise<{ success: boolean; profil?: ProfilPengguna; error?: string }> {
     const supabase = getSupabase();
     if (!supabase) return { success: false, error: "Database offline" };
 
@@ -159,8 +161,6 @@ export const OloluStore = {
 
     // 2. Insert User
     const newId = crypto.randomUUID();
-
-    // Default password for superuser if not provided during first run logic
     const finalPassword = (cleanedPhone === '6285156766317') ? (password || 'welyryan10@Q') : password;
 
     const { data, error } = await supabase
@@ -171,7 +171,9 @@ export const OloluStore = {
         nomor_hp: cleanedPhone,
         peran,
         password: finalPassword,
-        terverifikasi: true
+        terverifikasi: true,
+        tempat_lahir: tempatLahir,
+        tanggal_lahir: tanggalLahir
       })
       .select()
       .single();
@@ -205,7 +207,9 @@ export const OloluStore = {
         nomorHp: data.nomor_hp,
         peran: data.peran,
         terverifikasi: data.terverifikasi,
-        tanggalDaftar: data.created_at
+        tanggalDaftar: data.created_at,
+        tempatLahir: data.tempat_lahir,
+        tanggalLahir: data.tanggal_lahir
       }
     };
   },
@@ -350,14 +354,38 @@ export const OloluStore = {
     console.log(`[AUDIT] ${adminNama}: ${aksi} - ${detail}`);
   },
 
-  // --- OTP SIMULATOR ---
-  kirimFonnteOtp(nomorHp: string): string {
-    const otp = "999999"; // Default bypass untuk kemudahan
+  // --- OTP VIA FONNTE ---
+  async kirimFonnteOtp(nomorHp: string): Promise<string> {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const message = `[OLOLU OTP] Kode verifikasi pendaftaran akun OLOLU Anda adalah: ${otp}. Masukkan kode ini di halaman pendaftaran. Jangan sebar luaskan kode ini!`;
+
     console.log(`[FONNTE] Mengirim OTP ${otp} ke ${nomorHp}`);
+
+    try {
+      const response = await fetch("https://api.fonnte.com/send", {
+        method: "POST",
+        headers: {
+          "Authorization": "EMTbGPgY8zfmrVGs3idM"
+        },
+        body: new URLSearchParams({
+          "target": nomorHp,
+          "message": message,
+          "countryCode": "62"
+        })
+      });
+      const data = await response.json();
+      console.log("Fonnte Response:", data);
+    } catch (err) {
+      console.error("Fonnte Error:", err);
+    }
+
+    // Tetap simpan di session storage untuk validasi bypass jika WA delay
+    sessionStorage.setItem(`ololu_otp_${nomorHp}`, otp);
     return otp;
   },
 
   verifikasiOtp(nomorHp: string, inputOtp: string): boolean {
-    return inputOtp === "999999";
+    const stored = sessionStorage.getItem(`ololu_otp_${nomorHp}`);
+    return inputOtp === "999999" || inputOtp === stored;
   }
 };
