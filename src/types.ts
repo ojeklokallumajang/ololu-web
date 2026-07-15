@@ -35,8 +35,10 @@ export interface DetailSopir {
   fotoStnk: string;
   fotoKendaraan: string;
   platNomor: string;
-  jenisMotor: string;
-  bisaBarangBesar: boolean; // Punya bak motor / bisa bawa barang besar
+  jenisMotor: string; // Tipe spesifik (Vario, Avanza, dll)
+  jenisKendaraan: 'motor' | 'mobil';
+  warnaKendaraan: string;
+  bisaBarangBesar: boolean;
   disetujuiAdmin: boolean;
   ditolakAdmin: boolean;
   alasanDitolak?: string;
@@ -223,6 +225,10 @@ export interface PengaturanTarif {
   layananPaketAktif: boolean;
   layananBarangBesarAktif: boolean;
   layananLanggananAktif: boolean;
+
+  // Kontrol Pendaftaran
+  daftarMotorAktif: boolean;
+  daftarMobilAktif: boolean;
 
   // Rush Hour (Jam Sibuk)
   rushHourAktif: boolean;

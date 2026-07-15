@@ -71,6 +71,9 @@ export const DEFAULT_PENGATURAN_TARIF: PengaturanTarif = {
   layananBarangBesarAktif: true,
   layananLanggananAktif: true,
 
+  daftarMotorAktif: true,
+  daftarMobilAktif: true,
+
   rushHourAktif: false,
   rushHourMulai: "16:00",
   rushHourSelesai: "18:00",
@@ -241,6 +244,8 @@ export const OloluStore = {
       id: data.id,
       platNomor: data.plat_nomor,
       jenisMotor: data.jenis_motor,
+      jenisKendaraan: data.jenis_kendaraan || 'motor',
+      warnaKendaraan: data.warna_kendaraan || '',
       bisaBarangBesar: data.bisa_barang_besar,
       disetujuiAdmin: data.disetujui_admin,
       ditolakAdmin: data.ditolak_admin,
@@ -263,6 +268,8 @@ export const OloluStore = {
     await supabase.from('driver_details').update({
       plat_nomor: updates.platNomor,
       jenis_motor: updates.jenisMotor,
+      jenis_kendaraan: updates.jenisKendaraan,
+      warna_kendaraan: updates.warnaKendaraan,
       bisa_barang_besar: updates.bisaBarangBesar,
       ktp_url: updates.fotoKtp,
       sim_url: updates.fotoSim,
@@ -337,7 +344,14 @@ export const OloluStore = {
     const supabase = getSupabase();
     if (!supabase) return DEFAULT_PENGATURAN_TARIF;
     const { data } = await supabase.from('system_settings').select('value').eq('key', 'global_config').single();
-    return data?.value || DEFAULT_PENGATURAN_TARIF;
+    if (data?.value) {
+      pengaturans = data.value;
+    }
+    return pengaturans;
+  },
+
+  getPengaturanSync(): PengaturanTarif {
+    return pengaturans;
   },
 
   async savePengaturan(config: PengaturanTarif, adminId: string, adminNama: string) {

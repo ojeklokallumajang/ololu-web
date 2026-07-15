@@ -263,7 +263,19 @@ export default function AdminView() {
 
         {activeTab === 'tarif' && (
           <div className="bg-white p-5 rounded-2xl border shadow-sm space-y-5">
-            <h3 className="text-xs font-black text-[#046A38] uppercase">Edit Tarif Layanan</h3>
+            <h3 className="text-xs font-black text-[#046A38] uppercase">Pendaftaran & Layanan</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center justify-between bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                <span className="text-[10px] font-bold text-emerald-800 uppercase">Daftar Motor</span>
+                <input type="checkbox" checked={tempConfig.daftarMotorAktif} onChange={(e)=>setTempConfig({...tempConfig, daftarMotorAktif: e.target.checked})} className="w-4 h-4 rounded text-[#046A38]" />
+              </div>
+              <div className="flex items-center justify-between bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                <span className="text-[10px] font-bold text-emerald-800 uppercase">Daftar Mobil</span>
+                <input type="checkbox" checked={tempConfig.daftarMobilAktif} onChange={(e)=>setTempConfig({...tempConfig, daftarMobilAktif: e.target.checked})} className="w-4 h-4 rounded text-[#046A38]" />
+              </div>
+            </div>
+
+            <h3 className="text-xs font-black text-[#046A38] uppercase pt-2">Edit Tarif Layanan</h3>
             <div className="space-y-3">
                <div>
                  <label className="text-[9px] font-bold text-gray-400 uppercase">Tarif Dasar (Rp)</label>

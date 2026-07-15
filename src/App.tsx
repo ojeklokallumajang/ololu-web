@@ -38,6 +38,8 @@ export default function App() {
   const [docVehicle, setDocVehicle] = useState<string | null>(null);
   const [platNomor, setPlatNomor] = useState('');
   const [jenisMotor, setJenisMotor] = useState('');
+  const [warnaKendaraan, setWarnaKendaraan] = useState('');
+  const [jenisKendaraan, setJenisKendaraan] = useState<'motor' | 'mobil'>('motor');
   const [bisaBarangBesar, setBisaBarangBesar] = useState(false);
 
   const [otp, setOtp] = useState('');
@@ -111,7 +113,7 @@ export default function App() {
     if (selectedRole === 'sopir') {
       if (!profilePic) { setError('Foto profil wajib diunggah'); return; }
       if (!docKtp || !docSim || !docStnk || !docVehicle) { setError('Semua berkas dokumen wajib diunggah'); return; }
-      if (!platNomor || !jenisMotor) { setError('Plat nomor dan jenis motor wajib diisi'); return; }
+      if (!platNomor || !jenisMotor || !warnaKendaraan) { setError('Plat nomor, tipe, dan warna kendaraan wajib diisi'); return; }
     }
     setLoading(true);
     setError('');
@@ -153,7 +155,8 @@ export default function App() {
           if (finalRole === 'sopir' || finalRole === 'admin') {
             await OloluStore.updateSopirDokumen(profil.id, {
               fotoKtp: docKtp || '', fotoSim: docSim || '', fotoStnk: docStnk || '',
-              fotoKendaraan: docVehicle || '', platNomor, jenisMotor, bisaBarangBesar
+              fotoKendaraan: docVehicle || '', platNomor, jenisMotor, bisaBarangBesar,
+              jenisKendaraan, warnaKendaraan
             });
           }
           OloluStore.setSesi({ userId: profil.id, role: profil.peran });
@@ -349,14 +352,34 @@ export default function App() {
 
                   {selectedRole === 'sopir' && (
                     <div className="space-y-3 pt-2 border-t border-dashed">
+                      <div className="flex bg-emerald-50 p-1 rounded-xl border border-emerald-100 mb-2">
+                        <button
+                          onClick={() => setJenisKendaraan('motor')}
+                          disabled={!OloluStore.getPengaturanSync().daftarMotorAktif}
+                          className={`flex-1 py-2 rounded-lg text-[10px] font-black transition-all ${jenisKendaraan === 'motor' ? 'bg-[#046A38] text-white shadow-sm' : 'text-emerald-700 opacity-60'}`}
+                        >
+                          MOTOR {!OloluStore.getPengaturanSync().daftarMotorAktif && '(Tutup)'}
+                        </button>
+                        <button
+                          onClick={() => setJenisKendaraan('mobil')}
+                          disabled={!OloluStore.getPengaturanSync().daftarMobilAktif}
+                          className={`flex-1 py-2 rounded-lg text-[10px] font-black transition-all ${jenisKendaraan === 'mobil' ? 'bg-[#046A38] text-white shadow-sm' : 'text-emerald-700 opacity-60'}`}
+                        >
+                          MOBIL {!OloluStore.getPengaturanSync().daftarMobilAktif && '(Tutup)'}
+                        </button>
+                      </div>
+
                       <div className="grid grid-cols-2 gap-2">
                         <button onClick={() => handleFilePicker(setDocKtp)} className={`p-2.5 rounded-lg border-2 border-dashed text-center ${docKtp ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-100'}`}><Upload size={12} className={docKtp ? 'text-emerald-500 mx-auto' : 'text-gray-300 mx-auto'} /><p className="text-[7px] font-bold">KTP {docKtp && '✅'}</p></button>
                         <button onClick={() => handleFilePicker(setDocSim)} className={`p-2.5 rounded-lg border-2 border-dashed text-center ${docSim ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-100'}`}><Upload size={12} className={docSim ? 'text-emerald-500 mx-auto' : 'text-gray-300 mx-auto'} /><p className="text-[7px] font-bold">SIM {docSim && '✅'}</p></button>
                         <button onClick={() => handleFilePicker(setDocStnk)} className={`p-2.5 rounded-lg border-2 border-dashed text-center ${docStnk ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-100'}`}><Upload size={12} className={docStnk ? 'text-emerald-500 mx-auto' : 'text-gray-300 mx-auto'} /><p className="text-[7px] font-bold">STNK {docStnk && '✅'}</p></button>
-                        <button onClick={() => handleFilePicker(setDocVehicle)} className={`p-2.5 rounded-lg border-2 border-dashed text-center ${docVehicle ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-100'}`}><Upload size={12} className={docVehicle ? 'text-emerald-500 mx-auto' : 'text-gray-300 mx-auto'} /><p className="text-[7px] font-bold">MOTOR {docVehicle && '✅'}</p></button>
+                        <button onClick={() => handleFilePicker(setDocVehicle)} className={`p-2.5 rounded-lg border-2 border-dashed text-center ${docVehicle ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-100'}`}><Upload size={12} className={docVehicle ? 'text-emerald-500 mx-auto' : 'text-gray-300 mx-auto'} /><p className="text-[7px] font-bold">FOTO {jenisKendaraan.toUpperCase()} {docVehicle && '✅'}</p></button>
                       </div>
-                      <input type="text" value={platNomor} onChange={(e) => setPlatNomor(e.target.value.toUpperCase())} placeholder="N-XXXX-YX" className="w-full p-2.5 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-lg outline-none text-[10px] font-bold" />
-                      <input type="text" value={jenisMotor} onChange={(e) => setJenisMotor(e.target.value)} placeholder="Tipe Motor" className="w-full p-2.5 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-lg outline-none text-[10px] font-bold" />
+                      <div className="grid grid-cols-2 gap-2">
+                        <input type="text" value={platNomor} onChange={(e) => setPlatNomor(e.target.value.toUpperCase())} placeholder="N-XXXX-YX" className="p-2.5 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-lg outline-none text-[10px] font-bold" />
+                        <input type="text" value={warnaKendaraan} onChange={(e) => setWarnaKendaraan(e.target.value)} placeholder="Warna Kendaraan" className="p-2.5 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-lg outline-none text-[10px] font-bold" />
+                      </div>
+                      <input type="text" value={jenisMotor} onChange={(e) => setJenisMotor(e.target.value)} placeholder={`Tipe ${jenisKendaraan === 'motor' ? 'Motor' : 'Mobil'} (Avanza, Vario, dll)`} className="w-full p-2.5 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-lg outline-none text-[10px] font-bold" />
                     </div>
                   )}
                   <button onClick={handleRegisterSubmit} disabled={loading} className="w-full py-3.5 bg-[#046A38] text-white font-black rounded-2xl text-[10px] tracking-widest uppercase shadow-lg transition-all">{loading ? "Memproses..." : selectedRole === 'sopir' ? "Kirim Verifikasi" : "Daftar & Kirim OTP"}</button>
