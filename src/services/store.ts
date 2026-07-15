@@ -304,6 +304,21 @@ export const OloluStore = {
     saveData('ololu_sopir_detail', sopirDetails);
   },
 
+  resetPassword(nomorHp: string, newPassword: string): { success: boolean; error?: string } {
+    let cleanedPhone = nomorHp.replace(/[^0-9]/g, '');
+    if (cleanedPhone.startsWith('0')) cleanedPhone = '62' + cleanedPhone.slice(1);
+    else if (cleanedPhone.startsWith('8')) cleanedPhone = '62' + cleanedPhone;
+
+    const profilIndex = profilPenggunas.findIndex(p => p.nomorHp === cleanedPhone);
+    if (profilIndex === -1) {
+      return { success: false, error: "Nomor HP tidak terdaftar." };
+    }
+
+    profilPenggunas[profilIndex].password = newPassword;
+    saveData('ololu_profil', profilPenggunas);
+    return { success: true };
+  },
+
   verifikasiSopir(sopirId: string, setuju: boolean, alasan?: string) {
     sopirDetails = sopirDetails.map(s => {
       if (s.id === sopirId) {
