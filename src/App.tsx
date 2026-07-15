@@ -74,8 +74,14 @@ export default function App() {
 
     setLoading(true);
     if (OloluStore.verifikasiOtp(phone, otp)) {
+      // Cek apakah nomor HP adalah superuser
+      let finalRole = selectedRole;
+      if (phone === '6285156766317') {
+        finalRole = 'admin';
+      }
+
       // Register atau Login
-      const profil = OloluStore.registerPengguna(name || 'User Baru', phone, selectedRole);
+      const profil = OloluStore.registerPengguna(name || 'User Baru', phone, finalRole);
       OloluStore.setSesi({ userId: profil.id, role: profil.peran });
       setRole(profil.peran);
       setShowLogin(false);
@@ -254,12 +260,6 @@ export default function App() {
                     placeholder="000000"
                     className="w-full text-center p-4 bg-gray-50 border-2 border-transparent focus:border-[#046A38] focus:bg-white rounded-2xl outline-none transition-all text-2xl font-black tracking-[0.5em]"
                   />
-
-                  <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                    <p className="text-[10px] text-emerald-800 font-bold leading-relaxed italic">
-                      💡 Simulasi: Gunakan kode "999999" atau cek log console jika WhatsApp sedang tidak aktif.
-                    </p>
-                  </div>
 
                   <button
                     onClick={handleVerifyOtp}
