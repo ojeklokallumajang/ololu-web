@@ -1,0 +1,24 @@
+{
+  "short_name": "OLOLU",
+  "name": "OLOLU Lumajang - Ojek & Layanan Pengantaran",
+  "description": "Aplikasi Ojek & Layanan Pengantaran Terpercaya di Lumajang, Jawa Timur.",
+  "icons": [
+    {
+      "src": "/icon-192.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#FAFBF9",
+  "theme_color": "#046A38",
+  "display": "standalone",
+  "orientation": "portrait"
+}

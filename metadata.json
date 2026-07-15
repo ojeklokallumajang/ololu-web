@@ -1,0 +1,6 @@
+{
+  "name": "OLOLU",
+  "description": "Aplikasi Ojek & Layanan Pengantaran berbasis web terlengkap untuk daerah Lumajang, Jawa Timur.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
