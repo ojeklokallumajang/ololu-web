@@ -49,9 +49,10 @@ import {
 
 interface DriverViewProps {
   onNotifyAdminPanic: () => void;
+  onLogout: () => void;
 }
 
-export default function DriverView({ onNotifyAdminPanic }: DriverViewProps) {
+export default function DriverView({ onNotifyAdminPanic, onLogout }: DriverViewProps) {
   // --- IN-APP STATE SINKRONISASI ---
   const [profile, setProfile] = useState(OloluStore.getProfilLogin());
   const [driverDetail, setDriverDetail] = useState<DetailSopir | null>(null);
@@ -64,6 +65,7 @@ export default function DriverView({ onNotifyAdminPanic }: DriverViewProps) {
   const [jenisMotor, setJenisMotor] = useState('');
   const [bisaBarangBesar, setBisaBarangBesar] = useState(false);
   const [selectedPhotoField, setSelectedPhotoField] = useState<string | null>(null);
+  const [isSubmittingDoc, setIsSubmittingDoc] = useState(false);
 
   // WALLET FORM STATE
   const [topUpAmount, setTopUpAmount] = useState<number>(50000);
@@ -87,17 +89,23 @@ export default function DriverView({ onNotifyAdminPanic }: DriverViewProps) {
   // TABS FOR FINANCE VS ORDER HISTORY
   const [activeHistoryTab, setActiveHistoryTab] = useState<'finance' | 'orders'>('orders');
 
-  // EFECT UNTUK SYNC STATE REALTIME DARI DATABASE SIMULASI
+  // EFECT UNTUK SYNC STATE REALTIME DARI DATABASE
   useEffect(() => {
-    // Check if user is logged in, if not login as default driver (Joko)
-    let curSesi = OloluStore.getSesi();
-    if (!curSesi || curSesi.role !== 'sopir') {
-      // Login as Joko Susilo by default for instant testing
-      OloluStore.setSesi({ userId: 'sopir-joko', role: 'sopir' });
-      setProfile(OloluStore.getProfil('sopir-joko'));
-    }
-
     const syncDriverData = () => {
+      const p = OloluStore.getProfilLogin();
+      setProfile(p);
+      if (p) {
+        const detail = OloluStore.getSopir(p.id);
+        setDriverDetail(detail || null);
+        if (detail) {
+          setPlatNomor(detail.platNomor || '');
+          setJenisMotor(detail.jenisMotor || '');
+          setBisaBarangBesar(detail.bisaBarangBesar || false);
+        }
+        setActiveOrder(OloluStore.getPesananAktifSopir(p.id));
+        setTransactions(OloluStore.getTransaksiSopir(p.id));
+      }
+    };
       const sesi = OloluStore.getSesi();
       if (sesi && sesi.role === 'sopir') {
         const det = OloluStore.getSopir(sesi.userId);
@@ -242,41 +250,6 @@ export default function DriverView({ onNotifyAdminPanic }: DriverViewProps) {
     }, 800);
   };
 
-  // DIAL OUT WHATSAPP UNTUK OTP / REGISTRASI SIMULASI
-  const [namaReg, setNamaReg] = useState('');
-  const [nomorHpReg, setNomorHpReg] = useState('');
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  const [otpSentLog, setOtpSentLog] = useState<string | null>(null);
-  const [otpInput, setOtpInput] = useState('');
-  const [regError, setRegError] = useState('');
-
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    setRegError('');
-    if (!namaReg || !nomorHpReg) {
-      setRegError('Lengkapi semua isian!');
-      return;
-    }
-    const otp = OloluStore.kirimFonnteOtp(nomorHpReg);
-    setOtpSentLog(otp);
-    setIsVerifyingOtp(true);
-  };
-
-  const handleVerifyOtp = (e: React.FormEvent) => {
-    e.preventDefault();
-    setRegError('');
-    const ok = OloluStore.verifikasiOtp(nomorHpReg, otpInput);
-    if (ok) {
-      const user = OloluStore.registerPengguna(namaReg, nomorHpReg, 'sopir');
-      OloluStore.setSesi({ userId: user.id, role: 'sopir' });
-      setProfile(user);
-      setIsVerifyingOtp(false);
-      setOtpSentLog(null);
-    } else {
-      setRegError('Kode OTP salah! Gunakan bypass code 999999.');
-    }
-  };
-
   // --- SOPIR DOCUMENT ACTIONS ---
   const handleDocUpload = (e: React.FormEvent) => {
     e.preventDefault();
@@ -394,11 +367,9 @@ export default function DriverView({ onNotifyAdminPanic }: DriverViewProps) {
     setActiveOrder(null);
   };
 
-  const handleBatalOrder = () => {
-    if (!activeOrder) return;
-    if (confirm(`Apakah Anda yakin ingin membatalkan order ini?\n⚠️ Denda pembatalan sopir sebesar Rp ${config.dendaBatalSopir.toLocaleString('id-ID')} akan otomatis memotong saldo dompet Anda!`)) {
-      OloluStore.batalPesanan(activeOrder.id, 'sopir', 'Dibatalkan oleh Sopir melalui menu darurat.');
-      setActiveOrder(null);
+  const handleLogoutLocal = () => {
+    if (confirm("Apakah Anda yakin ingin keluar akun?")) {
+      onLogout();
     }
   };
 
@@ -433,86 +404,15 @@ export default function DriverView({ onNotifyAdminPanic }: DriverViewProps) {
     );
   };
 
-  // JIKA SOPIR BELUM DAFTAR / LOGIN SIMULASI
+  // JIKA SESSION TIDAK VALID
   if (!profile || !driverDetail) {
     return (
-      <div className="max-w-md mx-auto p-4 space-y-4">
-        <div className="bg-white p-6 rounded-2xl border-t-2 border-[#D4AF37] shadow-sm text-center">
-          <span className="text-4xl">👋</span>
-          <h2 className="text-xl font-bold text-[#046A38] mt-3 mb-1">Portal Pendaftaran Sopir</h2>
-          <p className="text-xs text-gray-500 mb-6">
-            Daftarkan diri Anda sebagai mitra sopir OLOLU. Sesi WhatsApp OTP simulasi.
-          </p>
-
-          <form onSubmit={isVerifyingOtp ? handleVerifyOtp : handleRegister} className="space-y-4 text-left">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Nama Lengkap Sopir</label>
-              <input
-                type="text"
-                disabled={isVerifyingOtp}
-                value={namaReg}
-                onChange={(e) => setNamaReg(e.target.value)}
-                placeholder="cth. Joko Susilo"
-                className="w-full p-2.5 bg-[#FAFBF9] border border-gray-200 rounded-xl text-sm focus:outline-[#046A38]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Nomor WhatsApp Aktif</label>
-              <input
-                type="tel"
-                disabled={isVerifyingOtp}
-                value={nomorHpReg}
-                onChange={(e) => setNomorHpReg(e.target.value)}
-                placeholder="cth. 628123456780"
-                className="w-full p-2.5 bg-[#FAFBF9] border border-gray-200 rounded-xl text-sm focus:outline-[#046A38]"
-              />
-              <p className="text-[10px] text-gray-400 mt-1">Kode OTP 6-digit asli dikirim via WhatsApp Fonnte.</p>
-            </div>
-
-            {isVerifyingOtp && (
-              <div className="bg-[#F5E6A8] p-3 rounded-xl border border-[#B8941F] space-y-2">
-                <label className="block text-xs font-bold text-[#1A1A1A]">
-                  Kode OTP WhatsApp (6 Digit)
-                </label>
-                <input
-                  type="text"
-                  maxLength={6}
-                  value={otpInput}
-                  onChange={(e) => setOtpInput(e.target.value)}
-                  placeholder="Masukkan OTP"
-                  className="w-full p-2 bg-white border border-[#B8941F] rounded-lg text-center tracking-widest font-bold font-mono focus:outline-[#046A38]"
-                />
-                <div className="text-[10px] text-[#6B7280]">
-                  {otpSentLog ? (
-                    <p className="font-semibold text-[#046A38]">
-                      💬 DEVELOPMENT LOG: OTP Simulasi dikirim = <span className="font-mono text-xs bg-white px-1.5 py-0.5 rounded border">{otpSentLog}</span> (Bypass code: 999999)
-                    </p>
-                  ) : (
-                    <p>Membaca database OTP...</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {regError && <p className="text-xs text-[#DC2626] font-semibold">{regError}</p>}
-
-            {isVerifyingOtp ? (
-              <button
-                type="submit"
-                className="w-full py-3 bg-[#034F2A] hover:bg-[#046A38] text-white font-bold rounded-xl shadow-md transition-all border border-[#D4AF37]"
-              >
-                Verifikasi & Masuk
-              </button>
-            ) : (
-              <button
-                type="submit"
-                className="w-full py-3 bg-[#034F2A] hover:bg-[#046A38] text-white font-bold rounded-xl shadow-md transition-all border border-[#D4AF37]"
-              >
-                Kirim Kode OTP WhatsApp
-              </button>
-            )}
-          </form>
+      <div className="max-w-md mx-auto p-8 text-center space-y-4">
+        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
+          <AlertTriangle size={48} className="mx-auto text-amber-500 mb-4" />
+          <h2 className="text-lg font-black text-gray-800">Sesi Tidak Valid</h2>
+          <p className="text-xs text-gray-500">Silakan login kembali untuk mengakses menu sopir.</p>
+          <button onClick={onLogout} className="mt-6 w-full py-3 bg-[#046A38] text-white rounded-xl font-bold">Kembali ke Login</button>
         </div>
       </div>
     );
@@ -677,6 +577,14 @@ export default function DriverView({ onNotifyAdminPanic }: DriverViewProps) {
             <Star size={12} className="text-[#D4AF37] fill-[#D4AF37]" />
             <span className="text-xs font-bold">{driverDetail.ratingRataRata}</span>
           </div>
+
+          <button
+            onClick={handleLogoutLocal}
+            className="p-2 bg-white/10 hover:bg-red-500 rounded-lg transition-all"
+            title="Keluar"
+          >
+            <Power size={18} />
+          </button>
         </div>
 
         {/* BUTTON ONLINE / OFFLINE SOPIR (SANGAT MENCOLOK DI ATAS) */}

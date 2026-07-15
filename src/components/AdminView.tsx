@@ -67,6 +67,19 @@ import { ReusableTable, ColumnDef, FilterDef } from './ReusableTable';
 import { downloadMonthlyExcel } from '../utils/excelExport';
 
 export default function AdminView() {
+  const profile = OloluStore.getProfilLogin();
+  const isSuperUser = profile?.nomorHp === '6285156766317';
+
+  if (!isSuperUser) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8">
+        <ShieldAlert size={64} className="text-red-500 mb-4" />
+        <h2 className="text-2xl font-black text-gray-800">Akses Ditolak</h2>
+        <p className="text-sm text-gray-500 mt-2">Halaman ini hanya dapat diakses oleh Administrator Utama Ololu Lumajang.</p>
+      </div>
+    );
+  }
+
   const [activeTab, setActiveTab] = useState<'stats' | 'sopir' | 'penumpang' | 'pesanan' | 'dompet' | 'tarif' | 'darurat' | 'rating'>('stats');
   
   // STATE DATA REALTIME
