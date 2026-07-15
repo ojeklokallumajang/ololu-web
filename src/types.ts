@@ -11,9 +11,11 @@ export interface ProfilPengguna {
   id: string;
   nama: string;
   nomorHp: string;
+  password?: string;
   peran: PeranPengguna;
   terverifikasi: boolean;
   tanggalDaftar: string;
+  fotoProfil?: string;
 }
 
 export interface DetailSopir {

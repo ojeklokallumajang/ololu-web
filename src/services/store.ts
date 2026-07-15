@@ -271,7 +271,7 @@ export const OloluStore = {
   },
 
   // REGISTRASI DAN LOGIN
-  registerPengguna(nama: string, nomorHp: string, peran: PeranPengguna): ProfilPengguna {
+  registerPengguna(nama: string, nomorHp: string, peran: PeranPengguna, password?: string): ProfilPengguna {
     // Bersihkan nomor HP agar format 62xxx
     let cleanedPhone = nomorHp.replace(/[^0-9]/g, '');
     if (cleanedPhone.startsWith('0')) {
@@ -283,6 +283,7 @@ export const OloluStore = {
     // Cek apakah nomor sudah ada
     const existing = profilPenggunas.find(p => p.nomorHp === cleanedPhone);
     if (existing) {
+      if (password) existing.password = password;
       return existing;
     }
 
@@ -291,8 +292,9 @@ export const OloluStore = {
       id,
       nama,
       nomorHp: cleanedPhone,
+      password,
       peran,
-      terverifikasi: true, // Auto verifikasi via simulasi/Fonnte OTP
+      terverifikasi: true, // OTP sudah diverifikasi sebelum panggil ini
       tanggalDaftar: new Date().toISOString()
     };
 
@@ -302,10 +304,10 @@ export const OloluStore = {
     if (peran === 'sopir') {
       const sopir: DetailSopir = {
         id,
-        fotoKtp: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23eee'/><text x='10' y='50'>KTP BELUM DIUNGGAH</text></svg>",
-        fotoSim: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23eee'/><text x='10' y='50'>SIM BELUM DIUNGGAH</text></svg>",
-        fotoStnk: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23eee'/><text x='10' y='50'>STNK BELUM DIUNGGAH</text></svg>",
-        fotoKendaraan: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23eee'/><text x='10' y='50'>KENDARAAN BELUM DIUNGGAH</text></svg>",
+        fotoKtp: "",
+        fotoSim: "",
+        fotoStnk: "",
+        fotoKendaraan: "",
         platNomor: "",
         jenisMotor: "",
         bisaBarangBesar: false,
@@ -322,6 +324,24 @@ export const OloluStore = {
     }
 
     return profil;
+  },
+
+  loginPengguna(nomorHp: string, passwordInput: string): { success: boolean; profil?: ProfilPengguna; error?: string } {
+    let cleanedPhone = nomorHp.replace(/[^0-9]/g, '');
+    if (cleanedPhone.startsWith('0')) cleanedPhone = '62' + cleanedPhone.slice(1);
+    else if (cleanedPhone.startsWith('8')) cleanedPhone = '62' + cleanedPhone;
+
+    const profil = profilPenggunas.find(p => p.nomorHp === cleanedPhone);
+
+    if (!profil) {
+      return { success: false, error: "Nomor HP tidak terdaftar. Silakan daftar akun baru." };
+    }
+
+    if (profil.password && profil.password !== passwordInput) {
+      return { success: false, error: "Kata sandi salah. Silakan coba lagi." };
+    }
+
+    return { success: true, profil };
   },
 
   updateSopirDokumen(sopirId: string, updates: Partial<DetailSopir>) {

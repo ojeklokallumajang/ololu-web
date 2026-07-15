@@ -18,10 +18,13 @@ export default function App() {
   const [sesi, setSesi] = useState(OloluStore.getSesi());
   const [role, setRole] = useState<PeranPengguna>(sesi?.role || 'penumpang');
   const [showLogin, setShowLogin] = useState(!sesi);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [loginStep, setLoginStep] = useState<'peran' | 'form' | 'otp'>('peran');
   const [selectedRole, setSelectedRole] = useState<PeranPengguna>('penumpang');
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -44,20 +47,43 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  const handleStartLogin = (peran: PeranPengguna) => {
+  const handleStartRegister = (peran: PeranPengguna) => {
     setSelectedRole(peran);
+    setAuthMode('register');
     setLoginStep('form');
   };
 
-  const handleKirimOtp = () => {
-    if (!phone) {
-      setError('Masukkan nomor HP Anda');
+  const handleLoginSubmit = () => {
+    if (!phone || !password) {
+      setError('Masukkan nomor HP dan kata sandi');
+      return;
+    }
+    setLoading(true);
+    const res = OloluStore.loginPengguna(phone, password);
+    if (res.success && res.profil) {
+      OloluStore.setSesi({ userId: res.profil.id, role: res.profil.peran });
+      setRole(res.profil.peran);
+      setShowLogin(false);
+      setError('');
+    } else {
+      setError(res.error || 'Gagal masuk');
+    }
+    setLoading(false);
+  };
+
+  const handleRegisterSubmit = () => {
+    if (!name || !phone || !password) {
+      setError('Lengkapi semua data pendaftaran');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Konfirmasi kata sandi tidak cocok');
       return;
     }
     setLoading(true);
     setError('');
 
-    // Simulasi kirim OTP via Fonnte yang ada di store
+    // Kirim OTP via Fonnte hanya saat pendaftaran
     OloluStore.kirimFonnteOtp(phone);
 
     setTimeout(() => {
@@ -81,7 +107,7 @@ export default function App() {
       }
 
       // Register atau Login
-      const profil = OloluStore.registerPengguna(name || 'User Baru', phone, finalRole);
+      const profil = OloluStore.registerPengguna(name, phone, finalRole, password);
       OloluStore.setSesi({ userId: profil.id, role: profil.peran });
       setRole(profil.peran);
       setShowLogin(false);
@@ -163,11 +189,54 @@ export default function App() {
                 </div>
               )}
 
-              {loginStep === 'peran' && (
-                <div className="space-y-3">
-                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center mb-4">Pilih Peran Anda</p>
+              {authMode === 'login' && (
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Nomor WhatsApp</label>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="628xxx"
+                      className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-[#046A38] focus:bg-white rounded-2xl outline-none transition-all text-sm font-bold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Kata Sandi</label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-[#046A38] focus:bg-white rounded-2xl outline-none transition-all text-sm font-bold"
+                    />
+                  </div>
+
                   <button
-                    onClick={() => handleStartLogin('penumpang')}
+                    onClick={handleLoginSubmit}
+                    disabled={loading}
+                    className="w-full py-4 bg-[#046A38] text-white font-black rounded-2xl text-xs tracking-widest uppercase shadow-lg transition-all"
+                  >
+                    {loading ? "Memproses..." : "Masuk Sekarang"}
+                  </button>
+
+                  <div className="text-center pt-2">
+                    <p className="text-[11px] text-gray-500">Belum punya akun?</p>
+                    <button
+                      onClick={() => { setAuthMode('register'); setLoginStep('peran'); setError(''); }}
+                      className="text-[11px] font-bold text-[#046A38] underline"
+                    >
+                      Daftar Akun Baru
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {authMode === 'register' && loginStep === 'peran' && (
+                <div className="space-y-3">
+                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest text-center mb-4">Daftar Sebagai Apa?</p>
+                  <button
+                    onClick={() => handleStartRegister('penumpang')}
                     className="w-full group flex items-center justify-between p-4 bg-white border-2 border-gray-100 hover:border-[#046A38] rounded-2xl transition-all"
                   >
                     <div className="flex items-center space-x-4">
@@ -182,7 +251,7 @@ export default function App() {
                   </button>
 
                   <button
-                    onClick={() => handleStartLogin('sopir')}
+                    onClick={() => handleStartRegister('sopir')}
                     className="w-full group flex items-center justify-between p-4 bg-white border-2 border-gray-100 hover:border-[#046A38] rounded-2xl transition-all"
                   >
                     <div className="flex items-center space-x-4">
@@ -195,61 +264,82 @@ export default function App() {
                       </div>
                     </div>
                   </button>
+
+                  <div className="text-center pt-4">
+                    <button
+                      onClick={() => { setAuthMode('login'); setError(''); }}
+                      className="text-[11px] font-bold text-gray-400 hover:text-[#046A38]"
+                    >
+                      Sudah punya akun? Login
+                    </button>
+                  </div>
                 </div>
               )}
 
-              {loginStep === 'form' && (
+              {authMode === 'register' && loginStep === 'form' && (
                 <div className="space-y-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Nama Lengkap</label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Nama Anda"
-                        className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-[#046A38] focus:bg-white rounded-2xl outline-none transition-all text-sm font-bold"
-                      />
-                    </div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Nama Lengkap (Sesuai KTP)</label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Nama Lengkap"
+                      className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-[#046A38] focus:bg-white rounded-2xl outline-none transition-all text-sm font-bold"
+                    />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Nomor WhatsApp</label>
-                    <div className="relative">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Nomor WhatsApp (628xxx)</label>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="628123456789"
+                      className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-[#046A38] focus:bg-white rounded-2xl outline-none transition-all text-sm font-bold"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Kata Sandi</label>
                       <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="628xxx"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-[#046A38] focus:bg-white rounded-2xl outline-none transition-all text-sm font-bold"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Konfirmasi</label>
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
                         className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-[#046A38] focus:bg-white rounded-2xl outline-none transition-all text-sm font-bold"
                       />
                     </div>
                   </div>
 
                   <button
-                    onClick={handleKirimOtp}
+                    onClick={handleRegisterSubmit}
                     disabled={loading}
-                    className="w-full py-4 bg-[#046A38] hover:bg-[#034F2A] disabled:bg-gray-300 text-white font-black rounded-2xl text-xs tracking-widest uppercase shadow-lg shadow-emerald-950/20 transition-all flex items-center justify-center space-x-2"
+                    className="w-full py-4 bg-[#046A38] text-white font-black rounded-2xl text-xs tracking-widest uppercase shadow-lg transition-all"
                   >
-                    {loading ? (
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    ) : (
-                      <>
-                        <span>Lanjutkan</span>
-                        <LogIn size={16} />
-                      </>
-                    )}
+                    {loading ? "Mengirim OTP..." : "Daftar & Kirim OTP"}
                   </button>
 
-                  <button onClick={() => setLoginStep('peran')} className="w-full text-[10px] font-bold text-gray-400 hover:text-gray-600">Kembali</button>
+                  <button onClick={() => setLoginStep('peran')} className="w-full text-[10px] font-bold text-gray-400">Kembali</button>
                 </div>
               )}
 
-              {loginStep === 'otp' && (
+              {authMode === 'register' && loginStep === 'otp' && (
                 <div className="space-y-6 text-center">
                   <div className="space-y-2">
-                    <h3 className="font-bold text-lg">Verifikasi Kode OTP</h3>
-                    <p className="text-xs text-gray-500">Kode telah dikirim ke WhatsApp <strong>{phone}</strong></p>
+                    <h3 className="font-bold text-lg">Verifikasi Pendaftaran</h3>
+                    <p className="text-xs text-gray-500">Masukkan 6 digit kode OTP yang dikirim ke WhatsApp <strong>{phone}</strong></p>
                   </div>
 
                   <input
@@ -264,9 +354,9 @@ export default function App() {
                   <button
                     onClick={handleVerifyOtp}
                     disabled={loading}
-                    className="w-full py-4 bg-[#046A38] hover:bg-[#034F2A] disabled:bg-gray-300 text-white font-black rounded-2xl text-xs tracking-widest uppercase shadow-lg transition-all"
+                    className="w-full py-4 bg-[#046A38] text-white font-black rounded-2xl text-xs tracking-widest uppercase shadow-lg transition-all"
                   >
-                    {loading ? "Memproses..." : "Konfirmasi OTP"}
+                    {loading ? "Memproses..." : "Konfirmasi & Selesaikan"}
                   </button>
                 </div>
               )}
