@@ -548,6 +548,14 @@ export default function AdminView() {
                           <input type="number" value={tempConfig.makananTarifPerKm} onChange={(e)=>setTempConfig({...tempConfig, makananTarifPerKm: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
                        </div>
                        <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Tarif Minimum</label>
+                          <input type="number" value={tempConfig.makananTarifMinimum} onChange={(e)=>setTempConfig({...tempConfig, makananTarifMinimum: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Batas KM Dasar</label>
+                          <input type="number" value={tempConfig.makananBatasKmTarifDasar} onChange={(e)=>setTempConfig({...tempConfig, makananBatasKmTarifDasar: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
                           <label className="text-[8px] font-bold text-gray-400 uppercase">Biaya Per Stop</label>
                           <input type="number" value={tempConfig.makananBiayaPerStop} onChange={(e)=>setTempConfig({...tempConfig, makananBiayaPerStop: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
                        </div>
@@ -571,6 +579,14 @@ export default function AdminView() {
                           <input type="number" value={tempConfig.paketTarifPerKm} onChange={(e)=>setTempConfig({...tempConfig, paketTarifPerKm: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
                        </div>
                        <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Tarif Minimum</label>
+                          <input type="number" value={tempConfig.paketTarifMinimum} onChange={(e)=>setTempConfig({...tempConfig, paketTarifMinimum: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Batas KM Dasar</label>
+                          <input type="number" value={tempConfig.paketBatasKmTarifDasar} onChange={(e)=>setTempConfig({...tempConfig, paketBatasKmTarifDasar: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
                           <label className="text-[8px] font-bold text-gray-400 uppercase">Biaya Per Stop</label>
                           <input type="number" value={tempConfig.paketBiayaPerStop} onChange={(e)=>setTempConfig({...tempConfig, paketBiayaPerStop: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
                        </div>
@@ -592,6 +608,14 @@ export default function AdminView() {
                        <div className="space-y-1">
                           <label className="text-[8px] font-bold text-gray-400 uppercase">Per KM</label>
                           <input type="number" value={tempConfig.barangBesarTarifPerKm} onChange={(e)=>setTempConfig({...tempConfig, barangBesarTarifPerKm: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Tarif Minimum</label>
+                          <input type="number" value={tempConfig.barangBesarTarifMinimum} onChange={(e)=>setTempConfig({...tempConfig, barangBesarTarifMinimum: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Batas KM Dasar</label>
+                          <input type="number" value={tempConfig.barangBesarBatasKmTarifDasar} onChange={(e)=>setTempConfig({...tempConfig, barangBesarBatasKmTarifDasar: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
                        </div>
                        <div className="space-y-1">
                           <label className="text-[8px] font-bold text-gray-400 uppercase">Biaya Per Stop</label>
