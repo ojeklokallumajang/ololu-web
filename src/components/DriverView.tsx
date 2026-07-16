@@ -658,10 +658,6 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
           </div>
         )}
 
-        <div className="bg-white p-4 rounded-2xl border border-gray-150 text-center py-6 text-xs text-gray-500">
-          💡 <strong>Tip Pengujian AI Studio:</strong> Anda bisa berpindah ke peran <strong>"Admin"</strong> di navbar atas untuk langsung melihat berkas ini di tab "Verifikasi Sopir" dan menyetujuinya agar akun Joko bisa langsung online!
-        </div>
-
       </div>
     );
   }

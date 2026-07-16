@@ -439,10 +439,6 @@ export default function App() {
               <div className="flex-1 overflow-y-auto scrollbar-none"><AdminView /></div>
             ) : (
               <>
-                <div className="bg-[#E6F4EC] px-5 py-2.5 flex items-center justify-between text-[9px] text-[#046A38] font-bold uppercase tracking-widest shrink-0">
-                  <span className="flex items-center space-x-1.5"><span className="h-1.5 w-1.5 rounded-full bg-[#059669] inline-block animate-pulse"></span><span>Realtime Active</span></span>
-                  <span>PT Ololu Lumajang</span>
-                </div>
                 <div className="flex-1 overflow-y-auto pb-14 relative scrollbar-none">
                   {role === 'penumpang' && (
                     <PassengerView
