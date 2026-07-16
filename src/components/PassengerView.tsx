@@ -145,11 +145,11 @@ function LiveDriversMap() {
         <div className="bg-[#E6F4EC] px-2.5 py-1 rounded-full text-[#034F2A] text-[10px] font-black">🛵 {drivers.length} Online</div>
       </div>
       <div className="h-64 rounded-2xl overflow-hidden border relative bg-gray-50">
-        <APIProvider apiKey={GOOGLE_MAPS_KEY}>
+        <APIProvider apiKey={GOOGLE_MAPS_KEY || ''}>
           <Map defaultCenter={KOORDINAT_LUMAJANG} defaultZoom={14} mapId="LIVE_MAP" disableDefaultUI gestureHandling="cooperative">
             <AdvancedMarker position={KOORDINAT_LUMAJANG}><Pin background="#046A38" scale={0.7} /></AdvancedMarker>
             {drivers.map(d => (
-              <AdvancedMarker key={d.id} position={{ lat: d.lat, lng: d.lng }}>
+              <AdvancedMarker key={d.id} position={{ lat: d.lat || KOORDINAT_LUMAJANG.lat, lng: d.lng || KOORDINAT_LUMAJANG.lng }}>
                 <div className="bg-white text-[14px] p-1 rounded-full shadow border-2 border-[#0A8A4E] w-7 h-7 flex items-center justify-center">🛵</div>
               </AdvancedMarker>
             ))}
@@ -273,7 +273,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
             </AdvancedMarker>
             {(driverLoc || activeOrder.idSopir) && (
               <AdvancedMarker position={driverLoc || { lat: activeOrder.asalLat || KOORDINAT_LUMAJANG.lat, lng: activeOrder.asalLng || KOORDINAT_LUMAJANG.lng }}>
-                <div className="text-2xl">🛵</div>
+                <div className="text-2xl drop-shadow-md">🛵</div>
               </AdvancedMarker>
             )}
           </Map>
@@ -340,13 +340,16 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
         <h1 className="text-xl font-black">Riwayat Order</h1>
       </div>
       <div className="p-4 space-y-3 text-left">
-        {historyOrders.length === 0 ? <p className="text-center text-gray-400 py-10 italic">Belum ada riwayat pesanan.</p> : historyOrders.slice().reverse().map(p => (
-          <div key={p.id} className="bg-white p-4 rounded-2xl border border-gray-150 space-y-2 shadow-xs">
-            <div className="flex justify-between border-b pb-2"><span className="text-[10px] font-mono text-gray-400">#{p.nomorPesanan}</span><span className="text-[10px] font-black uppercase text-[#046A38]">{p.status}</span></div>
-            <p className="text-xs text-gray-700 truncate">{p.asalAlamat}</p>
-            <div className="flex justify-between items-center"><span className="text-sm font-black text-[#B8941F]">Rp {p.totalBayarAkhir.toLocaleString('id-ID')}</span><span className="text-[9px] text-gray-400 font-bold">{new Date(p.waktuDibuat).toLocaleDateString('id-ID')}</span></div>
-          </div>
-        ))}
+        {historyOrders.length === 0 ? <p className="text-center text-gray-400 py-10 italic">Belum ada riwayat pesanan.</p> : historyOrders.slice().reverse().map(p => {
+          if (!p) return null;
+          return (
+            <div key={p.id} className="bg-white p-4 rounded-2xl border border-gray-150 space-y-2 shadow-xs">
+              <div className="flex justify-between border-b pb-2"><span className="text-[10px] font-mono text-gray-400">#{p.nomorPesanan || '0000'}</span><span className="text-[10px] font-black uppercase text-[#046A38]">{p.status || 'Pending'}</span></div>
+              <p className="text-xs text-gray-700 truncate">{p.asalAlamat || 'Alamat tidak tersedia'}</p>
+              <div className="flex justify-between items-center"><span className="text-sm font-black text-[#B8941F]">Rp {(p.totalBayarAkhir || 0).toLocaleString('id-ID')}</span><span className="text-[9px] text-gray-400 font-bold">{p.waktuDibuat ? new Date(p.waktuDibuat).toLocaleDateString('id-ID') : '-'}</span></div>
+            </div>
+          );
+        })}
       </div>
       <nav className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t flex items-center px-6 z-50 max-w-[420px] mx-auto shadow-lg">
         <button onClick={() => setViewMode('home')} className="flex-1 flex flex-col items-center text-gray-400"><Home size={18} /><span className="text-[8px] font-bold">Beranda</span></button>

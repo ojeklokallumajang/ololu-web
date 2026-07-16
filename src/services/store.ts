@@ -91,49 +91,54 @@ let pengaturans: PengaturanTarif = DEFAULT_PENGATURAN_TARIF;
 const mapProfile = (db: any): ProfilPengguna | null => {
   if (!db) return null;
   return {
-    id: db.id,
-    nama: db.nama,
-    nomorHp: db.nomor_hp,
-    peran: db.peran,
-    terverifikasi: db.terverifikasi,
-    tanggalDaftar: db.created_at,
-    fotoProfil: db.foto_profil,
-    isSubAdmin: db.is_sub_admin,
-    tempatLahir: db.tempat_lahir,
-    tanggalLahir: db.tanggal_lahir
+    id: db.id || '',
+    nama: db.nama || 'User',
+    nomorHp: db.nomor_hp || '',
+    peran: db.peran || 'penumpang',
+    terverifikasi: !!db.terverifikasi,
+    tanggalDaftar: db.created_at || new Date().toISOString(),
+    fotoProfil: db.foto_profil || null,
+    isSubAdmin: !!db.is_sub_admin,
+    tempatLahir: db.tempat_lahir || '',
+    tanggalLahir: db.tanggal_lahir || ''
   };
+};
+
+const safeParseFloat = (val: any, fallback: number = 0): number => {
+  const parsed = parseFloat(val);
+  return isNaN(parsed) ? fallback : parsed;
 };
 
 const mapOrder = (db: any): Pesanan | null => {
   if (!db) return null;
   return {
-    id: db.id,
-    nomorPesanan: db.nomor_pesanan,
-    jenisLayanan: db.jenis_layanan,
-    idPenumpang: db.id_penumpang,
+    id: db.id || '',
+    nomorPesanan: db.nomor_pesanan || 'OL-0000',
+    jenisLayanan: db.jenis_layanan || 'ojek',
+    idPenumpang: db.id_penumpang || '',
     namaPenumpang: db.nama_penumpang || 'Pelanggan',
     nomorHpPenumpang: db.nomor_hp_penumpang || '',
-    idSopir: db.id_sopir,
-    namaSopir: db.nama_sopir,
-    nomorHpSopir: db.nomor_hp_sopir,
-    platNomorSopir: db.plat_nomor_sopir,
-    asalAlamat: db.asal_alamat,
-    asalLat: parseFloat(db.asal_lat),
-    asalLng: parseFloat(db.asal_lng),
-    jarakKm: parseFloat(db.jarak_km),
-    tarifPerjalananMurni: parseFloat(db.tarif_perjalanan_murni),
-    totalBayarAkhir: parseFloat(db.total_bayar_akhir),
-    pembayaranTunai: db.pembayaran_tunai,
-    status: db.status,
-    waktuDibuat: db.waktu_dibuat,
-    waktuSelesai: db.waktu_selesai,
+    idSopir: db.id_sopir || null,
+    namaSopir: db.nama_sopir || '',
+    nomorHpSopir: db.nomor_hp_sopir || '',
+    platNomorSopir: db.plat_nomor_sopir || '',
+    asalAlamat: db.asal_alamat || '',
+    asalLat: safeParseFloat(db.asal_lat, KOORDINAT_LUMAJANG.lat),
+    asalLng: safeParseFloat(db.asal_lng, KOORDINAT_LUMAJANG.lng),
+    jarakKm: safeParseFloat(db.jarak_km, 1),
+    tarifPerjalananMurni: safeParseFloat(db.tarif_perjalanan_murni, 0),
+    totalBayarAkhir: safeParseFloat(db.total_bayar_akhir, 0),
+    pembayaranTunai: !!db.pembayaran_tunai,
+    status: db.status || 'mencari_sopir',
+    waktuDibuat: db.waktu_dibuat || new Date().toISOString(),
+    waktuSelesai: db.waktu_selesai || null,
     daftarTujuan: (db.order_stops || []).map((s: any) => ({
-      id: s.id,
-      alamat: s.alamat,
-      lat: parseFloat(s.lat),
-      lng: parseFloat(s.lng),
-      urutan: s.urutan,
-      status: s.status,
+      id: s.id || '',
+      alamat: s.alamat || '',
+      lat: safeParseFloat(s.lat, KOORDINAT_LUMAJANG.lat),
+      lng: safeParseFloat(s.lng, KOORDINAT_LUMAJANG.lng),
+      urutan: s.urutan || 0,
+      status: s.status || 'pending',
       pilihanParkir: s.pilihan_parkir || 'tidak_ada'
     })).sort((a: any, b: any) => a.urutan - b.urutan),
     tahapAktif: db.tahap_aktif || 0,
@@ -321,9 +326,13 @@ export const OloluStore = {
     if (!supabase) return [];
     const { data } = await supabase.from('driver_details').select('*');
     return (data || []).map(d => ({
-      id: d.id, platNomor: d.plat_nomor, jenisMotor: d.jenis_motor,
-      statusOnline: d.status_online, saldoDompet: d.saldo_dompet,
-      ratingRataRata: d.rating_rata_rata, disetujuiAdmin: d.disetujui_admin
+      id: d.id || '',
+      platNomor: d.plat_nomor || '',
+      jenisMotor: d.jenis_motor || '',
+      statusOnline: !!d.status_online,
+      saldoDompet: safeParseFloat(d.saldo_dompet, 0),
+      ratingRataRata: safeParseFloat(d.rating_rata_rata, 5.0),
+      disetujuiAdmin: !!d.disetujui_admin
     } as any));
   },
 
@@ -331,10 +340,7 @@ export const OloluStore = {
     const supabase = getSupabase();
     if (!supabase) return [];
     const { data } = await supabase.from('profiles').select('*').eq('peran', 'penumpang').order('created_at', { ascending: false });
-    return (data || []).map(d => ({
-      id: d.id, nama: d.nama, nomorHp: d.nomor_hp, peran: d.peran,
-      terverifikasi: d.terverifikasi, tanggalDaftar: d.created_at
-    }));
+    return (data || []).map(d => mapProfile(d)).filter(Boolean) as ProfilPengguna[];
   },
 
   // --- ORDERS ---
@@ -455,7 +461,7 @@ export const OloluStore = {
     const supabase = getSupabase();
     if (!supabase) return [];
     const { data } = await supabase.from('orders').select('*, order_stops(*)').order('waktu_dibuat', { ascending: false });
-    return (data || []).map(o => mapOrder(o)) as any;
+    return (data || []).map(o => mapOrder(o)).filter(Boolean) as Pesanan[];
   },
 
   // --- SYSTEM ---

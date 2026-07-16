@@ -17,11 +17,13 @@ export default function App() {
   const [sesi, setSesi] = useState<{ userId: string; role: PeranPengguna } | null>(null);
   const [role, setRole] = useState<PeranPengguna>('penumpang');
   const [showLogin, setShowLogin] = useState(true);
+  const [initializing, setInitializing] = useState(true);
+  const [lockedOrder, setLockedOrder] = useState<{ orderId: string; role: PeranPengguna } | null>(null);
+  const [fatalError, setFatalError] = useState<string | null>(null);
+
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [loginStep, setLoginStep] = useState<'peran' | 'form' | 'otp' | 'reset'>('peran');
   const [selectedRole, setSelectedRole] = useState<PeranPengguna>('penumpang');
-  const [initializing, setInitializing] = useState(true);
-  const [lockedOrder, setLockedOrder] = useState<{ orderId: string; role: PeranPengguna } | null>(null);
 
   // Registration States
   const [profilePic, setProfilePic] = useState<string | null>(null);
@@ -55,29 +57,27 @@ export default function App() {
 
   useEffect(() => {
     async function checkSession() {
-      const s = await OloluStore.getSesi();
-      if (s) {
-        setSesi(s);
-        setRole(s.role);
-        setShowLogin(false);
+      try {
+        const s = await OloluStore.getSesi();
+        if (s) {
+          setSesi(s);
+          setRole(s.role);
+          setShowLogin(false);
 
-        // Cek UI Hard-Lock (Refresh Recovery)
-        const lock = OloluStore.getLocalOrderLock();
-        if (lock) {
-          setLockedOrder(lock);
-          setRole(lock.role);
+          const lock = OloluStore.getLocalOrderLock();
+          if (lock) {
+            setLockedOrder(lock);
+            if (lock.role) setRole(lock.role);
+          }
         }
+      } catch (err: any) {
+        console.error("Session check error:", err);
+        setFatalError(err?.message || "Gagal memuat sesi");
+      } finally {
+        setInitializing(false);
       }
-      setInitializing(false);
     }
     checkSession();
-
-    const unsubscribe = OloluStore.subscribeToStore(async () => {
-      const currentSesi = await OloluStore.getSesi();
-      setSesi(currentSesi);
-      if (!currentSesi) setShowLogin(true);
-    });
-    return () => unsubscribe();
   }, []);
 
   const handleStartRegister = (peran: PeranPengguna) => {
@@ -234,6 +234,22 @@ export default function App() {
     setGlobalPanicNotification({ show: false, pelapor: '', tipe: '' });
     setRole('admin');
   };
+
+  if (fatalError) {
+    return (
+      <div className="min-h-screen bg-red-50 flex flex-col items-center justify-center p-6 text-center">
+        <AlertTriangle size={64} className="text-red-500 mb-4" />
+        <h1 className="text-xl font-black text-gray-800">Ups! Terjadi Kesalahan</h1>
+        <p className="text-sm text-gray-500 mt-2 mb-6">{fatalError}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-8 py-3 bg-red-600 text-white font-bold rounded-xl shadow-lg"
+        >
+          Muat Ulang Halaman
+        </button>
+      </div>
+    );
+  }
 
   if (initializing) {
     return (
