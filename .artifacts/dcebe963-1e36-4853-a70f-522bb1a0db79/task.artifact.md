@@ -1,6 +1,6 @@
-- [ ] Update `types.ts` dengan field Biaya Stop spesifik layanan
-- [ ] Update `store.ts` dengan default nilai Biaya Stop baru
-- [ ] Update `AdminView.tsx` - Tambahkan input Biaya Stop di setiap kategori tarif
-- [ ] Update `PassengerView.tsx` - Perbarui logika `hitungHarga` agar menggunakan biaya stop spesifik
-- [ ] Sinkronisasi & Push ke GitHub
-- [ ] Laporan Akhir (Walkthrough)
+- [x] Update `types.ts` dengan field Biaya Stop spesifik layanan
+- [x] Update `store.ts` dengan default nilai Biaya Stop baru
+- [x] Update `AdminView.tsx` - Tambahkan input Biaya Stop di setiap kategori tarif
+- [x] Update `PassengerView.tsx` - Perbarui logika `hitungHarga` agar menggunakan biaya stop spesifik
+- [x] Sinkronisasi & Push ke GitHub
+- [x] Laporan Akhir (Walkthrough)
