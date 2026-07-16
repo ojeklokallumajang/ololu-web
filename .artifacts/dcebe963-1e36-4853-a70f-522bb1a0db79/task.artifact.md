@@ -1,5 +1,3 @@
-- [x] Update `store.ts` - Tambahkan fungsi `verifikasiSopir` & Perbaiki `getAllSopir` untuk join profil
-- [x] Redesign `AdminView.tsx` - Tab Rider: Pisahkan daftar Verifikasi vs Aktif
-- [x] Implementasi Modal Detail Dokumen Rider di `AdminView.tsx`
-- [x] Sinkronisasi & Push ke GitHub
-- [x] Laporan Akhir (Walkthrough)
+- [ ] Ganti `.update()` ke `.upsert()` di fungsi `updateSopirDokumen` (`store.ts`)
+- [ ] Sinkronisasi & Push ke GitHub
+- [ ] Laporan Akhir (Walkthrough)

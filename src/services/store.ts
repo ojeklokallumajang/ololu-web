@@ -317,7 +317,8 @@ export const OloluStore = {
   async updateSopirDokumen(sopirId: string, updates: Partial<DetailSopir>) {
     const supabase = getSupabase();
     if (!supabase) return;
-    await supabase.from('driver_details').update({
+    await supabase.from('driver_details').upsert({
+      id: sopirId,
       plat_nomor: updates.platNomor,
       jenis_motor: updates.jenisMotor,
       jenis_kendaraan: updates.jenisKendaraan,
@@ -329,7 +330,7 @@ export const OloluStore = {
       kendaraan_url: updates.fotoKendaraan,
       disetujui_admin: false,
       ditolak_admin: false
-    }).eq('id', sopirId);
+    });
   },
 
   async getAllSopir(): Promise<DetailSopir[]> {
