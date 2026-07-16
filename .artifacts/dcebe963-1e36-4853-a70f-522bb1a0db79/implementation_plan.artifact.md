@@ -1,43 +1,36 @@
-# Penambahan Tarif Per Stop Spesifik Layanan
+# Implementasi Sistem Persetujuan (ACC) Driver
 
-Rencana ini akan menambahkan pengaturan biaya tambahan per-stop (mampir) yang unik untuk setiap kategori layanan (Ojek, Mobil, Paket, dll), sehingga Admin memiliki fleksibilitas penuh dalam menentukan biaya mampir berdasarkan jenis kendaraannya.
+Rencana ini akan menambahkan fitur verifikasi driver di Panel Admin, sehingga Admin dapat melihat dokumen yang diunggah (KTP, SIM, dll) dan menyetujui atau menolak pendaftaran driver tersebut.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Transisi Data:** Saya akan mengganti penggunaan field global `biayaPerStopTambahan` dengan field spesifik seperti `ojekBiayaPerStop`, `mobilBiayaPerStop`, dsb. Pengaturan lama akan tetap ada sebagai cadangan sistem, namun pengaturan per-kategori akan menjadi prioritas utama di aplikasi.
+> **Keamanan Data:** Saya akan memastikan seluruh dokumen driver (KTP, SIM, STNK) tampil di dashboard admin hanya untuk Administrator Utama agar proses verifikasi valid.
 
 ## Proposed Changes
 
-### Data Model & Store
-
-#### [MODIFY] [types.ts](file:///W:/ololuv1/src/types.ts)
-- Tambahkan field biaya stop ke `PengaturanTarif`:
-  - `ojekBiayaPerStop`, `mobilBiayaPerStop`, `makananBiayaPerStop`, `paketBiayaPerStop`, `barangBesarBiayaPerStop`.
+### Data Layer (`store.ts`)
 
 #### [MODIFY] [store.ts](file:///W:/ololuv1/src/services/store.ts)
-- Perbarui `DEFAULT_PENGATURAN_TARIF` dengan nilai default biaya stop (contoh: Motor Rp 3.000, Mobil Rp 5.000).
+- Perbarui `getAllSopir()` agar mengambil data profil (nama, nomor HP) menggunakan join table.
+- Tambahkan fungsi `verifikasiSopir(id, setuju, alasan?)` untuk mengubah status `disetujui_admin` di database.
 
-### Admin Interface
+### Admin Interface (`AdminView.tsx`)
 
 #### [MODIFY] [AdminView.tsx](file:///W:/ololuv1/src/components/AdminView.tsx)
-- Tambahkan input "Biaya Per Stop" di setiap tab kategori tarif:
-  - **🏍️ Ojek:** Tambahkan field `ojekBiayaPerStop`.
-  - **🚗 Mobil:** Tambahkan field `mobilBiayaPerStop`.
-  - **🍔 Makanan:** Tambahkan field `makananBiayaPerStop`.
-  - **📦 Paket:** Tambahkan field `paketBiayaPerStop`.
-  - **🚚 Logistik:** Tambahkan field `barangBesarBiayaPerStop`.
-
-### Passenger Interface
-
-#### [MODIFY] [PassengerView.tsx](file:///W:/ololuv1/src/components/PassengerView.tsx)
-- Perbarui fungsi `hitungHarga` agar mengambil biaya per stop sesuai dengan layanan yang dipilih (`selectedLayanan`).
+- Ubah tampilan tab "Rider":
+  - **Section 1: Menunggu Verifikasi.** Menampilkan daftar rider baru yang belum disetujui.
+  - **Section 2: Detail Berkas.** Saat rider diklik, tampilkan foto KTP, SIM, STNK, dan Kendaraan.
+  - **Section 3: Tombol Aksi.** Tambahkan tombol **"ACC / SETUJUI"** dan **"TOLAK"**.
+- **Section 4: Rider Aktif.** Daftar rider yang sudah lolos verifikasi (seperti yang ada sekarang).
 
 ## Verification Plan
 
 ### Manual Verification
-1. Masuk ke Panel Admin -> Tab **Mobil**. Set biaya per stop jadi Rp 7.000.
-2. Masuk ke Panel Admin -> Tab **Ojek**. Set biaya per stop jadi Rp 3.000.
-3. Buka Dashboard Penumpang.
-4. Buat pesanan **Ojek** dengan 2 stop (1 tujuan tambahan). Pastikan biaya tambahan adalah Rp 3.000.
-5. Ubah kendaraan ke **Mobil**. Pastikan biaya tambahan per stop berubah otomatis menjadi Rp 7.000.
+1. Daftar sebagai Driver baru di browser lain (atau incognito).
+2. Unggah semua berkas dokumen.
+3. Masuk ke Panel Admin -> Tab Rider.
+4. Pastikan driver baru tersebut muncul di daftar "Menunggu Verifikasi".
+5. Klik driver tersebut, cek apakah foto dokumennya muncul.
+6. Klik tombol **ACC**.
+7. Verifikasi di browser driver bahwa status sudah berubah jadi "Disetujui" dan bisa Online.

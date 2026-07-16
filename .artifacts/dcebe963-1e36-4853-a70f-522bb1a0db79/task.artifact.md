@@ -1,6 +1,5 @@
-- [x] Update `types.ts` dengan field Biaya Stop spesifik layanan
-- [x] Update `store.ts` dengan default nilai Biaya Stop baru
-- [x] Update `AdminView.tsx` - Tambahkan input Biaya Stop di setiap kategori tarif
-- [x] Update `PassengerView.tsx` - Perbarui logika `hitungHarga` agar menggunakan biaya stop spesifik
-- [x] Sinkronisasi & Push ke GitHub
-- [x] Laporan Akhir (Walkthrough)
+- [ ] Update `store.ts` - Tambahkan fungsi `verifikasiSopir` & Perbaiki `getAllSopir` untuk join profil
+- [ ] Redesign `AdminView.tsx` - Tab Rider: Pisahkan daftar Verifikasi vs Aktif
+- [ ] Implementasi Modal Detail Dokumen Rider di `AdminView.tsx`
+- [ ] Sinkronisasi & Push ke GitHub
+- [ ] Laporan Akhir (Walkthrough)

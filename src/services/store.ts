@@ -335,16 +335,49 @@ export const OloluStore = {
   async getAllSopir(): Promise<DetailSopir[]> {
     const supabase = getSupabase();
     if (!supabase) return [];
-    const { data } = await supabase.from('driver_details').select('*');
+    // Join dengan profiles untuk mendapatkan nama dan nomor HP
+    const { data } = await supabase
+      .from('driver_details')
+      .select('*, profiles(nama, nomor_hp)');
+
     return (data || []).map(d => ({
       id: d.id || '',
+      nama: d.profiles?.nama || 'Rider Baru',
+      nomorHp: d.profiles?.nomor_hp || '',
       platNomor: d.plat_nomor || '',
       jenisMotor: d.jenis_motor || '',
+      jenisKendaraan: d.jenis_kendaraan || 'motor',
+      warnaKendaraan: d.warna_kendaraan || '',
       statusOnline: !!d.status_online,
       saldoDompet: safeParseFloat(d.saldo_dompet, 0),
       ratingRataRata: safeParseFloat(d.rating_rata_rata, 5.0),
-      disetujuiAdmin: !!d.disetujui_admin
+      disetujuiAdmin: !!d.disetujui_admin,
+      ditolakAdmin: !!d.ditolak_admin,
+      alasanDitolak: d.alasan_ditolak || '',
+      fotoKtp: d.ktp_url || '',
+      fotoSim: d.sim_url || '',
+      fotoStnk: d.stnk_url || '',
+      fotoKendaraan: d.kendaraan_url || '',
+      bisaBarangBesar: !!d.bisa_barang_besar,
+      jumlahPesananSelesai: d.jumlah_pesanan_selesai || 0
     } as any));
+  },
+
+  async verifikasiSopir(sopirId: string, setuju: boolean, alasan?: string): Promise<{ success: boolean; error?: string }> {
+    const supabase = getSupabase();
+    if (!supabase) return { success: false, error: "Database offline" };
+
+    const { error } = await supabase
+      .from('driver_details')
+      .update({
+        disetujui_admin: setuju,
+        ditolak_admin: !setuju,
+        alasan_ditolak: alasan || null
+      })
+      .eq('id', sopirId);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
   },
 
   async getAllUsers(): Promise<ProfilPengguna[]> {
