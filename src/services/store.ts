@@ -87,6 +87,60 @@ const ORDER_LOCK_KEY = 'ololu_order_lock';
 
 let pengaturans: PengaturanTarif = DEFAULT_PENGATURAN_TARIF;
 
+// --- DATA MAPPING HELPERS (Database snake_case -> Frontend camelCase) ---
+const mapProfile = (db: any): ProfilPengguna | null => {
+  if (!db) return null;
+  return {
+    id: db.id,
+    nama: db.nama,
+    nomorHp: db.nomor_hp,
+    peran: db.peran,
+    terverifikasi: db.terverifikasi,
+    tanggalDaftar: db.created_at,
+    fotoProfil: db.foto_profil,
+    isSubAdmin: db.is_sub_admin,
+    tempatLahir: db.tempat_lahir,
+    tanggalLahir: db.tanggal_lahir
+  };
+};
+
+const mapOrder = (db: any): Pesanan | null => {
+  if (!db) return null;
+  return {
+    id: db.id,
+    nomorPesanan: db.nomor_pesanan,
+    jenisLayanan: db.jenis_layanan,
+    idPenumpang: db.id_penumpang,
+    namaPenumpang: db.nama_penumpang || 'Pelanggan',
+    nomorHpPenumpang: db.nomor_hp_penumpang || '',
+    idSopir: db.id_sopir,
+    namaSopir: db.nama_sopir,
+    nomorHpSopir: db.nomor_hp_sopir,
+    platNomorSopir: db.plat_nomor_sopir,
+    asalAlamat: db.asal_alamat,
+    asalLat: parseFloat(db.asal_lat),
+    asalLng: parseFloat(db.asal_lng),
+    jarakKm: parseFloat(db.jarak_km),
+    tarifPerjalananMurni: parseFloat(db.tarif_perjalanan_murni),
+    totalBayarAkhir: parseFloat(db.total_bayar_akhir),
+    pembayaranTunai: db.pembayaran_tunai,
+    status: db.status,
+    waktuDibuat: db.waktu_dibuat,
+    waktuSelesai: db.waktu_selesai,
+    daftarTujuan: (db.order_stops || []).map((s: any) => ({
+      id: s.id,
+      alamat: s.alamat,
+      lat: parseFloat(s.lat),
+      lng: parseFloat(s.lng),
+      urutan: s.urutan,
+      status: s.status,
+      pilihanParkir: s.pilihan_parkir || 'tidak_ada'
+    })).sort((a: any, b: any) => a.urutan - b.urutan),
+    tahapAktif: db.tahap_aktif || 0,
+    riwayatLokasiSopir: []
+  } as any;
+};
+
 export const OloluStore = {
   // --- REAL-TIME PUB/SUB ---
   subscribeToStore(listener: () => void) {
@@ -137,19 +191,7 @@ export const OloluStore = {
       .eq('id', sesi.userId)
       .single();
 
-    if (error || !data) return null;
-    return {
-      id: data.id,
-      nama: data.nama,
-      nomorHp: data.nomor_hp,
-      peran: data.peran,
-      terverifikasi: data.terverifikasi,
-      tanggalDaftar: data.created_at,
-      fotoProfil: data.foto_profil,
-      isSubAdmin: data.is_sub_admin,
-      tempatLahir: data.tempat_lahir,
-      tanggalLahir: data.tanggal_lahir
-    };
+    return mapProfile(data);
   },
 
   // --- AUTHENTICATION ---
@@ -185,7 +227,7 @@ export const OloluStore = {
       .single();
 
     if (error) return { success: false, error: error.message };
-    return { success: true, profil: data as any };
+    return { success: true, profil: mapProfile(data) as any };
   },
 
   async loginPengguna(nomorHp: string, passwordInput: string): Promise<{ success: boolean; profil?: ProfilPengguna; error?: string }> {
@@ -207,16 +249,7 @@ export const OloluStore = {
 
     return {
       success: true,
-      profil: {
-        id: data.id,
-        nama: data.nama,
-        nomorHp: data.nomor_hp,
-        peran: data.peran,
-        terverifikasi: data.terverifikasi,
-        tanggalDaftar: data.created_at,
-        tempatLahir: data.tempat_lahir,
-        tanggalLahir: data.tanggal_lahir
-      }
+      profil: mapProfile(data) as any
     };
   },
 
@@ -413,24 +446,14 @@ export const OloluStore = {
     const supabase = getSupabase();
     if (!supabase) return null;
     const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
-    if (!data) return null;
-    return {
-      id: data.id,
-      nama: data.nama,
-      nomorHp: data.nomor_hp,
-      peran: data.peran,
-      terverifikasi: data.terverifikasi,
-      tanggalDaftar: data.created_at,
-      fotoProfil: data.foto_profil,
-      isSubAdmin: data.is_sub_admin
-    };
+    return mapProfile(data);
   },
 
   async getAllPesanan(): Promise<Pesanan[]> {
     const supabase = getSupabase();
     if (!supabase) return [];
     const { data } = await supabase.from('orders').select('*, order_stops(*)').order('waktu_dibuat', { ascending: false });
-    return (data || []) as any;
+    return (data || []).map(o => mapOrder(o)) as any;
   },
 
   // --- SYSTEM ---

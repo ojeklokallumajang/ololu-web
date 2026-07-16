@@ -794,17 +794,16 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
             <div className="w-full h-48 rounded-xl border relative overflow-hidden">
               <APIProvider apiKey={GOOGLE_MAPS_KEY} version="weekly">
                 <Map
-                  defaultCenter={{ lat: activeOrder.asalLat, lng: activeOrder.asalLng }}
+                  defaultCenter={{ lat: activeOrder.asalLat || KOORDINAT_LUMAJANG.lat, lng: activeOrder.asalLng || KOORDINAT_LUMAJANG.lng }}
                   defaultZoom={14}
                   mapId="OLOLU_DRIVER_MINI_MAP"
-                  internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
                   style={{ width: '100%', height: '100%' }}
                 >
-                  <AdvancedMarker position={{ lat: activeOrder.asalLat, lng: activeOrder.asalLng }} title="Jemput">
+                  <AdvancedMarker position={{ lat: activeOrder.asalLat || 0, lng: activeOrder.asalLng || 0 }} title="Jemput">
                     <Pin background="#046A38" glyphColor="#fff" scale={0.7} />
                   </AdvancedMarker>
-                  {activeOrder.daftarTujuan.map((st, sIdx) => (
-                    <AdvancedMarker key={st.id} position={{ lat: st.lat, lng: st.lng }} title={`Tujuan ${sIdx+1}`}>
+                  {(activeOrder.daftarTujuan || []).map((st, sIdx) => (
+                    <AdvancedMarker key={st.id} position={{ lat: st.lat || 0, lng: st.lng || 0 }} title={`Tujuan ${sIdx+1}`}>
                       <Pin background="#D4AF37" glyphColor="#1A1A1A" glyphText={`${sIdx+1}`} scale={0.7} />
                     </AdvancedMarker>
                   ))}

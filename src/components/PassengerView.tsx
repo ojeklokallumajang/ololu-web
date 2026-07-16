@@ -259,13 +259,23 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20 relative">
       <div className="bg-[#046A38] text-white p-4 text-center border-b-2 border-[#D4AF37] sticky top-0 z-40">
         <p className="text-[10px] uppercase font-bold text-[#F5E6A8]">{activeOrder.nomorPesanan}</p>
-        <h2 className="text-lg font-bold">{activeOrder.status.replace('_', ' ').toUpperCase()}</h2>
+        <h2 className="text-lg font-bold">{activeOrder.status?.replace('_', ' ').toUpperCase()}</h2>
       </div>
       <div className="w-full h-72 border-b">
         <APIProvider apiKey={GOOGLE_MAPS_KEY}>
-          <Map defaultCenter={{ lat: activeOrder.asalLat, lng: activeOrder.asalLng }} defaultZoom={13} mapId="ORDER_MAP">
-            <AdvancedMarker position={{ lat: activeOrder.asalLat, lng: activeOrder.asalLng }}><Pin background="#046A38" scale={0.8} /></AdvancedMarker>
-            {(driverLoc || (activeOrder.idSopir && activeOrder.asalLat)) && <AdvancedMarker position={driverLoc || { lat: activeOrder.asalLat, lng: activeOrder.asalLng }}><div className="text-2xl">🛵</div></AdvancedMarker>}
+          <Map
+            defaultCenter={{ lat: activeOrder.asalLat || KOORDINAT_LUMAJANG.lat, lng: activeOrder.asalLng || KOORDINAT_LUMAJANG.lng }}
+            defaultZoom={13}
+            mapId="ORDER_MAP"
+          >
+            <AdvancedMarker position={{ lat: activeOrder.asalLat || 0, lng: activeOrder.asalLng || 0 }}>
+              <Pin background="#046A38" scale={0.8} />
+            </AdvancedMarker>
+            {(driverLoc || activeOrder.idSopir) && (
+              <AdvancedMarker position={driverLoc || { lat: activeOrder.asalLat || 0, lng: activeOrder.asalLng || 0 }}>
+                <div className="text-2xl">🛵</div>
+              </AdvancedMarker>
+            )}
           </Map>
         </APIProvider>
       </div>

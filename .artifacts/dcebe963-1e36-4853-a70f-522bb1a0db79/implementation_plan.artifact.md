@@ -1,37 +1,37 @@
-# Implementasi Sistem Alarm Darurat (Panic Room)
+# Fix Runtime Crashes and Data Mapping
 
-Fitur ini bertujuan untuk memberikan peringatan visual dan audio yang sangat mencolok di Dashboard Admin ketika ada laporan darurat (SOS) dari lapangan.
+The white screen issue is likely caused by a mismatch between database column names (snake_case) and the frontend data model (camelCase), leading to property access on `undefined` values that crash components like Google Maps.
 
 ## User Review Required
 
-> [!WARNING]
-> **Audio Alarm:** Sistem akan mencoba memutar suara sirine secara otomatis. Sebagian besar browser (Chrome/Safari) memblokir audio otomatis kecuali jika admin sudah pernah melakukan interaksi (klik) pada halaman dashboard sebelumnya.
+> [!IMPORTANT]
+> This update fixes the critical "White Screen" bug by ensuring all data coming from Supabase is correctly transformed from `snake_case` to `camelCase` before reaching the UI components.
 
 ## Proposed Changes
 
-### Database & Realtime
+### Core Logic (`store.ts`)
 
-#### [MODIFY] [supabaseClient.ts](file:///W:/ololuv1/src/services/supabaseClient.ts)
-- Tambahkan listener realtime khusus untuk tabel `emergency_reports`.
-- Picu event `new-emergency` ke seluruh komponen yang berlangganan.
+#### [MODIFY] [store.ts](file:///W:/ololuv1/src/services/store.ts)
+- Implement a robust `mapOrder(dbOrder)` helper function to convert database rows to the `Pesanan` type.
+- Implement a `mapProfile(dbProfile)` helper function for user profiles.
+- Update all methods (`getPesananById`, `getAllPesanan`, `registerPengguna`, `loginPengguna`, `getProfilLogin`) to use these mapping helpers.
+- Ensure `buatPesanan` returns a properly mapped `Pesanan` object.
 
-### Admin Dashboard Interface
+### Components
 
-#### [MODIFY] [AdminView.tsx](file:///W:/ololuv1/src/components/AdminView.tsx)
-- Tambahkan state `showPanicOverlay` dan `activeEmergency`.
-- Implementasikan `useEffect` untuk mendeteksi laporan baru secara realtime.
-- **Audio Logic:** Gunakan `AudioContext` untuk memutar suara sirine berulang saat ada laporan masuk.
-- **Visual Logic:** Tambahkan overlay merah berkedip (Fullscreen) yang menampilkan detail pelapor, lokasi, dan tombol "Tangani Sekarang".
-- **Tab Darurat:** Implementasikan UI detail di `activeTab === 'darurat'` untuk memantau seluruh riwayat SOS.
+#### [MODIFY] [PassengerView.tsx](file:///W:/ololuv1/src/components/PassengerView.tsx)
+- Add defensive checks for map coordinates.
+- Ensure `activeOrder` properties are accessed safely.
+
+#### [MODIFY] [DriverView.tsx](file:///W:/ololuv1/src/components/DriverView.tsx)
+- Ensure all database-derived states are correctly typed and mapped.
 
 ## Verification Plan
 
 ### Manual Verification
-1. Login sebagai Admin.
-2. Login sebagai Penumpang di HP/Tab lain.
-3. Buat pesanan, lalu tekan tombol **🚨 PANIK / SOS**.
-4. Verifikasi:
-   - Dashboard Admin memunculkan overlay merah besar.
-   - Suara sirine berbunyi.
-   - Lokasi darurat muncul di peta admin.
-   - Admin bisa menekan tombol "Tangani" untuk mematikan alarm.
+1. Register as a new user.
+2. Complete OTP verification.
+3. **Expected:** Dashboard should load correctly (no white screen).
+4. Create an order.
+5. **Expected:** Tracking map should show up correctly with markers at the right positions.
+6. Verify that "Riwayat Order" shows data correctly.

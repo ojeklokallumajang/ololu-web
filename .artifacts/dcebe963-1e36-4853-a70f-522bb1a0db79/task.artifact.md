@@ -1,6 +1,6 @@
-- [x] Implementasi Real-time Listener untuk Darurat di `supabaseClient.ts`
-- [x] Implementasi State & Audio Alarm di `AdminView.tsx`
-- [x] Buat Overlay Panic Mode (Visual Alert)
-- [x] Implementasi Tab "🚨 Darurat" untuk managemen laporan
-- [x] Sinkronisasi ke GitHub
-- [x] Laporan akhir (Walkthrough)
+- [/] Implementasi Mapping Helpers (snake_case to camelCase) di `store.ts`
+- [ ] Update metode pendaftaran & login dengan mapping baru
+- [ ] Perbaikan penanganan koordinat di `PassengerView.tsx`
+- [ ] Perbaikan penanganan koordinat di `DriverView.tsx`
+- [ ] Sinkronisasi ke GitHub
+- [ ] Laporan akhir (Walkthrough)
