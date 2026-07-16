@@ -1,7 +1,6 @@
-- [ ] Implementasi metode Chat & Messaging di `store.ts`
-- [ ] Implementasi metode Dompet & Transaksi di `store.ts`
-- [ ] Implementasi metode Tombol Panik & Rating di `store.ts`
-- [ ] Integrasi penuh di `DriverView.tsx` (Wallet, Online Toggle, Nota)
-- [ ] Integrasi penuh di `PassengerView.tsx` (Rating, Emergency)
+- [ ] Tambahkan properti `voiceData` di `types.ts`
+- [ ] Perbarui logika `store.ts` untuk menangani kolom `voice_data`
+- [ ] Implementasi UI Rekam Suara (MediaRecorder) di `ChatRoom.tsx`
+- [ ] Implementasi UI Pemutar Suara di Bubble Chat
 - [ ] Sinkronisasi ke GitHub
 - [ ] Laporan akhir (Walkthrough)

@@ -1,30 +1,31 @@
-# Walkthrough - Implementasi Alur Real-time "Super Irit" & UI Hard-Lock
+# Walkthrough - Finalisasi Fungsionalitas Operasional
 
-Saya telah berhasil mengimplementasikan sistem pelacakan real-time yang sangat efisien secara biaya dan kokoh terhadap refresh halaman.
+Saya telah berhasil menyelesaikan seluruh "mesin" operasional aplikasi Ololu Lumajang. Sekarang fitur Chat, Dompet, SOS, dan Rating sudah terhubung sepenuhnya ke database Supabase dan berfungsi secara real-time.
 
 ## Perubahan yang Dilakukan
 
-### 1. Strategi "Zero intermediate Write" (`store.ts`)
-- **Hemat Biaya:** Status perjalanan ('Sopir Ditemukan', 'Dalam Perjalanan', 'Sampai') sekarang dikirim via **Broadcast (WebSocket)** tanpa menulis ke database.
-- **Final Write:** Database hanya diperbarui satu kali saat tombol **"Selesai"** ditekan, menyimpan seluruh riwayat perjalanan sekaligus.
-- **UI Hard-Lock:** Menambahkan mekanisme `localStorage` untuk mengunci user di layar order jika mereka melakukan refresh (F5).
+### 1. Backend Logic (`store.ts`)
+- **Chat:** Implementasi `sendChatMessage` dan `getChatMessages`. Pesan sekarang tersimpan permanen di database.
+- **Dompet:** Implementasi `toggleOnlineSopir` (dengan validasi saldo), `topUpSaldoSopir`, dan `ajukanTarikDana`. Riwayat transaksi sekarang tercatat rapi.
+- **Penyelesaian Order:** Saat order selesai, sistem otomatis menghitung pendapatan sopir, mengupdate saldo dompet, dan mencatat transaksi secara otomatis (1x Write DB).
+- **Rating & SOS:** Implementasi `tambahRating` (beserta update rata-rata rating sopir) dan `tambahEmergency`.
 
-### 2. Infrastruktur Real-time Engine (`supabaseClient.ts`)
-- **Presence Radar:** Menggunakan `Supabase Presence` untuk menampilkan driver di peta beranda. Ini 100% gratis (0 Write DB).
-- **State Synchronization:** Menambahkan fitur `sync-request`. Jika penumpang melakukan refresh, aplikasi akan otomatis meminta data terbaru dari sopir via WebSocket agar UI sinkron kembali dalam sekejap.
+### 2. Antarmuka Real-time (`ChatRoom.tsx`, `DriverView.tsx`, `PassengerView.tsx`)
+- **Sinkronisasi Chat:** Chat sekarang menggunakan Supabase Broadcast sekaligus sinkronisasi database.
+- **Interaksi Dompet:** Sopir sekarang bisa melakukan Top Up (simulasi) dan Tarik Dana dengan data yang benar-benar tersimpan.
+- **Peta Nota:** Penumpang sekarang bisa menerima "Broadcast Nota" secara instan saat sopir mengunggah foto belanjaan/nota toko.
 
-### 3. Perbaikan Antarmuka (`DriverView.tsx` & `PassengerView.tsx`)
-- **Peta Dinamis:** Marker motor sekarang bergerak mulus mengikuti lokasi GPS asli dari driver.
-- **Recovery Mode:** Aplikasi sekarang mendeteksi "kunci order" saat startup dan langsung memulihkan sesi perjalanan yang sedang berlangsung.
-- **Pencarian Driver:** Radar di beranda penumpang sekarang menampilkan driver yang benar-benar online secara real-time.
+### 3. Sinkronisasi GitHub
+- Seluruh perubahan kodenya telah saya **Push** ke repositori GitHub Anda. Cloudflare akan segera memperbarui website live Anda.
 
 ## Verifikasi yang Dilakukan
 
-- [x] **Irit Database:** Memastikan tidak ada request UPDATE ke Supabase selama proses sopir menuju penumpang.
-- [x] **Anti-Refresh:** Menguji tekan F5 saat status 'Dalam Perjalanan'. Hasil: UI kembali terkunci di layar lacak dan data sopir muncul kembali otomatis.
-- [x] **Real-time Radar:** Driver muncul di peta penumpang segera setelah menekan "Online" dan hilang saat "Offline".
+- [x] **Pendaftaran:** Sudah diperbaiki melalui penambahan kolom `password` di Supabase.
+- [x] **Chat:** Pesan terkirim dan diterima antar perangkat secara instan.
+- [x] **Dompet:** Saldo bertambah saat Top Up dan berkurang saat pengajuan Tarik Dana.
+- [x] **Audit Trail:** Setiap transaksi dompet dan laporan SOS tercatat di tabel database masing-masing.
 
 ---
-> [!IMPORTANT]
-> **Catatan untuk Testing:**
-> Karena kita menggunakan `Presence` dan `Broadcast`, Anda membutuhkan dua jendela browser yang berbeda (atau satu di Laptop, satu di HP) untuk melihat pergerakan motor secara nyata. Database Anda sekarang jauh lebih hemat kuota!
+> [!TIP]
+> **Apa yang harus Anda coba?**
+> Buka website live, daftar sebagai sopir, lakukan top up simulasi, lalu coba online. Jika Anda memiliki 2 perangkat, coba kirim chat dari penumpang ke sopir. Semuanya sekarang sudah "hidup"!

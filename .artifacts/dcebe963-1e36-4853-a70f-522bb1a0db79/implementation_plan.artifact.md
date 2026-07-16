@@ -1,41 +1,44 @@
-# Finalisasi Fungsionalitas Operasional (Chat, Dompet, & Darurat)
+# Implementasi Fitur Voice Chat (Pesan Suara)
 
-Rencana ini bertujuan untuk menyelesaikan seluruh metode yang "hilang" atau masih berupa placeholder di `OloluStore`, sehingga fitur Chat, Dompet, Tombol Panik, dan Rating bisa berfungsi 100% menggunakan Supabase.
+Fitur ini memungkinkan Penumpang dan Sopir untuk saling mengirimkan pesan suara (voice notes) di dalam ruang chat, memberikan kemudahan koordinasi tanpa perlu mengetik.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Update Database Diperlukan:** Saya akan memberikan script SQL tambahan untuk membuat tabel `chat_messages`, `wallet_transactions`, `emergency_reports`, dan `ratings` di Supabase. Anda wajib menjalankan script ini agar fitur berfungsi.
+> **Strategi Kehematan (Irit):**
+> - Pesan suara akan dikirimkan sebagai string **Base64** terkompresi.
+> - **Real-time:** Data suara akan dibroadcast secara instan via WebSocket (0 biaya storage/write saat dikirim).
+> - **Penyimpanan:** Data suara akan disimpan di database kolom `voice_data` untuk riwayat chat.
 
 ## Proposed Changes
 
 ### Database Schema (Supabase)
 
-#### [NEW] [operational_schema.sql](file:///W:/ololuv1/operational_schema.sql)
-- Tabel `chat_messages`: Untuk komunikasi real-time antara penumpang dan sopir.
-- Tabel `wallet_transactions`: Untuk mencatat riwayat saldo, top-up, dan withdraw.
-- Tabel `emergency_reports`: Untuk mencatat aktivasi Tombol Panik (SOS).
-- Tabel `ratings`: Untuk menyimpan penilaian performa sopir.
+#### [MODIFY] [fix_chat_schema.sql]
+```sql
+-- Tambahkan kolom voice_data untuk menyimpan rekaman suara (Base64)
+ALTER TABLE public.chat_messages ADD COLUMN IF NOT EXISTS voice_data TEXT;
+```
 
-### Logic Implementation
+### types.ts
+- Tambahkan properti `voiceData?: string` pada antarmuka `ChatMessage`.
 
-#### [MODIFY] [store.ts](file:///W:/ololuv1/src/services/store.ts)
-- Implementasikan metode `Chat`: `getChatMessages`, `sendChatMessage`.
-- Implementasikan metode `Dompet`: `toggleOnlineSopir`, `topUpSaldoSopir`, `ajukanTarikDana`.
-- Implementasikan metode `Operasional`: `simpanNotaToko`, `tambahRating`.
-- Implementasikan metode `Darurat`: `tambahEmergency`, `getAllEmergency`.
-- Tambahkan helper `getProfil` untuk kompatibilitas UI.
+### store.ts
+- Perbarui `sendChatMessage` untuk menerima opsional `voiceData`.
+- Perbarui `getChatMessages` untuk memetakan kolom `voice_data`.
 
-### UI Integration
-
-#### [MODIFY] [DriverView.tsx](file:///W:/ololuv1/src/components/DriverView.tsx) & [PassengerView.tsx](file:///W:/ololuv1/src/components/PassengerView.tsx)
-- Hubungkan state transaksi dan riwayat ke metode store yang baru dibuat.
-- Pastikan semua pemanggilan fungsi menangani sifat *asynchronous* (Promise) dengan benar.
+### ChatRoom.tsx
+- Tambahkan tombol **"Mikrofon"** di sebelah input teks.
+- Implementasikan logika perekaman suara menggunakan `MediaRecorder` API.
+- Tambahkan komponen pemutar audio (Audio Player) mini di dalam bubble chat jika pesan berisi data suara.
+- Visualisasi status sedang merekam (animasi pulse).
 
 ## Verification Plan
 
 ### Manual Verification
-1. **Chat:** Coba kirim pesan dari Sopir ke Penumpang (dan sebaliknya).
-2. **Dompet:** Coba "Top Up" saldo simulasi dan pastikan riwayat transaksi muncul.
-3. **Panik:** Tekan tombol SOS dan cek apakah laporan muncul di Dashboard Admin.
-4. **Rating:** Selesaikan order dan beri bintang, lalu cek apakah rata-rata rating sopir terupdate.
+1. Buka Chat Room.
+2. Tekan dan tahan (atau klik) tombol mikrofon untuk merekam.
+3. Lepaskan/Klik stop untuk mengirim.
+4. Pastikan bubble chat muncul dengan tombol "Play".
+5. Pastikan lawan bicara menerima suara tersebut secara instan dan bisa memutarnya.
+6. Refresh halaman, pastikan pesan suara masih ada di riwayat.

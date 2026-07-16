@@ -573,11 +573,12 @@ export const OloluStore = {
       senderName: d.sender_name,
       senderRole: d.sender_role as any,
       message: d.message,
+      voiceData: d.voice_data,
       timestamp: d.created_at
     }));
   },
 
-  async sendChatMessage(pesananId: string, senderId: string, senderName: string, senderRole: string, message: string) {
+  async sendChatMessage(pesananId: string, senderId: string, senderName: string, senderRole: string, message: string, voiceData?: string) {
     const supabase = getSupabase();
     if (!supabase) return;
 
@@ -586,7 +587,8 @@ export const OloluStore = {
       sender_id: senderId,
       sender_name: senderName,
       sender_role: senderRole,
-      message
+      message,
+      voice_data: voiceData
     }).select().single();
 
     if (!error && data) {
@@ -597,6 +599,7 @@ export const OloluStore = {
         senderName,
         senderRole,
         message,
+        voiceData,
         timestamp: data.created_at
       });
     }
