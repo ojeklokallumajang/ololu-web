@@ -177,6 +177,7 @@ export interface PengaturanTarif {
   ojekTarifMinimum: number;
   ojekPersenJasa: number;
   ojekBatasKmTarifDasar: number; // KM berlakunya tarif dasar (contoh: 3)
+  ojekBiayaPerStop: number;
 
   // Tarif Mobil (Ololu-Car)
   mobilTarifDasar: number;
@@ -184,6 +185,7 @@ export interface PengaturanTarif {
   mobilTarifMinimum: number;
   mobilPersenJasa: number;
   mobilBatasKmTarifDasar: number;
+  mobilBiayaPerStop: number;
 
   // Tarif Makanan & Belanja
   makananTarifDasar: number;
@@ -191,6 +193,7 @@ export interface PengaturanTarif {
   makananTarifMinimum: number;
   makananPersenJasa: number;
   makananBatasKmTarifDasar: number; // KM berlakunya tarif dasar (contoh: 3)
+  makananBiayaPerStop: number;
 
   // Tarif Paket Kilat
   paketTarifDasar: number;
@@ -198,6 +201,7 @@ export interface PengaturanTarif {
   paketTarifMinimum: number;
   paketPersenJasa: number;
   paketBatasKmTarifDasar: number; // KM berlakunya tarif dasar (contoh: 3)
+  paketBiayaPerStop: number;
 
   // Tarif Barang Besar
   barangBesarTarifDasar: number;
@@ -205,6 +209,7 @@ export interface PengaturanTarif {
   barangBesarTarifMinimum: number;
   barangBesarPersenJasa: number;
   barangBesarBatasKmTarifDasar: number; // KM berlakunya tarif dasar (contoh: 3)
+  barangBesarBiayaPerStop: number;
 
   // Aturan Parkir (Sistem Parkir Baru)
   biayaParkirBiasa: number;

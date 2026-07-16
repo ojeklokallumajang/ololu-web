@@ -488,6 +488,10 @@ export default function AdminView() {
                           <label className="text-[8px] font-bold text-gray-400 uppercase">Batas KM Dasar</label>
                           <input type="number" value={tempConfig.ojekBatasKmTarifDasar} onChange={(e)=>setTempConfig({...tempConfig, ojekBatasKmTarifDasar: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
                        </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Biaya Per Stop</label>
+                          <input type="number" value={tempConfig.ojekBiayaPerStop} onChange={(e)=>setTempConfig({...tempConfig, ojekBiayaPerStop: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
                     </div>
                     <div className="flex items-center justify-between bg-emerald-50 p-3 rounded-xl border border-emerald-100">
                        <span className="text-[9px] font-bold text-emerald-800 uppercase">Status Layanan Ride</span>
@@ -519,6 +523,10 @@ export default function AdminView() {
                           <label className="text-[8px] font-bold text-gray-400 uppercase">Batas KM Dasar</label>
                           <input type="number" value={tempConfig.mobilBatasKmTarifDasar} onChange={(e)=>setTempConfig({...tempConfig, mobilBatasKmTarifDasar: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
                        </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Biaya Per Stop</label>
+                          <input type="number" value={tempConfig.mobilBiayaPerStop} onChange={(e)=>setTempConfig({...tempConfig, mobilBiayaPerStop: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
                     </div>
                     {/* Reuse existing mobil active toggle if relevant */}
                  </div>
@@ -539,6 +547,10 @@ export default function AdminView() {
                           <label className="text-[8px] font-bold text-gray-400 uppercase">Per KM</label>
                           <input type="number" value={tempConfig.makananTarifPerKm} onChange={(e)=>setTempConfig({...tempConfig, makananTarifPerKm: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
                        </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Biaya Per Stop</label>
+                          <input type="number" value={tempConfig.makananBiayaPerStop} onChange={(e)=>setTempConfig({...tempConfig, makananBiayaPerStop: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
                     </div>
                  </div>
                )}
@@ -557,6 +569,33 @@ export default function AdminView() {
                        <div className="space-y-1">
                           <label className="text-[8px] font-bold text-gray-400 uppercase">Per KM</label>
                           <input type="number" value={tempConfig.paketTarifPerKm} onChange={(e)=>setTempConfig({...tempConfig, paketTarifPerKm: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Biaya Per Stop</label>
+                          <input type="number" value={tempConfig.paketBiayaPerStop} onChange={(e)=>setTempConfig({...tempConfig, paketBiayaPerStop: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                    </div>
+                 </div>
+               )}
+
+               {/* 🚚 LOGISTIK / BARANG BESAR */}
+               {activeTarifCat === 'big' && (
+                 <div className="space-y-4">
+                    <h3 className="text-[10px] font-black text-purple-700 uppercase tracking-widest border-b pb-2 flex items-center space-x-2">
+                       <Package size={14} /> <span>Pengaturan Logistik & Barang Besar</span>
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Tarif Dasar</label>
+                          <input type="number" value={tempConfig.barangBesarTarifDasar} onChange={(e)=>setTempConfig({...tempConfig, barangBesarTarifDasar: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Per KM</label>
+                          <input type="number" value={tempConfig.barangBesarTarifPerKm} onChange={(e)=>setTempConfig({...tempConfig, barangBesarTarifPerKm: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Biaya Per Stop</label>
+                          <input type="number" value={tempConfig.barangBesarBiayaPerStop} onChange={(e)=>setTempConfig({...tempConfig, barangBesarBiayaPerStop: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
                        </div>
                     </div>
                  </div>

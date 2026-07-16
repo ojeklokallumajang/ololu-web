@@ -244,17 +244,17 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
 
   const hitungHarga = () => {
     if (!config) return 0;
-    let d = 0, k = 0, m = 0, b = 3;
+    let d = 0, k = 0, m = 0, b = 3, s = config.biayaPerStopTambahan;
 
-    if (selectedLayanan === 'ojek') { d = config.ojekTarifDasar; k = config.ojekTarifPerKm; m = config.ojekTarifMinimum; b = config.ojekBatasKmTarifDasar; }
-    else if (selectedLayanan === 'mobil') { d = config.mobilTarifDasar; k = config.mobilTarifPerKm; m = config.mobilTarifMinimum; b = config.mobilBatasKmTarifDasar; }
-    else if (selectedLayanan === 'makanan') { d = config.makananTarifDasar; k = config.makananTarifPerKm; m = config.makananTarifMinimum; b = config.makananBatasKmTarifDasar; }
-    else if (selectedLayanan === 'paket') { d = config.paketTarifDasar; k = config.paketTarifPerKm; m = config.paketTarifMinimum; b = config.paketBatasKmTarifDasar; }
-    else { d = config.barangBesarTarifDasar; k = config.barangBesarTarifPerKm; m = config.barangBesarTarifMinimum; b = config.barangBesarBatasKmTarifDasar; }
+    if (selectedLayanan === 'ojek') { d = config.ojekTarifDasar; k = config.ojekTarifPerKm; m = config.ojekTarifMinimum; b = config.ojekBatasKmTarifDasar; s = config.ojekBiayaPerStop; }
+    else if (selectedLayanan === 'mobil') { d = config.mobilTarifDasar; k = config.mobilTarifPerKm; m = config.mobilTarifMinimum; b = config.mobilBatasKmTarifDasar; s = config.mobilBiayaPerStop; }
+    else if (selectedLayanan === 'makanan') { d = config.makananTarifDasar; k = config.makananTarifPerKm; m = config.makananTarifMinimum; b = config.makananBatasKmTarifDasar; s = config.makananBiayaPerStop; }
+    else if (selectedLayanan === 'paket') { d = config.paketTarifDasar; k = config.paketTarifPerKm; m = config.paketTarifMinimum; b = config.paketBatasKmTarifDasar; s = config.paketBiayaPerStop; }
+    else { d = config.barangBesarTarifDasar; k = config.barangBesarTarifPerKm; m = config.barangBesarTarifMinimum; b = config.barangBesarBatasKmTarifDasar; s = config.barangBesarBiayaPerStop; }
 
     const j = hitungTotalJarak();
     let h = d + (j > b ? (j - b) * k : 0);
-    return Math.max(h, m) + (stops.length > 1 ? (stops.length - 1) * config.biayaPerStopTambahan : 0);
+    return Math.max(h, m) + (stops.length > 1 ? (stops.length - 1) * s : 0);
   };
 
   const handlePesan = async () => {
