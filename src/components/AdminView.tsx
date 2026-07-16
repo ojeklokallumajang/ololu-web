@@ -71,7 +71,8 @@ import {
   Bike,
   Car,
   ShoppingBag,
-  Package
+  Package,
+  User
 } from 'lucide-react';
 import { ReusableTable, ColumnDef, FilterDef } from './ReusableTable';
 

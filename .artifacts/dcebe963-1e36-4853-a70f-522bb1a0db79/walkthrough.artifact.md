@@ -1,31 +1,35 @@
-# Walkthrough - Implementasi Biaya Per Stop Spesifik Layanan
+# Walkthrough - Implementasi Sistem Verifikasi & Tombol ACC Driver
 
-Saya telah berhasil menambahkan fitur pengaturan biaya mampir (Add Stop) yang unik untuk setiap kategori layanan. Sekarang Anda memiliki kontrol penuh atas berapa biaya tambahan jika penumpang mampir-mampir, disesuaikan dengan jenis kendaraannya.
+Saya telah menambahkan fitur verifikasi mitra di Dashboard Admin. Sekarang Anda dapat mereview data pendaftar baru dan menyetujui (ACC) atau menolak akun mereka dengan satu klik.
 
-## Perubahan yang Dilakukan
+## Fitur Baru di Dashboard Admin (Tab Rider)
 
-### 1. Panel Admin: Input Biaya Per Stop per Kategori
-- **Kustomisasi Penuh:** Sekarang di setiap tab (🏍️ Ojek, 🚗 Mobil, 🍔 Makan, 📦 Paket, 🚚 Logistik), Anda akan menemukan field baru bernama **"Biaya Per Stop"**.
-- **Logika Mandiri:** Anda bisa mengatur agar mampir pakai Mobil lebih mahal daripada mampir pakai Motor.
+### 1. Daftar Antrian Pendaftaran
+- Sekarang tab **Rider** dibagi menjadi dua bagian: **⏳ Menunggu Verifikasi** dan **✅ Mitra Aktif**.
+- Pendaftar baru yang sudah mengunggah berkas akan otomatis muncul di daftar antrian dengan label kuning.
 
-### 2. Logika Perhitungan Biaya yang Akurat
-- **Automatic Sync:** Fungsi `hitungHarga` di sisi penumpang sekarang secara cerdas mendeteksi layanan apa yang dipilih dan mengambil biaya mampir yang sesuai dari pengaturan Admin.
-- **Fair Pricing:** Penumpang akan mendapatkan estimasi harga yang lebih akurat sesuai dengan regulasi tarif terbaru yang Anda buat.
+### 2. Modal Review Berkas (Tombol ACC)
+- **Klik Nama Rider** di antrian untuk membuka modal detail.
+- Di dalam modal tersebut, Anda bisa melihat:
+  - Nama Lengkap & Nomor HP asli pendaftar.
+  - Foto **KTP, SIM, STNK**, dan **Kendaraan** yang mereka unggah.
+- Terdapat tombol besar berwarna hijau: **"ACC / SETUJUI MITRA"** untuk meloloskan mereka.
+- Terdapat tombol putih: **"TOLAK"** jika berkas tidak sesuai (lengkap dengan input alasan penolakan).
 
-### 3. Sinkronisasi Data
-- **Default Values:** Saya telah menyetel nilai awal (contoh: Motor Rp 3.000, Mobil Rp 5.000) agar sistem langsung siap pakai.
-- **GitHub Push:** Semua perubahan sudah aktif di repositori `main`.
+### 3. Sinkronisasi Nama Profil
+- Sebelumnya hanya muncul tulisan "RIDER BARU", sekarang sistem sudah saya perbaiki agar otomatis mengambil nama asli dari profil mereka di database.
 
 ## Verifikasi yang Dilakukan
 
-- [x] **Update Admin UI:** Memastikan field input tampil di semua 5 kategori tarif utama.
-- [x] **Update Logic:** Menguji perhitungan estimasi harga dengan 3 stop; biaya tambahan terhitung dengan benar sesuai kategori kendaraan.
-- [x] **Audit Log:** Memastikan setiap perubahan tarif dicatat di log sistem.
+- [x] **Database Join:** Berhasil menghubungkan tabel `driver_details` dengan `profiles`.
+- [x] **Tombol ACC:** Berhasil mengupdate kolom `disetujui_admin` di database saat diklik.
+- [x] **UI Modal:** Memastikan seluruh foto dokumen tampil dengan benar untuk direview Admin.
 
 ---
 > [!TIP]
-> **Silakan Coba Sekarang:**
-> 1. Masuk ke **Admin Panel** -> **Pengaturan**.
-> 2. Buka tab **Mobil**, set **Biaya Per Stop** ke angka yang tinggi (misal: 10000).
-> 3. Buka Dashboard **Penumpang**, pilih **Ojek** -> pilih ikon **Mobil**.
-> 4. Tambahkan tujuan (**+ Tambah Stop**). Lihat estimasi harganya naik sesuai angka yang Anda setel tadi!
+> **Cara Pakai:**
+> 1. Tunggu 1 menit agar Cloudflare update.
+> 2. Lakukan **Hard Refresh (Ctrl + F5)** di Dashboard Admin.
+> 3. Buka tab **Rider**.
+> 4. Klik rider yang ada di antrian **"Menunggu Verifikasi"**.
+> 5. Cek fotonya, lalu klik **"ACC / SETUJUI MITRA"**.
