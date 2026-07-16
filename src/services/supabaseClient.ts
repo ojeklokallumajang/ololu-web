@@ -75,6 +75,16 @@ class RealtimeService {
           .on('presence', { event: 'leave' }, ({ key, leftPresences }: any) => {
             this.triggerLocal('presence-leave', { key, leftPresences });
           })
+          .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'emergency_reports',
+          }, (payload: any) => {
+            console.log('[Supabase Realtime] NEW EMERGENCY REPORT:', payload);
+            if (payload.new) {
+              this.triggerLocal('new-emergency', payload.new);
+            }
+          })
           .subscribe((status: string) => {
             console.log(`[Supabase Realtime] Channel subscription status: ${status}`);
           });
@@ -242,6 +252,18 @@ class RealtimeService {
 
     return () => {
       events.forEach(e => this.listeners.get(e)?.delete(callback));
+    };
+  }
+
+  // --- EMERGENCY REPORTS ---
+  public subscribeToEmergencies(callback: RealtimeCallback): () => void {
+    if (!this.listeners.has('new-emergency')) {
+      this.listeners.set('new-emergency', new Set());
+    }
+    this.listeners.get('new-emergency')!.add(callback);
+
+    return () => {
+      this.listeners.get('new-emergency')?.delete(callback);
     };
   }
 

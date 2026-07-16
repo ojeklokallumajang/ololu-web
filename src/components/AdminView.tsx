@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { OloluStore, KOORDINAT_LUMAJANG, DEFAULT_PENGATURAN_TARIF } from '../services/store';
+import { ololuRealtime } from '../services/supabaseClient';
 import { GOOGLE_MAPS_KEY } from './SplashMapKey';
 import {
   Pesanan,
@@ -99,7 +100,10 @@ export default function AdminView() {
   const [tempConfig, setTempConfig] = useState<PengaturanTarif>(DEFAULT_PENGATURAN_TARIF);
 
   // EMERGENCIES AUDIO ALARM SYSTEM
-  const [hasNewEmergency, setHasNewEmergency] = useState(false);
+  const [showPanicOverlay, setShowPanicOverlay] = useState(false);
+  const [activeEmergency, setActiveEmergency] = useState<LaporanDarurat | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const sirenIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -111,13 +115,14 @@ export default function AdminView() {
     initAdmin();
 
     const syncData = async () => {
-      const [orders, sopir, users, settings, logs, admins] = await Promise.all([
+      const [orders, sopir, users, settings, logs, admins, emergencies] = await Promise.all([
         OloluStore.getAllPesanan(),
         OloluStore.getAllSopir(),
         OloluStore.getAllUsers(),
         OloluStore.getPengaturan(),
         OloluStore.getAllAuditLogs(),
-        OloluStore.getAllAdmins()
+        OloluStore.getAllAdmins(),
+        OloluStore.getAllEmergency()
       ]);
 
       setPesananList(orders);
@@ -127,13 +132,69 @@ export default function AdminView() {
       setTempConfig(settings);
       setAuditLogs(logs);
       setAdminList(admins);
+      setEmergencyList(emergencies);
       setLoading(false);
     };
 
     syncData();
-    const unsubscribe = OloluStore.subscribeToStore(syncData);
-    return () => unsubscribe();
+    const unsubscribeStore = OloluStore.subscribeToStore(syncData);
+
+    // REAL-TIME PANIC LISTENER
+    const unsubscribeEmergency = ololuRealtime.subscribeToEmergencies((newEmergency: LaporanDarurat) => {
+      console.log("🚨 REAL-TIME EMERGENCY RECEIVED:", newEmergency);
+      setActiveEmergency(newEmergency);
+      setShowPanicOverlay(true);
+      startSiren();
+    });
+
+    return () => {
+      unsubscribeStore();
+      unsubscribeEmergency();
+      stopSiren();
+    };
   }, []);
+
+  // --- AUDIO SIREN LOGIC ---
+  const startSiren = () => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+
+    const playTone = (freq: number, duration: number) => {
+      const ctx = audioContextRef.current!;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + duration);
+    };
+
+    if (sirenIntervalRef.current) clearInterval(sirenIntervalRef.current);
+
+    sirenIntervalRef.current = setInterval(() => {
+      playTone(800, 0.5);
+      setTimeout(() => playTone(600, 0.5), 500);
+    }, 1000);
+  };
+
+  const stopSiren = () => {
+    if (sirenIntervalRef.current) {
+      clearInterval(sirenIntervalRef.current);
+      sirenIntervalRef.current = null;
+    }
+  };
+
+  const handleHandleEmergency = async () => {
+    // In production, update status in DB
+    stopSiren();
+    setShowPanicOverlay(false);
+    setActiveTab('darurat');
+  };
 
   if (loading) {
     return (
@@ -221,6 +282,7 @@ export default function AdminView() {
           { id: 'sopir', label: '🛵 Rider' },
           { id: 'penumpang', label: '👤 User' },
           { id: 'pesanan', label: '📋 Order' },
+          { id: 'darurat', label: '🚨 Darurat' },
           { id: 'tarif', label: '⚙️ Pengaturan' },
           { id: 'admins', label: '🔑 Tim' },
           { id: 'logs', label: '📜 Log' }
@@ -312,6 +374,58 @@ export default function AdminView() {
                   </div>
                 </div>
              ))}
+           </div>
+        )}
+
+        {activeTab === 'darurat' && (
+           <div className="space-y-4">
+             <h3 className="text-xs font-black text-red-600 uppercase">Laporan Darurat (SOS)</h3>
+             {emergencyList.length === 0 ? (
+               <div className="p-8 text-center text-gray-400 text-[10px] italic bg-white rounded-2xl border border-dashed">
+                 Belum ada laporan darurat masuk.
+               </div>
+             ) : (
+               emergencyList.map(e => (
+                 <div key={e.id} className={`bg-white p-4 rounded-2xl border-2 flex flex-col space-y-3 shadow-md ${e.status === 'baru' ? 'border-red-500 animate-pulse' : 'border-gray-100'}`}>
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center space-x-2">
+                         <div className={`p-2 rounded-full ${e.peranPelapor === 'sopir' ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600'}`}>
+                            {e.peranPelapor === 'sopir' ? '🛵' : '👤'}
+                         </div>
+                         <div>
+                            <p className="text-xs font-black text-gray-800 uppercase">{e.namaPelapor}</p>
+                            <p className="text-[10px] text-gray-500">{e.nomorHpPelapor}</p>
+                         </div>
+                      </div>
+                      <span className={`text-[8px] font-black px-2 py-1 rounded-full ${e.status === 'baru' ? 'bg-red-600 text-white' : 'bg-emerald-100 text-emerald-600'}`}>
+                        {e.status === 'baru' ? 'BUTUH BANTUAN' : 'DITANGANI'}
+                      </span>
+                    </div>
+
+                    <div className="h-32 w-full rounded-xl overflow-hidden border bg-gray-50 relative">
+                       <APIProvider apiKey={GOOGLE_MAPS_KEY}>
+                          <Map
+                            defaultCenter={{ lat: parseFloat(e.lat as any), lng: parseFloat(e.lng as any) }}
+                            defaultZoom={15}
+                            disableDefaultUI={true}
+                          >
+                             <AdvancedMarker position={{ lat: parseFloat(e.lat as any), lng: parseFloat(e.lng as any) }}>
+                                <div className="text-2xl animate-bounce">🆘</div>
+                             </AdvancedMarker>
+                          </Map>
+                       </APIProvider>
+                       <div className="absolute top-2 left-2 bg-black/70 text-white text-[8px] px-1.5 py-0.5 rounded font-mono">
+                         {e.lat}, {e.lng}
+                       </div>
+                    </div>
+
+                    <div className="flex space-x-2 pt-2 border-t border-dashed">
+                       <a href={`tel:${e.nomorHpPelapor}`} className="flex-1 py-2 bg-emerald-600 text-white text-center rounded-xl text-[10px] font-black uppercase">Hubungi Sekarang</a>
+                       <button className="flex-1 py-2 bg-gray-800 text-white text-center rounded-xl text-[10px] font-black uppercase">Tandai Selesai</button>
+                    </div>
+                 </div>
+               ))
+             )}
            </div>
         )}
 
@@ -426,6 +540,38 @@ export default function AdminView() {
            </div>
         )}
       </div>
+
+      {/* PANIC MODE OVERLAY (SANGAT MENCOLOK) */}
+      {showPanicOverlay && activeEmergency && (
+        <div className="fixed inset-0 z-[1000] bg-red-600/90 backdrop-blur-md flex items-center justify-center p-6 animate-pulse">
+           <div className="bg-white w-full max-w-sm rounded-[40px] shadow-2xl overflow-hidden text-center p-8 space-y-6">
+              <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mx-auto border-4 border-red-100">
+                 <AlertTriangle size={64} className="text-red-600 animate-bounce" />
+              </div>
+
+              <div className="space-y-1">
+                 <h2 className="text-2xl font-black text-red-600 uppercase tracking-tighter">KEADAAN DARURAT!</h2>
+                 <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Tombol Panik Diaktifkan Oleh:</p>
+              </div>
+
+              <div className="bg-gray-50 p-5 rounded-3xl border space-y-1">
+                 <p className="text-xl font-black text-gray-800">{activeEmergency.namaPelapor}</p>
+                 <p className="text-sm font-bold text-red-600">{activeEmergency.peranPelapor === 'sopir' ? '🛵 MITRA DRIVER' : '👤 PENUMPANG'}</p>
+                 <p className="text-xs font-mono text-gray-400">{activeEmergency.nomorHpPelapor}</p>
+              </div>
+
+              <div className="space-y-3">
+                 <button
+                   onClick={handleHandleEmergency}
+                   className="w-full py-5 bg-red-600 text-white font-black rounded-2xl text-xs tracking-widest uppercase shadow-lg active:scale-95 transition-transform"
+                 >
+                   SAYA TANGANI SEKARANG
+                 </button>
+                 <p className="text-[10px] text-gray-400 italic">Sirine akan berhenti setelah tombol di atas ditekan.</p>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 }

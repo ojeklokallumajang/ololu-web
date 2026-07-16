@@ -1,44 +1,37 @@
-# Implementasi Fitur Voice Chat (Pesan Suara)
+# Implementasi Sistem Alarm Darurat (Panic Room)
 
-Fitur ini memungkinkan Penumpang dan Sopir untuk saling mengirimkan pesan suara (voice notes) di dalam ruang chat, memberikan kemudahan koordinasi tanpa perlu mengetik.
+Fitur ini bertujuan untuk memberikan peringatan visual dan audio yang sangat mencolok di Dashboard Admin ketika ada laporan darurat (SOS) dari lapangan.
 
 ## User Review Required
 
-> [!IMPORTANT]
-> **Strategi Kehematan (Irit):**
-> - Pesan suara akan dikirimkan sebagai string **Base64** terkompresi.
-> - **Real-time:** Data suara akan dibroadcast secara instan via WebSocket (0 biaya storage/write saat dikirim).
-> - **Penyimpanan:** Data suara akan disimpan di database kolom `voice_data` untuk riwayat chat.
+> [!WARNING]
+> **Audio Alarm:** Sistem akan mencoba memutar suara sirine secara otomatis. Sebagian besar browser (Chrome/Safari) memblokir audio otomatis kecuali jika admin sudah pernah melakukan interaksi (klik) pada halaman dashboard sebelumnya.
 
 ## Proposed Changes
 
-### Database Schema (Supabase)
+### Database & Realtime
 
-#### [MODIFY] [fix_chat_schema.sql]
-```sql
--- Tambahkan kolom voice_data untuk menyimpan rekaman suara (Base64)
-ALTER TABLE public.chat_messages ADD COLUMN IF NOT EXISTS voice_data TEXT;
-```
+#### [MODIFY] [supabaseClient.ts](file:///W:/ololuv1/src/services/supabaseClient.ts)
+- Tambahkan listener realtime khusus untuk tabel `emergency_reports`.
+- Picu event `new-emergency` ke seluruh komponen yang berlangganan.
 
-### types.ts
-- Tambahkan properti `voiceData?: string` pada antarmuka `ChatMessage`.
+### Admin Dashboard Interface
 
-### store.ts
-- Perbarui `sendChatMessage` untuk menerima opsional `voiceData`.
-- Perbarui `getChatMessages` untuk memetakan kolom `voice_data`.
-
-### ChatRoom.tsx
-- Tambahkan tombol **"Mikrofon"** di sebelah input teks.
-- Implementasikan logika perekaman suara menggunakan `MediaRecorder` API.
-- Tambahkan komponen pemutar audio (Audio Player) mini di dalam bubble chat jika pesan berisi data suara.
-- Visualisasi status sedang merekam (animasi pulse).
+#### [MODIFY] [AdminView.tsx](file:///W:/ololuv1/src/components/AdminView.tsx)
+- Tambahkan state `showPanicOverlay` dan `activeEmergency`.
+- Implementasikan `useEffect` untuk mendeteksi laporan baru secara realtime.
+- **Audio Logic:** Gunakan `AudioContext` untuk memutar suara sirine berulang saat ada laporan masuk.
+- **Visual Logic:** Tambahkan overlay merah berkedip (Fullscreen) yang menampilkan detail pelapor, lokasi, dan tombol "Tangani Sekarang".
+- **Tab Darurat:** Implementasikan UI detail di `activeTab === 'darurat'` untuk memantau seluruh riwayat SOS.
 
 ## Verification Plan
 
 ### Manual Verification
-1. Buka Chat Room.
-2. Tekan dan tahan (atau klik) tombol mikrofon untuk merekam.
-3. Lepaskan/Klik stop untuk mengirim.
-4. Pastikan bubble chat muncul dengan tombol "Play".
-5. Pastikan lawan bicara menerima suara tersebut secara instan dan bisa memutarnya.
-6. Refresh halaman, pastikan pesan suara masih ada di riwayat.
+1. Login sebagai Admin.
+2. Login sebagai Penumpang di HP/Tab lain.
+3. Buat pesanan, lalu tekan tombol **🚨 PANIK / SOS**.
+4. Verifikasi:
+   - Dashboard Admin memunculkan overlay merah besar.
+   - Suara sirine berbunyi.
+   - Lokasi darurat muncul di peta admin.
+   - Admin bisa menekan tombol "Tangani" untuk mematikan alarm.

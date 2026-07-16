@@ -1,31 +1,29 @@
-# Walkthrough - Finalisasi Fungsionalitas Operasional
+# Walkthrough - Implementasi Fitur Voice Chat (Pesan Suara)
 
-Saya telah berhasil menyelesaikan seluruh "mesin" operasional aplikasi Ololu Lumajang. Sekarang fitur Chat, Dompet, SOS, dan Rating sudah terhubung sepenuhnya ke database Supabase dan berfungsi secara real-time.
+Saya telah berhasil menambahkan fitur Voice Chat ke dalam ruang percakapan Ololu Lumajang. Sekarang, sopir dan penumpang dapat berkomunikasi lebih cepat melalui rekaman suara.
 
 ## Perubahan yang Dilakukan
 
-### 1. Backend Logic (`store.ts`)
-- **Chat:** Implementasi `sendChatMessage` dan `getChatMessages`. Pesan sekarang tersimpan permanen di database.
-- **Dompet:** Implementasi `toggleOnlineSopir` (dengan validasi saldo), `topUpSaldoSopir`, dan `ajukanTarikDana`. Riwayat transaksi sekarang tercatat rapi.
-- **Penyelesaian Order:** Saat order selesai, sistem otomatis menghitung pendapatan sopir, mengupdate saldo dompet, dan mencatat transaksi secara otomatis (1x Write DB).
-- **Rating & SOS:** Implementasi `tambahRating` (beserta update rata-rata rating sopir) dan `tambahEmergency`.
+### 1. Struktur Data (`types.ts` & `store.ts`)
+- **Model Baru:** Menambahkan field `voiceData` (string Base64) ke dalam antarmuka `ChatMessage`.
+- **Logika Database:** Memperbarui fungsi `sendChatMessage` dan `getChatMessages` untuk menyimpan dan mengambil data suara dari kolom `voice_data` di Supabase.
 
-### 2. Antarmuka Real-time (`ChatRoom.tsx`, `DriverView.tsx`, `PassengerView.tsx`)
-- **Sinkronisasi Chat:** Chat sekarang menggunakan Supabase Broadcast sekaligus sinkronisasi database.
-- **Interaksi Dompet:** Sopir sekarang bisa melakukan Top Up (simulasi) dan Tarik Dana dengan data yang benar-benar tersimpan.
-- **Peta Nota:** Penumpang sekarang bisa menerima "Broadcast Nota" secara instan saat sopir mengunggah foto belanjaan/nota toko.
+### 2. Antarmuka Chat (`ChatRoom.tsx`)
+- **Tombol Mikrofon:** Menambahkan tombol rekam di sebelah input teks.
+- **Logika Rekam:** Menggunakan `MediaRecorder` API untuk menangkap suara pengguna secara langsung dari browser/HP.
+- **Visualisasi:** Menambahkan indikator waktu rekam (timer) dan animasi pulse saat sedang merekam.
+- **Audio Player:** Pesan suara muncul sebagai bubble khusus dengan tombol **"Play"** yang bisa diputar seketika.
 
-### 3. Sinkronisasi GitHub
-- Seluruh perubahan kodenya telah saya **Push** ke repositori GitHub Anda. Cloudflare akan segera memperbarui website live Anda.
+### 3. Efisiensi Real-time
+- Pesan suara dibroadcast secara instan via WebSocket, sehingga lawan bicara bisa langsung mendengar suara tanpa perlu refresh halaman.
 
 ## Verifikasi yang Dilakukan
 
-- [x] **Pendaftaran:** Sudah diperbaiki melalui penambahan kolom `password` di Supabase.
-- [x] **Chat:** Pesan terkirim dan diterima antar perangkat secara instan.
-- [x] **Dompet:** Saldo bertambah saat Top Up dan berkurang saat pengajuan Tarik Dana.
-- [x] **Audit Trail:** Setiap transaksi dompet dan laporan SOS tercatat di tabel database masing-masing.
+- [x] **Izin Mikrofon:** Sistem meminta izin akses mikrofon saat pertama kali merekam.
+- [x] **Penyimpanan:** Pesan suara tersimpan di database dan muncul kembali saat chat dibuka ulang.
+- [x] **Kompatibilitas:** Data suara dikompresi agar hemat bandwidth saat pengiriman.
 
 ---
 > [!TIP]
-> **Apa yang harus Anda coba?**
-> Buka website live, daftar sebagai sopir, lakukan top up simulasi, lalu coba online. Jika Anda memiliki 2 perangkat, coba kirim chat dari penumpang ke sopir. Semuanya sekarang sudah "hidup"!
+> **Cara Menggunakan:**
+> Buka Chat Room, klik ikon **Mikrofon** 🎙️ untuk mulai merekam, dan klik tombol **Stop** 🟥 untuk langsung mengirim. Lawan bicara Anda akan melihat tombol Play di bubble chat mereka!
