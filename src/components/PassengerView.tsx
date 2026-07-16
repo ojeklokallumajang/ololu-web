@@ -907,7 +907,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     return Math.round(tarifJarak + tambahanTujuan + tambahanItem);
   };
 
-  const handlePesan = () => {
+  const handlePesan = async () => {
     if (!profile) return;
     const jarak = hitungTotalJarak();
     
@@ -940,20 +940,22 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       }))
     }));
 
-    const order = OloluStore.buatPesanan(
-      selectedLayanan,
-      profile.id,
-      profile.nama,
-      profile.nomorHp,
-      customAsalAlamat,
-      asalLat,
-      asalLng,
-      stopsDb,
-      jarak,
-      pembayaranTunai
+    const order = await OloluStore.buatPesanan(
+      {
+        jenisLayanan: selectedLayanan,
+        idPenumpang: profile.id,
+        asalAlamat: customAsalAlamat,
+        asalLat,
+        asalLng,
+        jarakKm: jarak,
+        totalBayarAkhir: estimasiHarga + (subLayanan === 'wisata' ? (durasiWisata === '6_jam' ? 150000 : 250000) : 0),
+        pembayaranTunai,
+        tarifPerjalananMurni: estimasiHarga
+      },
+      stopsDb as any
     );
 
-    setActiveOrder(order);
+    if (order) setActiveOrder(order);
   };
 
   // TOMBOL PANIK / DARURAT PENUMPANG
@@ -961,8 +963,8 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     if (!activeOrder) return;
     // Deteksi lokasi koordinat browser
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const rep = OloluStore.tambahEmergency(
+      async (pos) => {
+        await OloluStore.tambahEmergency(
           activeOrder.id,
           profile?.nama || 'Penumpang Ololu',
           profile?.nomorHp || '0',
@@ -973,8 +975,8 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
         onNotifyAdminPanic();
         alert(`🚨 TOMBOL PANIK DIAKTIFKAN!\nLokasi GPS Anda berhasil dilaporkan ke Admin Ololu. Bantuan darurat sedang dihubungi sekarang.`);
       },
-      () => {
-        const rep = OloluStore.tambahEmergency(
+      async () => {
+        await OloluStore.tambahEmergency(
           activeOrder.id,
           profile?.nama || 'Penumpang Ololu',
           profile?.nomorHp || '0',
@@ -989,10 +991,10 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   };
 
   // SUBMIT RATING SETELAH PESANAN SELESAI
-  const handleRatingSubmit = (e: React.FormEvent) => {
+  const handleRatingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeOrder || !activeOrder.idSopir) return;
-    OloluStore.tambahRating(
+    await OloluStore.tambahRating(
       activeOrder.id,
       activeOrder.idSopir,
       profile?.nama || 'Penumpang Ololu',

@@ -14,32 +14,34 @@ interface ChatRoomProps {
 
 export default function ChatRoom({ pesananId, senderId, senderName, senderRole, onClose }: ChatRoomProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [pesanan, setPesanan] = useState<Pesanan | null>(null);
   const [inputText, setInputText] = useState('');
   const messageEndRef = useRef<HTMLDivElement>(null);
 
   // Get other party's info
-  const pesanan = OloluStore.getPesanan(pesananId);
   const targetName = senderRole === 'penumpang' ? (pesanan?.namaSopir || 'Sopir Ololu') : (pesanan?.namaPenumpang || 'Penumpang');
   const targetPhone = senderRole === 'penumpang' ? pesanan?.nomorHpSopir : pesanan?.nomorHpPenumpang;
 
   useEffect(() => {
-    // Load messages initially
-    const loadMsgs = () => {
-      const msgs = OloluStore.getChatMessages(pesananId);
+    // Load messages and order details
+    const initChat = async () => {
+      const order = await OloluStore.getPesananById(pesananId);
+      setPesanan(order);
+      const msgs = await OloluStore.getChatMessages(pesananId);
       setMessages(msgs);
     };
 
-    loadMsgs();
+    initChat();
 
     // Subscribe to Supabase realtime websocket channel for chat messages
     const unsubscribeRealtime = ololuRealtime.subscribeToChat(pesananId, (newMsg: ChatMessage) => {
       console.log('⚡ [Realtime Chat] New chat message received via Supabase subscription:', newMsg);
-      OloluStore.addIncomingChatMessage(newMsg);
+      setMessages(prev => [...prev.filter(m => m.id !== newMsg.id), newMsg]);
     });
 
     // Subscribe to store updates for real-time chat UI updates
     const unsubscribeStore = OloluStore.subscribeToStore(() => {
-      loadMsgs();
+      initChat();
     });
 
     return () => {
@@ -53,11 +55,11 @@ export default function ChatRoom({ pesananId, senderId, senderName, senderRole, 
     messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim()) return;
 
-    OloluStore.sendChatMessage(pesananId, senderId, senderName, senderRole, inputText.trim());
+    await OloluStore.sendChatMessage(pesananId, senderId, senderName, senderRole, inputText.trim());
     setInputText('');
 
     // Play visual/audio pop

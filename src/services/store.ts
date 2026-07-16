@@ -353,13 +353,35 @@ export const OloluStore = {
     if (!supabase) return;
 
     // SATU-SATUNYA PENULISAN DATABASE DI AKHIR PERJALANAN (IRIT)
-    await supabase.from('orders').update({
+    const { error } = await supabase.from('orders').update({
       status: 'selesai',
       id_sopir: finalData.idSopir,
       biaya_parkir_total: finalData.biayaParkirTotal || 0,
       total_bayar_akhir: finalData.totalBayarAkhir,
       waktu_selesai: new Date().toISOString()
     }).eq('id', orderId);
+
+    if (!error && finalData.idSopir) {
+      // Update saldo sopir (simulasi pendapatan)
+      const { data: driver } = await supabase.from('driver_details').select('saldo_dompet').eq('id', finalData.idSopir).single();
+      if (driver) {
+        const pendapatan = finalData.totalBayarAkhir || 0;
+        const saldoBaru = (driver.saldo_dompet || 0) + pendapatan;
+
+        await supabase.from('driver_details').update({
+          saldo_dompet: saldoBaru
+        }).eq('id', finalData.idSopir);
+
+        await supabase.from('wallet_transactions').insert({
+          id_sopir: finalData.idSopir,
+          jenis: 'pendapatan',
+          jumlah: pendapatan,
+          saldo_awal: driver.saldo_dompet,
+          saldo_akhir: saldoBaru,
+          deskripsi: `Pendapatan order #${finalData.nomorPesanan}`
+        });
+      }
+    }
 
     // Hapus pengunci UI
     this.removeLocalOrderLock();
@@ -385,6 +407,23 @@ export const OloluStore = {
 
     if (error || !data) return null;
     return data as any;
+  },
+
+  async getProfil(id: string): Promise<ProfilPengguna | null> {
+    const supabase = getSupabase();
+    if (!supabase) return null;
+    const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
+    if (!data) return null;
+    return {
+      id: data.id,
+      nama: data.nama,
+      nomorHp: data.nomor_hp,
+      peran: data.peran,
+      terverifikasi: data.terverifikasi,
+      tanggalDaftar: data.created_at,
+      fotoProfil: data.foto_profil,
+      isSubAdmin: data.is_sub_admin
+    };
   },
 
   async getAllPesanan(): Promise<Pesanan[]> {
@@ -515,6 +554,119 @@ export const OloluStore = {
       id: d.id, adminId: d.admin_id, adminNama: d.admin_nama,
       aksi: d.aksi, detail: d.detail, timestamp: d.timestamp
     }));
+  },
+
+  // --- MESSAGING ---
+  async getChatMessages(pesananId: string): Promise<ChatMessage[]> {
+    const supabase = getSupabase();
+    if (!supabase) return [];
+    const { data } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .eq('id_pesanan', pesananId)
+      .order('created_at', { ascending: true });
+
+    return (data || []).map(d => ({
+      id: d.id,
+      idPesanan: d.id_pesanan,
+      senderId: d.sender_id,
+      senderName: d.sender_name,
+      senderRole: d.sender_role as any,
+      message: d.message,
+      timestamp: d.created_at
+    }));
+  },
+
+  async sendChatMessage(pesananId: string, senderId: string, senderName: string, senderRole: string, message: string) {
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    const { data, error } = await supabase.from('chat_messages').insert({
+      id_pesanan: pesananId,
+      sender_id: senderId,
+      sender_name: senderName,
+      sender_role: senderRole,
+      message
+    }).select().single();
+
+    if (!error && data) {
+      ololuRealtime.broadcastChatMessage(pesananId, {
+        id: data.id,
+        idPesanan: pesananId,
+        senderId,
+        senderName,
+        senderRole,
+        message,
+        timestamp: data.created_at
+      });
+    }
+  },
+
+  // --- EMERGENCY & RATING ---
+  async tambahEmergency(orderId: string, nama: string, hp: string, peran: string, lat: number, lng: number) {
+    const supabase = getSupabase();
+    if (!supabase) return;
+    await supabase.from('emergency_reports').insert({
+      id_pesanan: orderId,
+      nama_pelapor: nama,
+      nomor_hp_pelapor: hp,
+      peran_pelapor: peran,
+      lat,
+      lng
+    });
+  },
+
+  async getAllEmergency(): Promise<LaporanDarurat[]> {
+    const supabase = getSupabase();
+    if (!supabase) return [];
+    const { data } = await supabase.from('emergency_reports').select('*').order('created_at', { ascending: false });
+    return (data || []).map(d => ({
+      id: d.id,
+      idPesanan: d.id_pesanan,
+      namaPelapor: d.nama_pelapor,
+      nomorHpPelapor: d.nomor_hp_pelapor,
+      peranPelapor: d.peran_pelapor as any,
+      lat: d.lat,
+      lng: d.lng,
+      status: d.status as any,
+      timestamp: d.created_at
+    }));
+  },
+
+  async tambahRating(orderId: string, sopirId: string, nama: string, bintang: number, ulasan: string) {
+    const supabase = getSupabase();
+    if (!supabase) return;
+    await supabase.from('ratings').insert({
+      id_pesanan: orderId,
+      id_sopir: sopirId,
+      nama_penumpang: nama,
+      bintang,
+      ulasan
+    });
+
+    // Update rata-rata rating sopir
+    const { data: ratings } = await supabase.from('ratings').select('bintang').eq('id_sopir', sopirId);
+    if (ratings && ratings.length > 0) {
+      const avg = ratings.reduce((acc, cur) => acc + cur.bintang, 0) / ratings.length;
+      await supabase.from('driver_details').update({ rating_rata_rata: avg }).eq('id', sopirId);
+    }
+  },
+
+  async simpanNotaToko(orderId: string, stopId: string, toko: string, barang: string, total: number, foto: string) {
+    // Note: order_stops doesn't have a column for nota yet in standard schema,
+    // we use broadcast for realtime and could add a 'nota' column to order_stops if needed.
+    // For now, let's just broadcast it to the passenger.
+    ololuRealtime.broadcastTripUpdate(orderId, {
+      type: 'nota_update',
+      stopId,
+      nota: {
+        namaToko: toko,
+        rincianBarang: barang,
+        totalToko: total,
+        fotoNota: foto,
+        waktuDicatat: new Date().toISOString()
+      }
+    });
   },
 
   // --- LOCAL ORDER LOCKING (UI HARD-LOCK) ---

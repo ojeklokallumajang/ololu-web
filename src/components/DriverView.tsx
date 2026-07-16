@@ -109,8 +109,8 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
           if (order) setActiveOrder(order);
         }
 
-        // Note: Missing some methods in store refactor, using empty fallback for safety
-        // setTransactions(await OloluStore.getTransaksiSopir(p.id));
+        const txs = await OloluStore.getTransaksiSopir(p.id);
+        setTransactions(txs);
       }
     };
 
@@ -336,25 +336,25 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
   };
 
   // --- ONLINE / OFFLINE TOGGLE ENGINE ---
-  const handleToggleOnline = () => {
+  const handleToggleOnline = async () => {
     if (!driverDetail) return;
-    const res = OloluStore.toggleOnlineSopir(driverDetail.id);
+    const res = await OloluStore.toggleOnlineSopir(driverDetail.id);
     if (!res.success) {
       alert(`❌ GAGAL ONLINE:\n${res.error}`);
     }
   };
 
   // --- WALLET ACTIONS (SIMULATED) ---
-  const handleTopUp = (e: React.FormEvent) => {
+  const handleTopUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!driverDetail) return;
-    OloluStore.topUpSaldoSopir(driverDetail.id, topUpAmount, 'Simulasi Transfer Bank');
+    await OloluStore.topUpSaldoSopir(driverDetail.id, topUpAmount, 'Top Up Saldo (Simulasi)');
     setWalletSuccess(`🎉 Top Up Saldo Rp ${topUpAmount.toLocaleString('id-ID')} Berhasil!`);
     setWalletError('');
     setTimeout(() => setWalletSuccess(''), 4000);
   };
 
-  const handleWithdraw = (e: React.FormEvent) => {
+  const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     setWalletError('');
     setWalletSuccess('');
@@ -364,7 +364,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
       setWalletError('Masukkan nominal tarik dana yang valid!');
       return;
     }
-    const res = OloluStore.ajukanTarikDana(driverDetail.id, amt);
+    const res = await OloluStore.ajukanTarikDana(driverDetail.id, amt);
     if (res.success) {
       setWalletSuccess(`🎉 Pengajuan penarikan dana Rp ${amt.toLocaleString('id-ID')} terkirim! Menunggu approval Admin.`);
       setWithdrawAmount('');
