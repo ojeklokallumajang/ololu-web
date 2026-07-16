@@ -21,6 +21,7 @@ export default function App() {
   const [loginStep, setLoginStep] = useState<'peran' | 'form' | 'otp' | 'reset'>('peran');
   const [selectedRole, setSelectedRole] = useState<PeranPengguna>('penumpang');
   const [initializing, setInitializing] = useState(true);
+  const [lockedOrder, setLockedOrder] = useState<{ orderId: string; role: PeranPengguna } | null>(null);
 
   // Registration States
   const [profilePic, setProfilePic] = useState<string | null>(null);
@@ -59,6 +60,13 @@ export default function App() {
         setSesi(s);
         setRole(s.role);
         setShowLogin(false);
+
+        // Cek UI Hard-Lock (Refresh Recovery)
+        const lock = OloluStore.getLocalOrderLock();
+        if (lock) {
+          setLockedOrder(lock);
+          setRole(lock.role);
+        }
       }
       setInitializing(false);
     }
@@ -411,8 +419,21 @@ export default function App() {
                   <span>PT Ololu Lumajang</span>
                 </div>
                 <div className="flex-1 overflow-y-auto pb-14 relative scrollbar-none">
-                  {role === 'penumpang' && <PassengerView onNotifyAdminPanic={handleNotifyPanic} onLogout={handleLogout} onRoleChange={(r) => setRole(r)} />}
-                  {role === 'sopir' && <DriverView onNotifyAdminPanic={handleNotifyPanic} onLogout={handleLogout} />}
+                  {role === 'penumpang' && (
+                    <PassengerView
+                      onNotifyAdminPanic={handleNotifyPanic}
+                      onLogout={handleLogout}
+                      onRoleChange={(r) => setRole(r)}
+                      lockedOrderId={lockedOrder?.role === 'penumpang' ? lockedOrder.orderId : undefined}
+                    />
+                  )}
+                  {role === 'sopir' && (
+                    <DriverView
+                      onNotifyAdminPanic={handleNotifyPanic}
+                      onLogout={handleLogout}
+                      lockedOrderId={lockedOrder?.role === 'sopir' ? lockedOrder.orderId : undefined}
+                    />
+                  )}
                 </div>
               </>
             )}

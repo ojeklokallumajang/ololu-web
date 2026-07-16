@@ -111,19 +111,22 @@ export default function AdminView() {
     initAdmin();
 
     const syncData = async () => {
-      const [orders, sopir, profiles, settings, logs] = await Promise.all([
+      const [orders, sopir, users, settings, logs, admins] = await Promise.all([
         OloluStore.getAllPesanan(),
         OloluStore.getAllSopir(),
-        // Note: Missing some methods in store refactor, using empty fallback for safety
-        Promise.resolve([]),
+        OloluStore.getAllUsers(),
         OloluStore.getPengaturan(),
-        Promise.resolve([])
+        OloluStore.getAllAuditLogs(),
+        OloluStore.getAllAdmins()
       ]);
 
       setPesananList(orders);
       setSopirList(sopir);
+      setProfilList(users);
       setConfig(settings);
       setTempConfig(settings);
+      setAuditLogs(logs);
+      setAdminList(admins);
       setLoading(false);
     };
 
@@ -170,6 +173,32 @@ export default function AdminView() {
     alert("Pengaturan berhasil disimpan.");
   };
 
+  const handleAddAdmin = async () => {
+    if (!newAdminPhone || !newAdminName) {
+      alert("Lengkapi nama dan nomor WhatsApp.");
+      return;
+    }
+    const res = await OloluStore.promoteToAdmin(newAdminPhone, newAdminName);
+    if (res.success) {
+      alert("Admin berhasil ditambahkan.");
+      setNewAdminPhone('');
+      setNewAdminName('');
+    } else {
+      alert(res.error || "Gagal menambah admin.");
+    }
+  };
+
+  const handleRemoveAdmin = async (id: string) => {
+    if (confirm("Cabut hak akses admin untuk pengguna ini?")) {
+      const res = await OloluStore.removeAdminStatus(id);
+      if (res.success) {
+        alert("Akses admin dicabut.");
+      } else {
+        alert(res.error || "Gagal mencabut akses.");
+      }
+    }
+  };
+
   const driverColumns = [
     { id: 'nama', header: 'Sopir', accessor: (s: any) => <div className="text-left font-bold">{s.platNomor || 'Rider'}</div> },
     { id: 'motor', header: 'Motor', accessor: (s: any) => <div className="text-left text-[10px]">{s.jenisMotor}</div> },
@@ -193,7 +222,8 @@ export default function AdminView() {
           { id: 'penumpang', label: '👤 User' },
           { id: 'pesanan', label: '📋 Order' },
           { id: 'tarif', label: '⚙️ Pengaturan' },
-          { id: 'admins', label: '🔑 Tim' }
+          { id: 'admins', label: '🔑 Tim' },
+          { id: 'logs', label: '📜 Log' }
         ].map((t) => (
           <button
             key={t.id}
@@ -241,6 +271,30 @@ export default function AdminView() {
                ))
              }
           </div>
+        )}
+
+        {activeTab === 'penumpang' && (
+           <div className="space-y-2">
+             <h3 className="text-xs font-black text-gray-700 uppercase mb-3">Daftar Pengguna (Penumpang)</h3>
+             {profilList.length === 0 ? <p className="text-xs italic text-gray-400 text-center py-10">Belum ada pengguna terdaftar.</p> :
+               profilList.map(p => (
+                 <div key={p.id} className="bg-white p-3 rounded-xl border flex items-center justify-between shadow-xs">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+                        <Users size={16} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-black text-gray-800">{p.nama}</p>
+                        <p className="text-[9px] text-gray-500">{p.nomorHp}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                       <p className="text-[8px] text-gray-400 uppercase font-medium">{new Date(p.tanggalDaftar).toLocaleDateString()}</p>
+                    </div>
+                 </div>
+               ))
+             }
+           </div>
         )}
 
         {activeTab === 'pesanan' && (
@@ -291,8 +345,84 @@ export default function AdminView() {
         )}
 
         {activeTab === 'admins' && (
-           <div className="p-8 text-center text-gray-400 text-[10px] italic bg-white rounded-2xl border border-dashed">
-             Fitur Manajemen Tim sedang dihubungkan ke database...
+           <div className="space-y-4">
+              <div className="bg-white p-5 rounded-2xl border shadow-sm space-y-4">
+                <h3 className="text-xs font-black text-[#046A38] uppercase">Tambah Admin Baru</h3>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="Nama Lengkap Admin"
+                    value={newAdminName}
+                    onChange={(e) => setNewAdminName(e.target.value)}
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs font-bold"
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Nomor WhatsApp (628...)"
+                    value={newAdminPhone}
+                    onChange={(e) => setNewAdminPhone(e.target.value)}
+                    className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs font-bold"
+                  />
+                  <button
+                    onClick={handleAddAdmin}
+                    className="w-full py-3 bg-[#046A38] text-white font-black rounded-xl text-[10px] tracking-widest uppercase shadow-md active:scale-95 transition-transform"
+                  >
+                    TAMBAH TIM ADMIN
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-xs font-black text-gray-700 uppercase mb-3 px-1">Daftar Tim Admin</h3>
+                {adminList.length === 0 ? (
+                  <div className="p-8 text-center text-gray-400 text-[10px] italic bg-white rounded-2xl border border-dashed">
+                    Belum ada admin tambahan.
+                  </div>
+                ) : (
+                  adminList.map(adm => (
+                    <div key={adm.id} className="bg-white p-3 rounded-xl border flex items-center justify-between shadow-xs animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center text-[#046A38]">
+                          <ShieldCheck size={16} />
+                        </div>
+                        <div>
+                          <p className="text-xs font-black text-gray-800">{adm.nama}</p>
+                          <p className="text-[9px] text-gray-500 font-medium">
+                            {adm.nomorHp} {adm.nomorHp === '6285156766317' ? <span className="text-amber-600 font-bold ml-1">(SUPERUSER)</span> : <span className="text-emerald-600 font-bold ml-1">(SUB-ADMIN)</span>}
+                          </p>
+                        </div>
+                      </div>
+                      {adm.nomorHp !== '6285156766317' && (
+                        <button
+                          onClick={() => handleRemoveAdmin(adm.id)}
+                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                          title="Hapus Akses"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+           </div>
+        )}
+
+        {activeTab === 'logs' && (
+           <div className="space-y-2">
+             <h3 className="text-xs font-black text-gray-700 uppercase mb-3">Log Audit Sistem</h3>
+             {auditLogs.length === 0 ? <p className="text-xs italic text-gray-400 text-center py-10">Belum ada log tercatat.</p> :
+               auditLogs.map(l => (
+                 <div key={l.id} className="bg-white p-3 rounded-xl border space-y-1 shadow-xs">
+                    <div className="flex justify-between items-start">
+                      <p className="text-[10px] font-black text-[#046A38] uppercase">{l.aksi}</p>
+                      <p className="text-[8px] text-gray-400">{new Date(l.timestamp).toLocaleString()}</p>
+                    </div>
+                    <p className="text-[10px] text-gray-600 leading-relaxed">{l.detail}</p>
+                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">Oleh: {l.adminNama}</p>
+                 </div>
+               ))
+             }
            </div>
         )}
       </div>

@@ -53,27 +53,27 @@ class RealtimeService {
               this.triggerLocal(`chat:${payload.payload.pesananId}`, payload.payload.message);
             }
           })
-          .on('postgres_changes', {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'pesanan',
-            filter: 'status=eq.mencari_sopir',
-          }, (payload: any) => {
-            console.log('[Supabase Realtime] Received postgres_changes INSERT event:', payload);
-            if (payload.new) {
-              this.triggerLocal('new-order', payload.new);
+          .on('broadcast', { event: 'trip-update' }, (payload: any) => {
+            console.log('[Supabase Realtime] Received trip-update:', payload);
+            if (payload.payload && payload.payload.orderId) {
+              this.triggerLocal(`trip:${payload.payload.orderId}`, payload.payload.data);
             }
           })
-          .on('postgres_changes', {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'pesanan',
-            filter: 'status=eq.mencari_sopir',
-          }, (payload: any) => {
-            console.log('[Supabase Realtime] Received postgres_changes UPDATE event:', payload);
-            if (payload.new) {
-              this.triggerLocal('new-order', payload.new);
+          .on('broadcast', { event: 'sync-request' }, (payload: any) => {
+            console.log('[Supabase Realtime] Received sync-request:', payload);
+            if (payload.payload && payload.payload.orderId) {
+              this.triggerLocal(`sync-req:${payload.payload.orderId}`, payload.payload);
             }
+          })
+          .on('presence', { event: 'sync' }, () => {
+            const state = this.supabaseChannel.presenceState();
+            this.triggerLocal('presence-sync', state);
+          })
+          .on('presence', { event: 'join' }, ({ key, newPresences }: any) => {
+            this.triggerLocal('presence-join', { key, newPresences });
+          })
+          .on('presence', { event: 'leave' }, ({ key, leftPresences }: any) => {
+            this.triggerLocal('presence-leave', { key, leftPresences });
           })
           .subscribe((status: string) => {
             console.log(`[Supabase Realtime] Channel subscription status: ${status}`);
@@ -179,6 +179,70 @@ class RealtimeService {
       }
     }
     this.triggerLocal(`chat:${pesananId}`, message);
+  }
+
+  // --- TRIP UPDATES (BROADCAST) ---
+  public subscribeToTrip(orderId: string, callback: RealtimeCallback): () => void {
+    const key = `trip:${orderId}`;
+    if (!this.listeners.has(key)) {
+      this.listeners.set(key, new Set());
+    }
+    this.listeners.get(key)!.add(callback);
+    return () => this.listeners.get(key)?.delete(callback);
+  }
+
+  public broadcastTripUpdate(orderId: string, data: any) {
+    if (this.supabaseChannel) {
+      this.supabaseChannel.send({
+        type: 'broadcast',
+        event: 'trip-update',
+        payload: { orderId, data },
+      });
+    }
+    this.triggerLocal(`trip:${orderId}`, data);
+  }
+
+  // --- STATE SYNC (RE-SYNC AFTER F5) ---
+  public subscribeToSyncRequest(orderId: string, callback: RealtimeCallback): () => void {
+    const key = `sync-req:${orderId}`;
+    if (!this.listeners.has(key)) {
+      this.listeners.set(key, new Set());
+    }
+    this.listeners.get(key)!.add(callback);
+    return () => this.listeners.get(key)?.delete(callback);
+  }
+
+  public requestStateSync(orderId: string) {
+    if (this.supabaseChannel) {
+      this.supabaseChannel.send({
+        type: 'broadcast',
+        event: 'sync-request',
+        payload: { orderId },
+      });
+    }
+  }
+
+  // --- PRESENCE (RADAR DRIVERS) ---
+  public trackDriverPresence(driverId: string, data: any) {
+    if (this.supabaseChannel) {
+      this.supabaseChannel.track({
+        id: driverId,
+        ...data,
+        online_at: new Date().toISOString(),
+      });
+    }
+  }
+
+  public subscribeToDriversOnline(callback: RealtimeCallback): () => void {
+    const events = ['presence-sync', 'presence-join', 'presence-leave'];
+    events.forEach(e => {
+      if (!this.listeners.has(e)) this.listeners.set(e, new Set());
+      this.listeners.get(e)!.add(callback);
+    });
+
+    return () => {
+      events.forEach(e => this.listeners.get(e)?.delete(callback));
+    };
   }
 
   private triggerLocal(event: string, data: any) {

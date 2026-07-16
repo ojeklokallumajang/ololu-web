@@ -83,6 +83,9 @@ export const DEFAULT_PENGATURAN_TARIF: PengaturanTarif = {
 
 // HELPER UNTUK LOCAL PERSISTENCE SESSION SAJA
 const SESSION_KEY = 'ololu_sesi_active';
+const ORDER_LOCK_KEY = 'ololu_order_lock';
+
+let pengaturans: PengaturanTarif = DEFAULT_PENGATURAN_TARIF;
 
 export const OloluStore = {
   // --- REAL-TIME PUB/SUB ---
@@ -291,6 +294,16 @@ export const OloluStore = {
     } as any));
   },
 
+  async getAllUsers(): Promise<ProfilPengguna[]> {
+    const supabase = getSupabase();
+    if (!supabase) return [];
+    const { data } = await supabase.from('profiles').select('*').eq('peran', 'penumpang').order('created_at', { ascending: false });
+    return (data || []).map(d => ({
+      id: d.id, nama: d.nama, nomorHp: d.nomor_hp, peran: d.peran,
+      terverifikasi: d.terverifikasi, tanggalDaftar: d.created_at
+    }));
+  },
+
   // --- ORDERS ---
   async buatPesanan(order: Partial<Pesanan>, stops: Omit<TujuanStop, 'status'>[]): Promise<Pesanan | null> {
     const supabase = getSupabase();
@@ -327,9 +340,51 @@ export const OloluStore = {
 
     await supabase.from('order_stops').insert(stopsToInsert);
 
+    // Kunci UI Penumpang ke layar lacak
+    this.setLocalOrderLock(newOrder.id, 'penumpang');
+
     // Broadcast realtime
     ololuRealtime.broadcastNewOrder(newOrder);
     return newOrder as any;
+  },
+
+  async selesaikanPesanan(orderId: string, finalData: Partial<Pesanan>) {
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    // SATU-SATUNYA PENULISAN DATABASE DI AKHIR PERJALANAN (IRIT)
+    await supabase.from('orders').update({
+      status: 'selesai',
+      id_sopir: finalData.idSopir,
+      biaya_parkir_total: finalData.biayaParkirTotal || 0,
+      total_bayar_akhir: finalData.totalBayarAkhir,
+      waktu_selesai: new Date().toISOString()
+    }).eq('id', orderId);
+
+    // Hapus pengunci UI
+    this.removeLocalOrderLock();
+  },
+
+  async batalPesanan(orderId: string, peran: string, alasan: string) {
+    const supabase = getSupabase();
+    if (!supabase) return;
+    await supabase.from('orders').update({
+      status: 'dibatalkan'
+    }).eq('id', orderId);
+    this.removeLocalOrderLock();
+  },
+
+  async getPesananById(id: string): Promise<Pesanan | null> {
+    const supabase = getSupabase();
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*, order_stops(*)')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) return null;
+    return data as any;
   },
 
   async getAllPesanan(): Promise<Pesanan[]> {
@@ -364,8 +419,121 @@ export const OloluStore = {
   async addAuditLog(adminId: string, adminNama: string, aksi: string, detail: string) {
     const supabase = getSupabase();
     if (!supabase) return;
-    // (Opsional: Simpan log ke tabel khusus jika sudah dibuat di SQL)
-    console.log(`[AUDIT] ${adminNama}: ${aksi} - ${detail}`);
+    await supabase.from('audit_logs').insert({
+      admin_id: adminId,
+      admin_nama: adminNama,
+      aksi: aksi,
+      detail: detail
+    });
+  },
+
+  // --- ADMIN TEAM MANAGEMENT ---
+  async getAllAdmins(): Promise<ProfilPengguna[]> {
+    const supabase = getSupabase();
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('peran', 'admin')
+      .order('created_at', { ascending: true });
+
+    if (error || !data) return [];
+    return data.map(d => ({
+      id: d.id,
+      nama: d.nama,
+      nomorHp: d.nomor_hp,
+      peran: d.peran,
+      terverifikasi: d.terverifikasi,
+      tanggalDaftar: d.created_at,
+      fotoProfil: d.foto_profil,
+      isSubAdmin: d.is_sub_admin
+    }));
+  },
+
+  async promoteToAdmin(nomorHp: string, nama: string): Promise<{ success: boolean; error?: string }> {
+    const supabase = getSupabase();
+    if (!supabase) return { success: false, error: "Database offline" };
+
+    let cleanedPhone = nomorHp.replace(/[^0-9]/g, '');
+    if (cleanedPhone.startsWith('0')) cleanedPhone = '62' + cleanedPhone.slice(1);
+    else if (cleanedPhone.startsWith('8')) cleanedPhone = '62' + cleanedPhone;
+
+    // Check if user exists
+    const { data: existing } = await supabase.from('profiles').select('*').eq('nomor_hp', cleanedPhone).single();
+
+    if (existing) {
+      // Update existing user
+      const { error } = await supabase
+        .from('profiles')
+        .update({ peran: 'admin', is_sub_admin: true, nama: nama })
+        .eq('id', existing.id);
+
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } else {
+      // Create new admin user
+      const newId = crypto.randomUUID();
+      const { error } = await supabase
+        .from('profiles')
+        .insert({
+          id: newId,
+          nama,
+          nomor_hp: cleanedPhone,
+          peran: 'admin',
+          password: 'ololuadmin123', // Default password
+          terverifikasi: true,
+          is_sub_admin: true
+        });
+
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    }
+  },
+
+  async removeAdminStatus(userId: string): Promise<{ success: boolean; error?: string }> {
+    const supabase = getSupabase();
+    if (!supabase) return { success: false, error: "Database offline" };
+
+    // Prevent removing superuser
+    const { data: user } = await supabase.from('profiles').select('nomor_hp').eq('id', userId).single();
+    if (user?.nomor_hp === '6285156766317') return { success: false, error: "Admin Utama tidak bisa dihapus." };
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ peran: 'penumpang', is_sub_admin: false })
+      .eq('id', userId);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  },
+
+  async getAllAuditLogs(): Promise<LogAudit[]> {
+    const supabase = getSupabase();
+    if (!supabase) return [];
+    const { data } = await supabase.from('audit_logs').select('*').order('timestamp', { ascending: false });
+    return (data || []).map(d => ({
+      id: d.id, adminId: d.admin_id, adminNama: d.admin_nama,
+      aksi: d.aksi, detail: d.detail, timestamp: d.timestamp
+    }));
+  },
+
+  // --- LOCAL ORDER LOCKING (UI HARD-LOCK) ---
+  setLocalOrderLock(orderId: string, role: PeranPengguna) {
+    localStorage.setItem(ORDER_LOCK_KEY, JSON.stringify({ orderId, role }));
+  },
+
+  getLocalOrderLock(): { orderId: string; role: PeranPengguna } | null {
+    const stored = localStorage.getItem(ORDER_LOCK_KEY);
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return null;
+    }
+  },
+
+  removeLocalOrderLock() {
+    localStorage.removeItem(ORDER_LOCK_KEY);
   },
 
   // --- OTP VIA FONNTE ---

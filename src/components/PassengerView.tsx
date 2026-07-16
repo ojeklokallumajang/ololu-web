@@ -61,6 +61,7 @@ interface PassengerViewProps {
   onNotifyAdminPanic: () => void;
   onLogout: () => void;
   onRoleChange: (role: any) => void;
+  lockedOrderId?: string;
 }
 
 // Daftar tempat populer di Lumajang sebagai rekomendasi cepat & fallback offline
@@ -292,59 +293,38 @@ function LiveDriversMap() {
   const [drivers, setDrivers] = useState<SimulatedDriver[]>([]);
 
   useEffect(() => {
-    // Load existing online drivers from store
-    const listSopir = OloluStore.getAllSopir();
-    const onlineSopir = listSopir.filter(s => s.statusOnline);
+    const handlePresence = (state: any) => {
+      const activeDrivers: SimulatedDriver[] = [];
 
-    const initialDrivers = onlineSopir.map(s => {
-      const profilSopir = OloluStore.getProfil(s.id);
-      return {
-        id: s.id,
-        nama: profilSopir?.nama || "Mitra Ololu",
-        lat: s.lokasiSaatIni.lat,
-        lng: s.lokasiSaatIni.lng,
-        isSimulated: false,
-        jenisMotor: s.jenisMotor || "Honda Vario"
-      };
+      // Parse Presence State dari Supabase
+      Object.keys(state).forEach(id => {
+        const presences = state[id];
+        if (presences && presences.length > 0) {
+          const p = presences[0];
+          if (p.lat && p.lng) {
+            activeDrivers.push({
+              id,
+              nama: p.nama || "Mitra Ololu",
+              lat: p.lat,
+              lng: p.lng,
+              isSimulated: false,
+              jenisMotor: p.jenisMotor || "Motor"
+            });
+          }
+        }
+      });
+
+      setDrivers(activeDrivers);
+    };
+
+    const unsubscribe = ololuRealtime.subscribeToDriversOnline((payload) => {
+      // Jika payload adalah state presence (event sync)
+      if (payload && typeof payload === 'object' && !payload.key) {
+        handlePresence(payload);
+      }
     });
 
-    // If fewer than 7 online drivers, add beautiful simulated ones around Alun-Alun Lumajang
-    const needed = 7 - initialDrivers.length;
-    if (needed > 0) {
-      const simulatedNames = ["Aris Setyawan", "Didik Prasetyo", "Roni Hidayat", "Wahyu Pratama", "Soni Wijaya", "Edi Santoso", "Gus Sholeh"];
-      const motorTypes = ["Yamaha Mio", "Honda Beat", "Suzuki Nex", "Honda Supra", "Yamaha Gear"];
-      for (let i = 0; i < needed; i++) {
-        // Random offset within ~1.5km of Alun-Alun Lumajang
-        const latOffset = (Math.random() - 0.5) * 0.015;
-        const lngOffset = (Math.random() - 0.5) * 0.015;
-        initialDrivers.push({
-          id: `sim-driver-${i}`,
-          nama: simulatedNames[i % simulatedNames.length],
-          lat: KOORDINAT_LUMAJANG.lat + latOffset,
-          lng: KOORDINAT_LUMAJANG.lng + lngOffset,
-          isSimulated: true,
-          jenisMotor: motorTypes[i % motorTypes.length]
-        });
-      }
-    }
-
-    setDrivers(initialDrivers);
-
-    // Periodic slight location drifts to simulate active cruising on the streets of Lumajang!
-    const interval = setInterval(() => {
-      setDrivers(prev => prev.map(d => {
-        // Drift coordinates slightly (within a very tiny threshold)
-        const latDrift = (Math.random() - 0.5) * 0.0003;
-        const lngDrift = (Math.random() - 0.5) * 0.0003;
-        return {
-          ...d,
-          lat: d.lat + latDrift,
-          lng: d.lng + lngDrift
-        };
-      }));
-    }, 4000); // update every 4 seconds for maximum smoothness
-
-    return () => clearInterval(interval);
+    return () => unsubscribe();
   }, []);
 
   // --- VIEW: PROFILE ---
@@ -503,11 +483,12 @@ interface PassengerViewProps {
   onRoleChange: (role: any) => void;
 }
 
-export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChange }: PassengerViewProps) {
+export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChange, lockedOrderId }: PassengerViewProps) {
   // --- IN-APP STATE SINKRONISASI ---
-  const [profile, setProfile] = useState(OloluStore.getProfilLogin());
+  const [profile, setProfile] = useState<any>(null);
   const isSuperUser = profile?.nomorHp === '6285156766317';
   const [activeOrder, setActiveOrder] = useState<Pesanan | null>(null);
+  const [driverLoc, setDriverLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [ratingsSubmitted, setRatingsSubmitted] = useState<boolean>(false);
   const [ratingVal, setRatingVal] = useState<number>(5);
@@ -659,33 +640,64 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
 
   const config = OloluStore.getPengaturan();
 
-  // EFECT UNTUK SYNC STATE REALTIME DARI DATABASE SIMULASI
   useEffect(() => {
-    // Check if user is logged in, if not login as default passenger
-    let curSesi = OloluStore.getSesi();
-    if (!curSesi || curSesi.role !== 'penumpang') {
-      const userObj = OloluStore.registerPengguna("Penumpang Lumajang", "628234567890", "penumpang");
-      OloluStore.setSesi({ userId: userObj.id, role: 'penumpang' });
-      setProfile(userObj);
-    }
+    const initPassenger = async () => {
+      const p = await OloluStore.getProfilLogin();
+      setProfile(p);
 
-    const checkActiveOrder = () => {
-      const sesi = OloluStore.getSesi();
-      if (sesi && sesi.role === 'penumpang') {
-        const order = OloluStore.getPesananAktifPenumpang(sesi.userId);
-        setActiveOrder(order);
-        if (!order) {
-          setRatingsSubmitted(false);
-          setReviewText('');
-          setRatingVal(5);
+      // RECOVERY: Jika ada kunci order (Refresh F5), ambil data dasar dari DB
+      if (lockedOrderId) {
+        const order = await OloluStore.getPesananById(lockedOrderId);
+        if (order) {
+          setActiveOrder(order);
+          // Minta sinkronisasi dari sopir (jika sudah ada sopir)
+          ololuRealtime.requestStateSync(lockedOrderId);
         }
       }
     };
 
-    checkActiveOrder();
-    const unsubscribe = OloluStore.subscribeToStore(checkActiveOrder);
+    initPassenger();
+    const unsubscribe = OloluStore.subscribeToStore(initPassenger);
     return () => unsubscribe();
-  }, []);
+  }, [lockedOrderId]);
+
+  // --- TRIP BROADCAST LISTENER (0 Write Updates) ---
+  useEffect(() => {
+    if (!activeOrder) return;
+
+    const unsubscribe = ololuRealtime.subscribeToTrip(activeOrder.id, (data) => {
+      console.log("⚡ Trip Update Received:", data);
+
+      if (data.type === 'location') {
+        setDriverLoc(data.coords);
+      } else if (data.type === 'accepted' || data.type === 'full-sync') {
+        setActiveOrder(prev => prev ? ({
+          ...prev,
+          status: data.status || 'sopir_ditemukan',
+          idSopir: data.driver.id,
+          namaSopir: data.driver.nama,
+          platNomorSopir: data.driver.platNomor,
+          tahapAktif: data.tahapAktif ?? prev.tahapAktif
+        }) : null);
+      } else if (data.type === 'status_update') {
+        setActiveOrder(prev => prev ? ({ ...prev, status: data.status }) : null);
+      } else if (data.type === 'parking_update') {
+        setActiveOrder(prev => {
+          if (!prev) return null;
+          const stops = prev.daftarTujuan.map(s => s.id === data.stopId ? { ...s, pilihanParkir: data.choice } : s);
+          return { ...prev, daftarTujuan: stops };
+        });
+      } else if (data.type === 'stop_complete') {
+        setActiveOrder(prev => {
+          if (!prev) return null;
+          const stops = prev.daftarTujuan.map(s => s.id === data.stopId ? { ...s, status: 'selesai' as any } : s);
+          return { ...prev, daftarTujuan: stops, tahapAktif: data.nextTahap };
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [activeOrder?.id]);
 
   // DIAL OUT WHATSAPP UNTUK OTP / REGISTRASI SIMULASI
   const [namaReg, setNamaReg] = useState('');
@@ -1291,7 +1303,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
 
               {/* Marker Sopir (Jika sudah ditemukan) */}
               {activeOrder.idSopir && (
-                <AdvancedMarker position={currentLoc} title="Posisi Sopir Ololu">
+                <AdvancedMarker position={driverLoc || currentLoc} title="Posisi Sopir Ololu">
                   <div className="bg-white p-1 rounded-full border-2 border-[#0A8A4E] shadow-md flex items-center justify-center w-9 h-9">
                     <span className="text-lg">🛵</span>
                   </div>

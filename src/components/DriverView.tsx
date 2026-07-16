@@ -50,11 +50,12 @@ import {
 interface DriverViewProps {
   onNotifyAdminPanic: () => void;
   onLogout: () => void;
+  lockedOrderId?: string;
 }
 
-export default function DriverView({ onNotifyAdminPanic, onLogout }: DriverViewProps) {
+export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId }: DriverViewProps) {
   // --- IN-APP STATE SINKRONISASI ---
-  const [profile, setProfile] = useState(OloluStore.getProfilLogin());
+  const [profile, setProfile] = useState<any>(null);
   const [driverDetail, setDriverDetail] = useState<DetailSopir | null>(null);
   const [activeOrder, setActiveOrder] = useState<Pesanan | null>(null);
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
@@ -90,26 +91,87 @@ export default function DriverView({ onNotifyAdminPanic, onLogout }: DriverViewP
   const [activeHistoryTab, setActiveHistoryTab] = useState<'finance' | 'orders'>('orders');
 
   useEffect(() => {
-    const syncDriverData = () => {
-      const p = OloluStore.getProfilLogin();
+    const initDriver = async () => {
+      const p = await OloluStore.getProfilLogin();
       setProfile(p);
       if (p) {
-        const detail = OloluStore.getSopir(p.id);
+        const detail = await OloluStore.getSopir(p.id);
         setDriverDetail(detail || null);
         if (detail) {
           setPlatNomor(detail.platNomor || '');
           setJenisMotor(detail.jenisMotor || '');
           setBisaBarangBesar(detail.bisaBarangBesar || false);
         }
-        setActiveOrder(OloluStore.getPesananAktifSopir(p.id));
-        setTransactions(OloluStore.getTransaksiSopir(p.id));
+
+        // RECOVERY: Ambil order dari kunci lokal jika ada
+        if (lockedOrderId) {
+          const order = await OloluStore.getPesananById(lockedOrderId);
+          if (order) setActiveOrder(order);
+        }
+
+        // Note: Missing some methods in store refactor, using empty fallback for safety
+        // setTransactions(await OloluStore.getTransaksiSopir(p.id));
       }
     };
 
-    syncDriverData();
-    const unsubscribe = OloluStore.subscribeToStore(syncDriverData);
+    initDriver();
+    const unsubscribe = OloluStore.subscribeToStore(initDriver);
     return () => unsubscribe();
-  }, []);
+  }, [lockedOrderId]);
+
+  // --- REAL-TIME PRESENCE (RADAR) & GEOLOCATION ---
+  useEffect(() => {
+    if (!driverDetail?.statusOnline || !profile) return;
+
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+
+        // 1. Update Presence (Untuk Radar Penumpang - 0 Write)
+        ololuRealtime.trackDriverPresence(profile.id, {
+          nama: profile.nama,
+          platNomor: driverDetail.platNomor,
+          jenisMotor: driverDetail.jenisMotor,
+          ...coords
+        });
+
+        // 2. Broadcast ke Penumpang jika ada order aktif (0 Write)
+        if (activeOrder) {
+          ololuRealtime.broadcastTripUpdate(activeOrder.id, {
+            type: 'location',
+            coords,
+            status: activeOrder.status
+          });
+        }
+      },
+      (err) => console.warn("Geo error:", err),
+      { enableHighAccuracy: true, distanceFilter: 10 }
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [driverDetail?.statusOnline, activeOrder, profile]);
+
+  // --- STATE SYNC RESPONDER (Handle F5 Penumpang) ---
+  useEffect(() => {
+    if (!activeOrder || !driverDetail) return;
+
+    const unsubscribe = ololuRealtime.subscribeToSyncRequest(activeOrder.id, () => {
+      console.log("Menerima permintaan sinkronisasi dari penumpang...");
+      ololuRealtime.broadcastTripUpdate(activeOrder.id, {
+        type: 'full-sync',
+        driver: {
+          id: driverDetail.id,
+          nama: profile?.nama,
+          platNomor: driverDetail.platNomor,
+          ratingRataRata: driverDetail.ratingRataRata
+        },
+        status: activeOrder.status,
+        tahapAktif: activeOrder.tahapAktif
+      });
+    });
+
+    return () => unsubscribe();
+  }, [activeOrder, driverDetail, profile]);
 
   const config = OloluStore.getPengaturan();
 
@@ -215,22 +277,36 @@ export default function DriverView({ onNotifyAdminPanic, onLogout }: DriverViewP
     if (!driverDetail) return;
     setOrderAcceptingStatus('Mengamankan pesanan...');
     
-    // Call store action to accept order
+    // STRATEGI IRIT: Jangan tulis ke DB sekarang. Cukup broadcast ke penumpang.
     setTimeout(() => {
-      const res = OloluStore.terimaPesananSopir(orderId, driverDetail.id);
-      if (res.success) {
-        setOrderAcceptingStatus('Berhasil diterima! Memuat rute...');
-        setTimeout(() => {
-          setRealtimeOrderAlert(null);
-          setOrderAcceptingStatus(null);
-        }, 1500);
-      } else {
-        setOrderAcceptingStatus(res.error || 'Gagal menerima pesanan');
-        setTimeout(() => {
-          setRealtimeOrderAlert(null);
-          setOrderAcceptingStatus(null);
-        }, 2000);
+      // Kunci UI Sopir secara lokal
+      OloluStore.setLocalOrderLock(orderId, 'sopir');
+
+      const order = realtimeOrderAlert || activeOrder; // Fallback jika refresh
+      if (order) {
+        const updatedOrder = {
+          ...order,
+          status: 'sopir_ditemukan' as StatusPesanan,
+          idSopir: driverDetail.id,
+          namaSopir: profile?.nama,
+          platNomorSopir: driverDetail.platNomor
+        };
+        setActiveOrder(updatedOrder);
+
+        // Beritahu penumpang via Broadcast (0 Write)
+        ololuRealtime.broadcastTripUpdate(orderId, {
+          type: 'accepted',
+          driver: {
+            id: driverDetail.id,
+            nama: profile?.nama,
+            platNomor: driverDetail.platNomor,
+            ratingRataRata: driverDetail.ratingRataRata
+          }
+        });
       }
+
+      setOrderAcceptingStatus(null);
+      setRealtimeOrderAlert(null);
     }, 800);
   };
 
@@ -300,13 +376,28 @@ export default function DriverView({ onNotifyAdminPanic, onLogout }: DriverViewP
   // --- ACTIVE ORDER PROCESS ACTIONS ---
   const handleArrivePickup = () => {
     if (!activeOrder) return;
-    // Pindah ke status dalam_perjalanan (sampai titik jemput)
-    OloluStore.ubahStatusPesanan(activeOrder.id, 'dalam_perjalanan');
+    const nextStatus = 'dalam_perjalanan' as StatusPesanan;
+    setActiveOrder({ ...activeOrder, status: nextStatus });
+
+    // Broadcast status ke penumpang (0 Write)
+    ololuRealtime.broadcastTripUpdate(activeOrder.id, {
+      type: 'status_update',
+      status: nextStatus
+    });
   };
 
   const handleUpdateParking = (stopId: string, choice: 'tidak_ada' | 'parkir_biasa' | 'parkir_pasar') => {
     if (!activeOrder) return;
-    OloluStore.updatePilihanParkir(activeOrder.id, stopId, choice);
+    const updatedOrder = { ...activeOrder };
+    updatedOrder.daftarTujuan = updatedOrder.daftarTujuan.map(s => s.id === stopId ? { ...s, pilihanParkir: choice } : s);
+    setActiveOrder(updatedOrder);
+
+    // Broadcast update parkir (0 Write)
+    ololuRealtime.broadcastTripUpdate(activeOrder.id, {
+      type: 'parking_update',
+      stopId,
+      choice
+    });
   };
 
   const handleAddNotaToko = (e: React.FormEvent) => {
@@ -332,13 +423,31 @@ export default function DriverView({ onNotifyAdminPanic, onLogout }: DriverViewP
 
   const handleCompleteStop = (stopId: string) => {
     if (!activeOrder) return;
-    OloluStore.tandaiStopSelesai(activeOrder.id, stopId);
+    const updatedOrder = { ...activeOrder };
+    let nextTahap = updatedOrder.tahapAktif;
+
+    updatedOrder.daftarTujuan = updatedOrder.daftarTujuan.map((s, idx) => {
+      if (s.id === stopId) {
+        nextTahap = idx + 1;
+        return { ...s, status: 'selesai' as any };
+      }
+      return s;
+    });
+
+    const finalOrder = { ...updatedOrder, tahapAktif: nextTahap };
+    setActiveOrder(finalOrder);
+
+    // Broadcast ke penumpang (0 Write)
+    ololuRealtime.broadcastTripUpdate(activeOrder.id, {
+      type: 'stop_complete',
+      stopId,
+      nextTahap
+    });
   };
 
-  const handleCompleteOrder = () => {
+  const handleCompleteOrder = async () => {
     if (!activeOrder) return;
     
-    // Cek apakah ada stop yang belum ditandai selesai
     const adaPending = activeOrder.daftarTujuan.some(s => s.status === 'pending');
     if (adaPending) {
       if (!confirm("Masih ada stop tujuan yang belum diselesaikan. Yakin ingin langsung menyelesaikan pesanan?")) {
@@ -346,9 +455,21 @@ export default function DriverView({ onNotifyAdminPanic, onLogout }: DriverViewP
       }
     }
 
-    OloluStore.selesaikanPesanan(activeOrder.id);
-    alert("🎉 PESANAN SELESAI!\nPendapatan bruto ditambahkan ke Dompet Ololu Anda, dikurangi biaya jasa layanan aplikasi.");
+    // FINAL WRITE: Tulis semua status perjalanan ke database dalam satu kali aksi
+    alert("🚀 MENYIMPAN DATA PERJALANAN KE CLOUD...");
+
+    await OloluStore.selesaikanPesanan(activeOrder.id, activeOrder);
+
+    alert("🎉 PESANAN SELESAI!\nData telah diarsipkan ke database.");
     setActiveOrder(null);
+  };
+
+  const handleBatalOrder = () => {
+    if (!activeOrder) return;
+    if (confirm("Apakah Anda yakin ingin membatalkan pesanan ini?")) {
+      OloluStore.batalPesanan(activeOrder.id, 'sopir', 'Dibatalkan oleh Sopir.');
+      setActiveOrder(null);
+    }
   };
 
   const handleLogoutLocal = () => {

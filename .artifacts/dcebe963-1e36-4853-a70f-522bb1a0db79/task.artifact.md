@@ -1,0 +1,7 @@
+- [x] Implementasi sistem `Local Order Lock` di `store.ts`
+- [x] Tambahkan mekanisme `State Sync Request` di `supabaseClient.ts`
+- [x] Update `App.tsx` untuk deteksi kunci order saat startup
+- [x] Implementasi sinkronisasi data di `PassengerView.tsx` (menerima broadcast status)
+- [x] Implementasi sinkronisasi data di `DriverView.tsx` (mengirim data saat diminta)
+- [x] Uji coba Refresh (F5) dan verifikasi kehematan database
+- [x] Laporan akhir (Walkthrough)
