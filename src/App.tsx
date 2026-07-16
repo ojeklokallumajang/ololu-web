@@ -462,7 +462,7 @@ export default function App() {
                 </div>
               </>
             )}
-            <footer className="absolute bottom-0 left-0 right-0 bg-[#E6F4EC] border-t border-emerald-950/5 py-2 flex flex-col items-center justify-center space-y-1 shrink-0">
+            <footer className="absolute bottom-0 left-0 right-0 bg-[#E6F4EC] border-t border-emerald-950/5 py-2.5 flex flex-col items-center justify-center shrink-0">
               <div className="flex items-center space-x-3">
                 <a href="https://tiktok.com/@ololuojeklokallumajang" target="_blank" rel="noreferrer" className="flex items-center space-x-1 text-[#046A38] hover:opacity-80 transition-opacity">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -475,7 +475,6 @@ export default function App() {
                   <span className="text-[7px] font-black uppercase">ololu_ojeklokallumajang</span>
                 </a>
               </div>
-              <p className="text-[7px] text-[#046A38]/60 font-bold tracking-[0.2em] uppercase">© 2026 PT Ololu Pengantaran Nusantara Lumajang</p>
             </footer>
           </div>
         )}
