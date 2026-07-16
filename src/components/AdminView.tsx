@@ -67,7 +67,11 @@ import {
   ShieldCheck,
   Power,
   MessageCircle,
-  ArrowRight
+  ArrowRight,
+  Bike,
+  Car,
+  ShoppingBag,
+  Package
 } from 'lucide-react';
 import { ReusableTable, ColumnDef, FilterDef } from './ReusableTable';
 

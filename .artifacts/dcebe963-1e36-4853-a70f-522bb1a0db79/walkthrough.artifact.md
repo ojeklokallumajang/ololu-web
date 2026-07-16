@@ -1,29 +1,34 @@
-# Walkthrough - Implementasi Ultra-Stability & Recovery
+# Walkthrough - Implementasi Tarif Lengkap & Pemisahan Kendaraan
 
-Saya telah melakukan perbaikan mendalam untuk memastikan aplikasi tidak akan pernah lagi mengalami "White Screen" (Layar Putih). Fokus utama perbaikan ini adalah keamanan data (null-safety) dan penanganan error global.
+Saya telah memperluas sistem tarif aplikasi Ololu untuk mendukung perbedaan harga antara Motor dan Mobil, serta memberikan kontrol penuh kepada Admin atas seluruh parameter biaya.
 
-## Perubahan yang Dilakukan
+## Perubahan Utama
 
-### 1. Filter Data Ketat (`store.ts`)
-- **Null Filtering:** Sekarang, setiap kali data ditarik dari database, sistem akan otomatis membuang data yang rusak atau tidak lengkap agar tidak meracuni tampilan UI.
-- **Extreme Defaulting:** Jika ada kolom database yang kosong (misal: lokasi atau nama), aplikasi sekarang akan menggunakan nilai default (seperti koordinat Alun-Alun Lumajang) alih-alih berhenti bekerja.
+### 1. Panel Admin: Dashboard Tarif Kategoris
+- **Kategori Navigasi:** Pengaturan tarif kini dibagi menjadi kategori: 🏍️ Ojek, 🚗 Mobil, 🍔 Makan, 📦 Paket, 🚚 Logistik, 🅿️ Parkir, dan ⚙️ Sistem.
+- **Kontrol Penuh:** Anda sekarang bisa mengatur:
+  - Tarif Dasar, Tarif Per KM, Tarif Minimum, dan Batas KM Dasar untuk **setiap layanan**.
+  - Biaya Parkir (Biasa & Pasar).
+  - Biaya Tambahan (Stop mampir & Kelebihan item).
+  - Aturan Sistem (Radius cari & Saldo minimal driver).
 
-### 2. Penanganan Error Global (`App.tsx`)
-- **Layar Darurat:** Saya telah menambahkan sistem pendeteksi crash. Jika aplikasi mengalami error fatal saat dibuka, Anda tidak akan lagi melihat layar putih, melainkan pesan error yang jelas beserta tombol "Muat Ulang Halaman".
+### 2. Sisi Penumpang: Pilih Motor atau Mobil
+- **Vehicle Selector:** Saat memesan layanan Ride (Ojek) atau Send (Paket), penumpang kini bisa memilih menggunakan **Motor** atau **Mobil**.
+- **Real-time Price Adjustment:** Estimasi biaya akan otomatis berubah sesuai dengan tarif yang Anda tentukan di Admin Panel untuk kendaraan tersebut.
 
-### 3. Tampilan UI yang Tahan Banting (`PassengerView.tsx` & `DriverView.tsx`)
-- **Safe Loops:** Semua daftar (seperti riwayat order) sekarang memiliki pengecekan ekstra sebelum ditampilkan.
-- **Peta Mandiri:** Komponen Google Maps sekarang memiliki "pelindung" agar tetap bisa terbuka meskipun koneksi ke database sedang melambat.
+### 3. Logika Pendapatan Driver yang Lebih Adil
+- **Potongan Jasa:** Sistem sekarang menghitung potongan jasa aplikasi secara otomatis berdasarkan persentase yang diatur di Admin Panel.
+- **Transparansi Dompet:** Driver akan melihat rincian Pendapatan Kotor dan Potongan Jasa di riwayat transaksi dompet mereka.
 
 ## Verifikasi yang Dilakukan
 
-- [x] **Tes Data Rusak:** Mensimulasikan data database yang tidak lengkap; aplikasi tetap berjalan dengan nilai default.
-- [x] **Tes Transisi Auth:** Pendaftaran dan Login sekarang memiliki alur yang lebih stabil tanpa jeda kosong.
-- [x] **Sinkronisasi GitHub:** Semua perbaikan ini sudah aktif di repositori `main`.
+- [x] **Sync Tarif:** Mengubah tarif di Admin -> Tab Mobil, dan memverifikasi perubahan harga di layar Penumpang.
+- [x] **Revenue Logic:** Memastikan saldo driver terupdate dengan benar (Total Bayar - Potongan Jasa).
+- [x] **GitHub Push:** Seluruh perbaikan telah dikirim ke repositori pusat.
 
 ---
 > [!TIP]
-> **Silakan Lakukan Percobaan:**
-> 1. Tunggu 1 menit agar Cloudflare selesai memperbarui website.
-> 2. Lakukan **Hard Refresh (Ctrl + F5)**.
-> 3. Coba Login atau Daftar. Jika masih ada masalah, Anda akan melihat pesan error di layar yang bisa Anda beritahukan kepada saya untuk perbaikan instan.
+> **Cara Mencoba:**
+> 1. Hard Refresh (**Ctrl + F5**) di Dashboard Admin.
+> 2. Buka tab **Edit Tarif**. Anda akan melihat tampilan baru dengan kategori yang rapi.
+> 3. Coba ubah tarif Mobil, lalu buka Dashboard Penumpang untuk melihat perbedaannya saat memilih ikon Mobil.
