@@ -1,6 +1,6 @@
-- [/] Implementasi Mapping Helpers (snake_case to camelCase) di `store.ts`
-- [ ] Update metode pendaftaran & login dengan mapping baru
-- [ ] Perbaikan penanganan koordinat di `PassengerView.tsx`
-- [ ] Perbaikan penanganan koordinat di `DriverView.tsx`
-- [ ] Sinkronisasi ke GitHub
-- [ ] Laporan akhir (Walkthrough)
+- [x] Implementasi Mapping Helpers (snake_case to camelCase) di `store.ts`
+- [x] Update metode pendaftaran & login dengan mapping baru
+- [x] Perbaikan penanganan koordinat di `PassengerView.tsx`
+- [x] Perbaikan penanganan koordinat di `DriverView.tsx`
+- [x] Sinkronisasi ke GitHub
+- [x] Laporan akhir (Walkthrough)

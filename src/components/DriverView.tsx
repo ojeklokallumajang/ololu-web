@@ -678,8 +678,8 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
           <div className="flex items-center space-x-2">
             <span className="text-xl">🛵</span>
             <div>
-              <h2 className="text-sm font-bold font-sans">{profile.nama}</h2>
-              <p className="text-[10px] text-[#F5E6A8] tracking-widest uppercase font-semibold">Plat: {driverDetail.platNomor || 'N/A'}</p>
+              <h2 className="text-sm font-bold font-sans">{profile?.nama}</h2>
+              <p className="text-[10px] text-[#F5E6A8] tracking-widest uppercase font-semibold">Plat: {driverDetail?.platNomor || 'N/A'}</p>
             </div>
           </div>
           
@@ -799,7 +799,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                   mapId="OLOLU_DRIVER_MINI_MAP"
                   style={{ width: '100%', height: '100%' }}
                 >
-                  <AdvancedMarker position={{ lat: activeOrder.asalLat || 0, lng: activeOrder.asalLng || 0 }} title="Jemput">
+                  <AdvancedMarker position={{ lat: activeOrder.asalLat || KOORDINAT_LUMAJANG.lat, lng: activeOrder.asalLng || KOORDINAT_LUMAJANG.lng }} title="Jemput">
                     <Pin background="#046A38" glyphColor="#fff" scale={0.7} />
                   </AdvancedMarker>
                   {(activeOrder.daftarTujuan || []).map((st, sIdx) => (

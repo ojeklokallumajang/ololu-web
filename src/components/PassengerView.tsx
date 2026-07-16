@@ -272,7 +272,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
               <Pin background="#046A38" scale={0.8} />
             </AdvancedMarker>
             {(driverLoc || activeOrder.idSopir) && (
-              <AdvancedMarker position={driverLoc || { lat: activeOrder.asalLat || 0, lng: activeOrder.asalLng || 0 }}>
+              <AdvancedMarker position={driverLoc || { lat: activeOrder.asalLat || KOORDINAT_LUMAJANG.lat, lng: activeOrder.asalLng || KOORDINAT_LUMAJANG.lng }}>
                 <div className="text-2xl">🛵</div>
               </AdvancedMarker>
             )}
@@ -314,8 +314,8 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20">
       <div className="bg-[#046A38] text-white p-8 rounded-b-[40px] text-center relative shadow-lg">
         <button onClick={() => setViewMode('home')} className="absolute left-6 top-6 bg-white/10 p-2 rounded-full"><Home size={16} /></button>
-        <div className="w-24 h-24 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-white/30 overflow-hidden">{profile.fotoProfil ? <img src={profile.fotoProfil} className="w-full h-full object-cover" /> : <User size={48} />}</div>
-        <h2 className="text-xl font-black">{profile.nama}</h2><p className="text-emerald-100 text-xs">{profile.nomorHp}</p>
+        <div className="w-24 h-24 bg-white/20 rounded-full mx-auto mb-4 flex items-center justify-center border-4 border-white/30 overflow-hidden">{profile?.fotoProfil ? <img src={profile.fotoProfil} className="w-full h-full object-cover" /> : <User size={48} />}</div>
+        <h2 className="text-xl font-black">{profile?.nama}</h2><p className="text-emerald-100 text-xs">{profile?.nomorHp}</p>
       </div>
       <div className="p-6 space-y-4">
         <div className="bg-white p-4 rounded-3xl border space-y-4 text-left">
@@ -361,7 +361,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20 pt-2">
       <div className="p-5 text-left">
         <div className="bg-white p-6 rounded-[32px] border border-gray-150 shadow-sm space-y-4">
-          <div className="flex justify-between items-start"><div><span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full uppercase">Halo 👋</span><h3 className="text-lg font-black mt-2">Sobat {profile.nama}!</h3><p className="text-xs text-gray-500 leading-relaxed">Mau bepergian atau kirim barang di Lumajang hari ini?</p></div><span className="text-2xl">🛵</span></div>
+          <div className="flex justify-between items-start"><div><span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full uppercase">Halo 👋</span><h3 className="text-lg font-black mt-2">Sobat {profile?.nama}!</h3><p className="text-xs text-gray-500 leading-relaxed">Mau bepergian atau kirim barang di Lumajang hari ini?</p></div><span className="text-2xl">🛵</span></div>
           <div className="pt-2 border-t space-y-2"><button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="w-full py-3.5 bg-emerald-600 text-white font-black rounded-2xl shadow-md uppercase text-xs tracking-wider border-b-4 border-emerald-800">Mulai Order Sekarang</button>
           {isSuperUser && <button onClick={() => onRoleChange('admin')} className="w-full py-3 bg-amber-500 text-[#046A38] font-black rounded-2xl shadow-md uppercase text-xs">Dashboard Admin</button>}</div>
         </div>

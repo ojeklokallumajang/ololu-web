@@ -205,7 +205,7 @@ export const OloluStore = {
 
     // 1. Cek User Exist
     const { data: existing } = await supabase.from('profiles').select('*').eq('nomor_hp', cleanedPhone).single();
-    if (existing) return { success: true, profil: existing as any };
+    if (existing) return { success: true, profil: mapProfile(existing) as any };
 
     // 2. Insert User
     const newId = crypto.randomUUID();
@@ -218,7 +218,7 @@ export const OloluStore = {
         nama,
         nomor_hp: cleanedPhone,
         peran,
-        password: finalPassword,
+        password: finalPassword || 'ololu123',
         terverifikasi: true,
         tempat_lahir: tempatLahir,
         tanggal_lahir: tanggalLahir
@@ -396,13 +396,15 @@ export const OloluStore = {
 
     if (!error && finalData.idSopir) {
       // Update saldo sopir (simulasi pendapatan)
-      const { data: driver } = await supabase.from('driver_details').select('saldo_dompet').eq('id', finalData.idSopir).single();
+      const { data: driver } = await supabase.from('driver_details').select('saldo_dompet, jumlah_pesanan_selesai').eq('id', finalData.idSopir).single();
       if (driver) {
         const pendapatan = finalData.totalBayarAkhir || 0;
         const saldoBaru = (driver.saldo_dompet || 0) + pendapatan;
+        const pesananBaru = (driver.jumlah_pesanan_selesai || 0) + 1;
 
         await supabase.from('driver_details').update({
-          saldo_dompet: saldoBaru
+          saldo_dompet: saldoBaru,
+          jumlah_pesanan_selesai: pesananBaru
         }).eq('id', finalData.idSopir);
 
         await supabase.from('wallet_transactions').insert({

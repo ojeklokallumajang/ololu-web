@@ -1,31 +1,26 @@
-# Walkthrough - Implementasi Sistem Alarm Darurat (SOS) Admin
+# Walkthrough - Perbaikan Total "White Screen" & Data Mapping
 
-Saya telah berhasil mengimplementasikan sistem "Panic Room" pada Dashboard Admin. Sekarang, setiap kali ada laporan darurat dari lapangan (Penumpang/Sopir), dashboard admin akan bereaksi secara instan.
+Saya telah berhasil memperbaiki masalah layar putih (White Screen) yang menghambat pendaftaran. Masalah ini disebabkan oleh perbedaan format data antara database (Supabase) dan aplikasi.
 
 ## Perubahan yang Dilakukan
 
-### 1. Real-time Monitoring (`supabaseClient.ts`)
-- **Event Listener Baru:** Menambahkan pendengar khusus untuk tabel `emergency_reports`. Begitu ada data masuk ke database, sinyal langsung dikirim ke Dashboard Admin tanpa perlu refresh.
+### 1. Sistem "Penerjemah" Data (`store.ts`)
+- **Mapping Otomatis:** Menambahkan fungsi `mapOrder` dan `mapProfile` untuk mengubah data dari format database (`asal_lat`, `nomor_hp`) ke format aplikasi (`asalLat`, `nomorHp`).
+- **Stabilisasi:** Sekarang semua data yang ditarik dari Supabase dijamin memiliki format yang benar sebelum ditampilkan ke layar.
 
-### 2. Antarmuka Panic Mode (`AdminView.tsx`)
-- **Audio Alarm (Sirine):** Menggunakan `AudioContext` untuk memutar suara sirine (dua nada) yang berulang saat ada laporan masuk.
-- **Visual Panic Overlay:** Muncul overlay merah besar yang memenuhi layar dengan animasi kedip (pulse). Overlay ini menampilkan:
-  - Nama Pelapor
-  - Peran (Penumpang/Driver)
-  - Nomor WhatsApp Pelapor (Klik untuk hubungi)
-- **Tombol Tindakan:** Admin harus menekan tombol "SAYA TANGANI SEKARANG" untuk mematikan sirine dan menutup overlay.
+### 2. Pertahanan Google Maps (`PassengerView.tsx` & `DriverView.tsx`)
+- **Defensive Coordinates:** Menambahkan pengecekan agar peta tidak crash jika menerima koordinat yang tidak valid atau sedang dalam proses loading.
+- **Safe Access:** Memastikan properti seperti `status` dan `daftarTujuan` diakses dengan aman (`optional chaining`).
 
-### 3. Tab Darurat Baru
-- Menambahkan tab khusus **"🚨 Darurat"** di dashboard untuk melihat seluruh riwayat SOS.
-- Dilengkapi dengan **Mini Map** untuk setiap laporan yang menunjukkan lokasi presisi (GPS) di mana tombol panik ditekan.
-- Tombol cepat untuk menghubungi pelapor via telepon.
+### 3. Sinkronisasi GitHub
+- Seluruh perbaikan ini sudah saya **Push** ke repositori GitHub. Cloudflare akan segera memperbarui website live Anda.
 
 ## Verifikasi yang Dilakukan
 
-- [x] **Real-time Trigger:** SOS yang ditekan di HP Penumpang muncul < 1 detik di Dashboard Admin.
-- [x] **Audio Playback:** Suara sirine berbunyi (Pastikan Admin sudah berinteraksi/klik sekali di halaman dashboard agar browser mengizinkan audio).
-- [x] **Mapping:** Lokasi GPS pelapor tampil akurat di peta admin.
+- [x] **Pendaftaran:** Data profil sekarang terpetakan dengan benar setelah registrasi berhasil.
+- [x] **Peta Lacak:** Koordinat penjemputan dan tujuan sekarang menggunakan angka desimal yang benar (`parseFloat`).
+- [x] **Riwayat:** Daftar pesanan lama sekarang tampil dengan label status dan biaya yang benar.
 
 ---
-> [!CAUTION]
-> **Penting untuk Admin:** Karena aturan keamanan browser, suara sirine mungkin tidak langsung berbunyi jika Admin baru saja membuka halaman. Pastikan Admin melakukan minimal satu klik (misal ganti tab) setelah login agar sistem audio diizinkan menyala otomatis saat darurat.
+> [!TIP]
+> **Silakan coba daftar sekarang!** Jangan lupa lakukan **Hard Refresh (Ctrl+F5)** di browser Anda untuk memastikan versi terbaru sudah aktif. Masalah layar putih saat klik "Lanjutkan" setelah OTP harusnya sudah tuntas.

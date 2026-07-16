@@ -158,8 +158,9 @@ export default function App() {
         if (phone === '6285156766317') finalRole = 'admin';
         const res = await OloluStore.registerPengguna(name, phone, finalRole, password, tempatLahir, tanggalLahir);
         if (res.success && res.profil) {
-          const profil = res.profil;
+          const profil = { ...res.profil }; // Clone to ensure extensibility
           if (profilePic) profil.fotoProfil = profilePic;
+
           if (finalRole === 'sopir' || finalRole === 'admin') {
             await OloluStore.updateSopirDokumen(profil.id, {
               fotoKtp: docKtp || '', fotoSim: docSim || '', fotoStnk: docStnk || '',
@@ -221,8 +222,12 @@ export default function App() {
     setLoginStep('form');
   };
 
-  const handleNotifyPanic = () => {
-    setGlobalPanicNotification({ show: true, pelapor: 'Seseorang', tipe: 'Darurat SOS' });
+  const handleNotifyPanic = (pelapor?: string, tipe?: string) => {
+    setGlobalPanicNotification({
+      show: true,
+      pelapor: pelapor || 'Seseorang',
+      tipe: tipe || 'Darurat SOS'
+    });
   };
 
   const handleGotoAdminPanicRoom = () => {
