@@ -1,5 +1,6 @@
-- [ ] Null-filter results in `store.ts`
-- [ ] Safe-mapping verification
-- [ ] Add Error Boundaries/Safe loops in views
-- [ ] Sync & Push to GitHub
+- [ ] Update `types.ts` dengan field tarif Mobil
+- [ ] Update `store.ts` dengan default tarif Mobil dan perbaikan `selesaikanPesanan` untuk update pendapatan sopir
+- [ ] Redesign UI Admin `AdminView.tsx` - Tab Tarif (Lengkap & Terorganisir)
+- [ ] Update `PassengerView.tsx` - Dukungan pemilihan Motor/Mobil dan sinkronisasi tarif
+- [ ] Sinkronisasi & Push ke GitHub
 - [ ] Laporan Akhir (Walkthrough)

@@ -98,6 +98,7 @@ export default function AdminView() {
 
   // FORM EDIT TARIF STATE
   const [tempConfig, setTempConfig] = useState<PengaturanTarif>(DEFAULT_PENGATURAN_TARIF);
+  const [activeTarifCat, setActiveTarifCat] = useState<'ride' | 'car' | 'food' | 'send' | 'big' | 'extra' | 'sys'>('ride');
 
   // EMERGENCIES AUDIO ALARM SYSTEM
   const [showPanicOverlay, setShowPanicOverlay] = useState(false);
@@ -230,8 +231,13 @@ export default function AdminView() {
   };
 
   const saveConfigWithLog = async () => {
-    await OloluStore.savePengaturan(tempConfig, profile!.id, profile!.nama);
-    alert("Pengaturan berhasil disimpan.");
+    if (!profile) return;
+    const catLabels: any = { ride: 'Ojek', car: 'Mobil', food: 'Makanan', send: 'Paket', big: 'Logistik', extra: 'Parkir/Lainnya', sys: 'Sistem' };
+    const detail = `Memperbarui konfigurasi tarif kategori: ${catLabels[activeTarifCat] || activeTarifCat.toUpperCase()}`;
+
+    await OloluStore.savePengaturan(tempConfig, profile.id, profile.nama);
+    await OloluStore.addAuditLog(profile.id, profile.nama, "Update Tarif", detail);
+    alert("🚀 SEMUA PENGATURAN BERHASIL DISIMPAN!");
   };
 
   const handleAddAdmin = async () => {
@@ -430,31 +436,191 @@ export default function AdminView() {
         )}
 
         {activeTab === 'tarif' && (
-          <div className="bg-white p-5 rounded-2xl border shadow-sm space-y-5">
-            <h3 className="text-xs font-black text-[#046A38] uppercase">Pendaftaran & Layanan</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex items-center justify-between bg-emerald-50 p-3 rounded-xl border border-emerald-100">
-                <span className="text-[10px] font-bold text-emerald-800 uppercase">Daftar Motor</span>
-                <input type="checkbox" checked={tempConfig.daftarMotorAktif} onChange={(e)=>setTempConfig({...tempConfig, daftarMotorAktif: e.target.checked})} className="w-4 h-4 rounded text-[#046A38]" />
-              </div>
-              <div className="flex items-center justify-between bg-emerald-50 p-3 rounded-xl border border-emerald-100">
-                <span className="text-[10px] font-bold text-emerald-800 uppercase">Daftar Mobil</span>
-                <input type="checkbox" checked={tempConfig.daftarMobilAktif} onChange={(e)=>setTempConfig({...tempConfig, daftarMobilAktif: e.target.checked})} className="w-4 h-4 rounded text-[#046A38]" />
-              </div>
+          <div className="space-y-4">
+            {/* Navigasi Kategori Tarif */}
+            <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-none">
+               {[
+                 { id: 'ride', label: '🏍️ Ojek', color: 'bg-emerald-500' },
+                 { id: 'car', label: '🚗 Mobil', color: 'bg-blue-500' },
+                 { id: 'food', label: '🍔 Makan', color: 'bg-amber-500' },
+                 { id: 'send', label: '📦 Paket', color: 'bg-indigo-500' },
+                 { id: 'big', label: '🚚 Logistik', color: 'bg-purple-500' },
+                 { id: 'extra', label: '🅿️ Lainnya', color: 'bg-slate-500' },
+                 { id: 'sys', label: '⚙️ Sistem', color: 'bg-gray-500' }
+               ].map(cat => (
+                 <button
+                   key={cat.id}
+                   onClick={() => setActiveTarifCat(cat.id as any)}
+                   className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase whitespace-nowrap transition-all border-2 ${
+                     activeTarifCat === cat.id ? 'border-[#046A38] bg-[#E6F4EC] text-[#046A38]' : 'border-transparent bg-white text-gray-400'
+                   }`}
+                 >
+                   {cat.label}
+                 </button>
+               ))}
             </div>
 
-            <h3 className="text-xs font-black text-[#046A38] uppercase pt-2">Edit Tarif Layanan</h3>
-            <div className="space-y-3">
-               <div>
-                 <label className="text-[9px] font-bold text-gray-400 uppercase">Tarif Dasar (Rp)</label>
-                 <input type="number" value={tempConfig.ojekTarifDasar} onChange={(e)=>setTempConfig({...tempConfig, ojekTarifDasar: parseInt(e.target.value)})} className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-sm font-black" />
-               </div>
-               <div>
-                 <label className="text-[9px] font-bold text-gray-400 uppercase">Tarif Per KM (Rp)</label>
-                 <input type="number" value={tempConfig.ojekTarifPerKm} onChange={(e)=>setTempConfig({...tempConfig, ojekTarifPerKm: parseInt(e.target.value)})} className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-sm font-black" />
-               </div>
+            <div className="bg-white p-5 rounded-2xl border shadow-sm space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+               {/* 🏍️ OJEK MOTOR */}
+               {activeTarifCat === 'ride' && (
+                 <div className="space-y-4">
+                    <h3 className="text-[10px] font-black text-emerald-700 uppercase tracking-widest border-b pb-2 flex items-center space-x-2">
+                       <Bike size={14} /> <span>Pengaturan Ololu-Ride (Motor)</span>
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Tarif Dasar</label>
+                          <input type="number" value={tempConfig.ojekTarifDasar} onChange={(e)=>setTempConfig({...tempConfig, ojekTarifDasar: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Per KM</label>
+                          <input type="number" value={tempConfig.ojekTarifPerKm} onChange={(e)=>setTempConfig({...tempConfig, ojekTarifPerKm: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Tarif Minimum</label>
+                          <input type="number" value={tempConfig.ojekTarifMinimum} onChange={(e)=>setTempConfig({...tempConfig, ojekTarifMinimum: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Batas KM Dasar</label>
+                          <input type="number" value={tempConfig.ojekBatasKmTarifDasar} onChange={(e)=>setTempConfig({...tempConfig, ojekBatasKmTarifDasar: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                    </div>
+                    <div className="flex items-center justify-between bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                       <span className="text-[9px] font-bold text-emerald-800 uppercase">Status Layanan Ride</span>
+                       <input type="checkbox" checked={tempConfig.layananOjekAktif} onChange={(e)=>setTempConfig({...tempConfig, layananOjekAktif: e.target.checked})} className="w-4 h-4 rounded text-[#046A38]" />
+                    </div>
+                 </div>
+               )}
+
+               {/* 🚗 MOBIL */}
+               {activeTarifCat === 'car' && (
+                 <div className="space-y-4">
+                    <h3 className="text-[10px] font-black text-blue-700 uppercase tracking-widest border-b pb-2 flex items-center space-x-2">
+                       <Car size={14} /> <span>Pengaturan Ololu-Car (Mobil)</span>
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Tarif Dasar</label>
+                          <input type="number" value={tempConfig.mobilTarifDasar} onChange={(e)=>setTempConfig({...tempConfig, mobilTarifDasar: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Per KM</label>
+                          <input type="number" value={tempConfig.mobilTarifPerKm} onChange={(e)=>setTempConfig({...tempConfig, mobilTarifPerKm: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Tarif Minimum</label>
+                          <input type="number" value={tempConfig.mobilTarifMinimum} onChange={(e)=>setTempConfig({...tempConfig, mobilTarifMinimum: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Batas KM Dasar</label>
+                          <input type="number" value={tempConfig.mobilBatasKmTarifDasar} onChange={(e)=>setTempConfig({...tempConfig, mobilBatasKmTarifDasar: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                    </div>
+                    {/* Reuse existing mobil active toggle if relevant */}
+                 </div>
+               )}
+
+               {/* 🍔 MAKANAN */}
+               {activeTarifCat === 'food' && (
+                 <div className="space-y-4">
+                    <h3 className="text-[10px] font-black text-amber-700 uppercase tracking-widest border-b pb-2 flex items-center space-x-2">
+                       <ShoppingBag size={14} /> <span>Pengaturan Makanan & Belanja</span>
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Tarif Dasar</label>
+                          <input type="number" value={tempConfig.makananTarifDasar} onChange={(e)=>setTempConfig({...tempConfig, makananTarifDasar: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Per KM</label>
+                          <input type="number" value={tempConfig.makananTarifPerKm} onChange={(e)=>setTempConfig({...tempConfig, makananTarifPerKm: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                    </div>
+                 </div>
+               )}
+
+               {/* 📦 PAKET */}
+               {activeTarifCat === 'send' && (
+                 <div className="space-y-4">
+                    <h3 className="text-[10px] font-black text-indigo-700 uppercase tracking-widest border-b pb-2 flex items-center space-x-2">
+                       <Package size={14} /> <span>Pengaturan Ololu-Send (Paket)</span>
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Tarif Dasar</label>
+                          <input type="number" value={tempConfig.paketTarifDasar} onChange={(e)=>setTempConfig({...tempConfig, paketTarifDasar: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Per KM</label>
+                          <input type="number" value={tempConfig.paketTarifPerKm} onChange={(e)=>setTempConfig({...tempConfig, paketTarifPerKm: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                    </div>
+                 </div>
+               )}
+
+               {/* 🅿️ PARKIR & TAMBAHAN */}
+               {activeTarifCat === 'extra' && (
+                 <div className="space-y-4">
+                    <h3 className="text-[10px] font-black text-slate-700 uppercase tracking-widest border-b pb-2 flex items-center space-x-2">
+                       <DollarSign size={14} /> <span>Biaya Parkir & Tambahan</span>
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Parkir Biasa</label>
+                          <input type="number" value={tempConfig.biayaParkirBiasa} onChange={(e)=>setTempConfig({...tempConfig, biayaParkirBiasa: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Parkir Pasar</label>
+                          <input type="number" value={tempConfig.biayaParkirPasar} onChange={(e)=>setTempConfig({...tempConfig, biayaParkirPasar: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Biaya Per Stop</label>
+                          <input type="number" value={tempConfig.biayaPerStopTambahan} onChange={(e)=>setTempConfig({...tempConfig, biayaPerStopTambahan: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Kelebihan Item</label>
+                          <input type="number" value={tempConfig.biayaKelebihanItem} onChange={(e)=>setTempConfig({...tempConfig, biayaKelebihanItem: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                    </div>
+                 </div>
+               )}
+
+               {/* ⚙️ ATURAN SISTEM */}
+               {activeTarifCat === 'sys' && (
+                 <div className="space-y-4">
+                    <h3 className="text-[10px] font-black text-gray-700 uppercase tracking-widest border-b pb-2 flex items-center space-x-2">
+                       <Settings size={14} /> <span>Kontrol Pendaftaran & Sistem</span>
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                       <div className="flex items-center justify-between bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                          <span className="text-[8px] font-bold text-emerald-800 uppercase leading-none">Daftar Motor</span>
+                          <input type="checkbox" checked={tempConfig.daftarMotorAktif} onChange={(e)=>setTempConfig({...tempConfig, daftarMotorAktif: e.target.checked})} className="w-4 h-4 rounded text-[#046A38]" />
+                       </div>
+                       <div className="flex items-center justify-between bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                          <span className="text-[8px] font-bold text-emerald-800 uppercase leading-none">Daftar Mobil</span>
+                          <input type="checkbox" checked={tempConfig.daftarMobilAktif} onChange={(e)=>setTempConfig({...tempConfig, daftarMobilAktif: e.target.checked})} className="w-4 h-4 rounded text-[#046A38]" />
+                       </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Radius Cari (KM)</label>
+                          <input type="number" value={tempConfig.radiusPencarianSopirKm} onChange={(e)=>setTempConfig({...tempConfig, radiusPencarianSopirKm: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Saldo Min Online</label>
+                          <input type="number" value={tempConfig.saldoMinimalOnlineSopir} onChange={(e)=>setTempConfig({...tempConfig, saldoMinimalOnlineSopir: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                    </div>
+                 </div>
+               )}
+
+               <button
+                 onClick={saveConfigWithLog}
+                 className="w-full py-4 bg-[#046A38] text-white font-black rounded-2xl text-[10px] tracking-widest uppercase shadow-lg active:scale-95 transition-transform"
+               >
+                 SIMPAN SEMUA PENGATURAN
+               </button>
             </div>
-            <button onClick={saveConfigWithLog} className="w-full py-4 bg-[#046A38] text-white font-black rounded-2xl text-[10px] tracking-widest uppercase shadow-lg">SIMPAN PENGATURAN</button>
           </div>
         )}
 

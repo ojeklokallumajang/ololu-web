@@ -1,34 +1,48 @@
-# Final Recovery and Null-Safety for PWA
+# Implementasi Pengaturan Tarif Lengkap (Motor vs Mobil)
 
-This plan ensures that the application never crashes due to missing data by implementing strict null-filtering in the data layer and adding a global Error Boundary.
+Rencana ini akan memperluas sistem tarif agar mendukung perbedaan harga antara kendaraan Motor dan Mobil untuk setiap jenis layanan, serta memberikan kontrol penuh kepada Admin atas seluruh parameter biaya di aplikasi.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> This is a deep stability fix. We are adding "Safety Nets" at every level: Data Fetching, State Management, and UI Rendering.
+> **Struktur Tarif Baru:**
+> - **Motor:** Menggunakan parameter `ojek...` (untuk Ride) dan `paket...` (untuk Send).
+> - **Mobil:** Menambahkan parameter baru `mobil...` khusus untuk layanan transportasi mobil.
+> - **Layanan Lain:** Menambahkan input untuk tarif Makanan, Belanja, dan Barang Besar (Logistik).
 
 ## Proposed Changes
 
-### Data Layer (`store.ts`)
+### Data Model & Store
+
+#### [MODIFY] [types.ts](file:///W:/ololuv1/src/types.ts)
+- Perbarui antarmuka `PengaturanTarif` dengan menambahkan field:
+  - `mobilTarifDasar`, `mobilTarifPerKm`, `mobilTarifMinimum`, `mobilPersenJasa`, `mobilBatasKmTarifDasar`.
 
 #### [MODIFY] [store.ts](file:///W:/ololuv1/src/services/store.ts)
-- Update `getAllPesanan` and `getAllUsers` to filter out any null/undefined results from mapping.
-- Ensure `mapOrder` and `mapProfile` are strictly used and never return incomplete objects.
+- Perbarui `DEFAULT_PENGATURAN_TARIF` untuk menyertakan nilai default tarif Mobil.
 
-### Main Entry (`App.tsx`)
+### Admin Interface
 
-#### [MODIFY] [App.tsx](file:///W:/ololuv1/src/App.tsx)
-- Wrap the entire application in a `try-catch` during initialization.
-- Add a fallback UI if a critical error occurs.
+#### [MODIFY] [AdminView.tsx](file:///W:/ololuv1/src/components/AdminView.tsx)
+- Desain ulang tab "Tarif" menjadi kategori yang dapat diklik (Accordion atau List):
+  - **🏍️ Motor (Ololu-Ride)**
+  - **🚗 Mobil (Ololu-Car)**
+  - **📦 Paket (Ololu-Send)**
+  - **🍔 Makanan & Belanja**
+  - **🚚 Barang Besar / Logistik**
+  - **🅿️ Parkir & Biaya Tambahan**
+  - **⚙️ Aturan Sistem** (Radius, Saldo Minimal, dll)
 
-### Views (`PassengerView.tsx` & `DriverView.tsx`)
+### Passenger Interface
 
-#### [MODIFY] [PassengerView.tsx](file:///W:/ololuv1/src/components/PassengerView.tsx) & [DriverView.tsx](file:///W:/ololuv1/src/components/DriverView.tsx)
-- Add additional safety checks in all `.map()` loops.
-- Ensure Google Maps components receive hardcoded defaults if state is temporarily invalid.
+#### [MODIFY] [PassengerView.tsx](file:///W:/ololuv1/src/components/PassengerView.tsx)
+- Tambahkan pilihan kendaraan (Motor/Mobil) pada saat pemesanan (khusus untuk layanan Ride/Send).
+- Perbarui fungsi `hitungHarga` agar mengambil parameter tarif yang sesuai dengan pilihan kendaraan.
 
 ## Verification Plan
 
 ### Manual Verification
-1. Register/Login as usual.
-2. If a white screen still appears, I will provide a way for the user to see the error log on screen (custom error overlay).
+1. Buka Admin Panel -> Tab Tarif.
+2. Atur tarif Motor (misal: Rp 2.500/km) dan Mobil (misal: Rp 6.000/km).
+3. Simpan.
+4. Buka Dashboard Penumpang, pilih layanan Ride, alihkan antara Motor dan Mobil, pastikan estimasi harga berubah seketika.

@@ -29,6 +29,12 @@ export const DEFAULT_PENGATURAN_TARIF: PengaturanTarif = {
   ojekPersenJasa: 8,
   ojekBatasKmTarifDasar: 3,
 
+  mobilTarifDasar: 8000,
+  mobilTarifPerKm: 5000,
+  mobilTarifMinimum: 15000,
+  mobilPersenJasa: 10,
+  mobilBatasKmTarifDasar: 3,
+
   makananTarifDasar: 6000,
   makananTarifPerKm: 3000,
   makananTarifMinimum: 10000,
@@ -401,25 +407,52 @@ export const OloluStore = {
     }).eq('id', orderId);
 
     if (!error && finalData.idSopir) {
-      // Update saldo sopir (simulasi pendapatan)
+      // 1. Ambil Data Sopir & Pengaturan Tarif
       const { data: driver } = await supabase.from('driver_details').select('saldo_dompet, jumlah_pesanan_selesai').eq('id', finalData.idSopir).single();
+      const settings = await this.getPengaturan();
+
       if (driver) {
-        const pendapatan = finalData.totalBayarAkhir || 0;
-        const saldoBaru = (driver.saldo_dompet || 0) + pendapatan;
+        // 2. Tentukan Persen Potongan Jasa berdasarkan Jenis Layanan
+        let persenJasa = 10; // Default
+        const layanan = finalData.jenisLayanan;
+        if (layanan === 'ojek') persenJasa = settings.ojekPersenJasa;
+        else if (layanan === 'mobil') persenJasa = settings.mobilPersenJasa;
+        else if (layanan === 'makanan') persenJasa = settings.makananPersenJasa;
+        else if (layanan === 'paket') persenJasa = settings.paketPersenJasa;
+        else if (layanan === 'barang_besar') persenJasa = settings.barangBesarPersenJasa;
+
+        // 3. Hitung Pendapatan & Potongan
+        const totalBayar = finalData.totalBayarAkhir || 0;
+        const potonganJasa = Math.round(totalBayar * (persenJasa / 100));
+        const pendapatanBersih = totalBayar - potonganJasa;
+
+        const saldoBaru = (driver.saldo_dompet || 0) + pendapatanBersih;
         const pesananBaru = (driver.jumlah_pesanan_selesai || 0) + 1;
 
+        // 4. Update Database Sopir & Dompet
         await supabase.from('driver_details').update({
           saldo_dompet: saldoBaru,
           jumlah_pesanan_selesai: pesananBaru
         }).eq('id', finalData.idSopir);
 
+        // Record Pendapatan (Gross)
         await supabase.from('wallet_transactions').insert({
           id_sopir: finalData.idSopir,
           jenis: 'pendapatan',
-          jumlah: pendapatan,
+          jumlah: totalBayar,
           saldo_awal: driver.saldo_dompet,
-          saldo_akhir: saldoBaru,
+          saldo_akhir: driver.saldo_dompet + totalBayar,
           deskripsi: `Pendapatan order #${finalData.nomorPesanan}`
+        });
+
+        // Record Potongan Jasa (Deduction)
+        await supabase.from('wallet_transactions').insert({
+          id_sopir: finalData.idSopir,
+          jenis: 'potongan_jasa',
+          jumlah: potonganJasa,
+          saldo_awal: driver.saldo_dompet + totalBayar,
+          saldo_akhir: saldoBaru,
+          deskripsi: `Potongan jasa Ololu (${persenJasa}%) #${finalData.nomorPesanan}`
         });
       }
     }

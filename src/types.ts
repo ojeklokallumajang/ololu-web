@@ -49,7 +49,7 @@ export interface DetailSopir {
   lokasiSaatIni?: { lat: number; lng: number };
 }
 
-export type JenisLayanan = 'ojek' | 'makanan' | 'paket' | 'barang_besar' | 'langganan';
+export type JenisLayanan = 'ojek' | 'mobil' | 'makanan' | 'paket' | 'barang_besar' | 'langganan';
 
 export interface ItemBelanja {
   id: string;
@@ -177,6 +177,13 @@ export interface PengaturanTarif {
   ojekTarifMinimum: number;
   ojekPersenJasa: number;
   ojekBatasKmTarifDasar: number; // KM berlakunya tarif dasar (contoh: 3)
+
+  // Tarif Mobil (Ololu-Car)
+  mobilTarifDasar: number;
+  mobilTarifPerKm: number;
+  mobilTarifMinimum: number;
+  mobilPersenJasa: number;
+  mobilBatasKmTarifDasar: number;
 
   // Tarif Makanan & Belanja
   makananTarifDasar: number;

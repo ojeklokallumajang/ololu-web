@@ -168,7 +168,8 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   const [historyOrders, setHistoryOrders] = useState<Pesanan[]>([]);
   const [viewMode, setViewMode] = useState<'home' | 'booking' | 'history' | 'profile'>('home');
   const [subLayanan, setSubLayanan] = useState<'ojek' | 'kirim' | 'belanja' | 'makanan' | 'wisata' | 'market'>('ojek');
-  const [selectedLayanan, setSelectedLayanan] = useState<'ojek' | 'makanan' | 'paket' | 'barang_besar'>('ojek');
+  const [pilihanKendaraan, setPilihanKendaraan] = useState<'motor' | 'mobil'>('motor');
+  const [selectedLayanan, setSelectedLayanan] = useState<'ojek' | 'makanan' | 'paket' | 'barang_besar' | 'mobil'>('ojek');
   const [asalAlamat, setAsalAlamat] = useState('Pilih lokasi penjemputan...');
   const [asalLat, setAsalLat] = useState(KOORDINAT_LUMAJANG.lat);
   const [asalLng, setAsalLng] = useState(KOORDINAT_LUMAJANG.lng);
@@ -222,10 +223,17 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
 
   const selectSubLayanan = (sub: any) => {
     setSubLayanan(sub);
-    if (sub === 'ojek') setSelectedLayanan('ojek');
+    if (sub === 'ojek') setSelectedLayanan(pilihanKendaraan === 'mobil' ? 'mobil' : 'ojek');
     else if (sub === 'kirim') setSelectedLayanan('paket');
     else if (sub === 'wisata') setSelectedLayanan('barang_besar');
     else setSelectedLayanan('makanan');
+  };
+
+  const toggleKendaraan = (v: 'motor' | 'mobil') => {
+    setPilihanKendaraan(v);
+    if (subLayanan === 'ojek') {
+      setSelectedLayanan(v === 'mobil' ? 'mobil' : 'ojek');
+    }
   };
 
   const hitungTotalJarak = () => {
@@ -237,10 +245,13 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   const hitungHarga = () => {
     if (!config) return 0;
     let d = 0, k = 0, m = 0, b = 3;
+
     if (selectedLayanan === 'ojek') { d = config.ojekTarifDasar; k = config.ojekTarifPerKm; m = config.ojekTarifMinimum; b = config.ojekBatasKmTarifDasar; }
+    else if (selectedLayanan === 'mobil') { d = config.mobilTarifDasar; k = config.mobilTarifPerKm; m = config.mobilTarifMinimum; b = config.mobilBatasKmTarifDasar; }
     else if (selectedLayanan === 'makanan') { d = config.makananTarifDasar; k = config.makananTarifPerKm; m = config.makananTarifMinimum; b = config.makananBatasKmTarifDasar; }
     else if (selectedLayanan === 'paket') { d = config.paketTarifDasar; k = config.paketTarifPerKm; m = config.paketTarifMinimum; b = config.paketBatasKmTarifDasar; }
     else { d = config.barangBesarTarifDasar; k = config.barangBesarTarifPerKm; m = config.barangBesarTarifMinimum; b = config.barangBesarBatasKmTarifDasar; }
+
     const j = hitungTotalJarak();
     let h = d + (j > b ? (j - b) * k : 0);
     return Math.max(h, m) + (stops.length > 1 ? (stops.length - 1) * config.biayaPerStopTambahan : 0);
@@ -389,6 +400,26 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       </div>
 
       <div className="p-3 space-y-3 text-left">
+        {/* PILIHAN KENDARAAN (MOTOR/MOBIL) */}
+        {(subLayanan === 'ojek' || subLayanan === 'kirim') && (
+           <div className="flex bg-white p-1 rounded-2xl border border-gray-150 shadow-sm gap-1">
+              <button
+                onClick={() => toggleKendaraan('motor')}
+                className={`flex-1 py-3 rounded-xl flex flex-col items-center justify-center transition-all ${pilihanKendaraan === 'motor' ? 'bg-[#E6F4EC] text-[#046A38] border-[#046A38] border shadow-sm' : 'text-gray-400'}`}
+              >
+                <Bike size={20} className={pilihanKendaraan === 'motor' ? 'animate-bounce' : ''} />
+                <span className="text-[9px] font-black uppercase mt-1">Ololu-Ride (Motor)</span>
+              </button>
+              <button
+                onClick={() => toggleKendaraan('mobil')}
+                className={`flex-1 py-3 rounded-xl flex flex-col items-center justify-center transition-all ${pilihanKendaraan === 'mobil' ? 'bg-[#E6F4EC] text-[#046A38] border-[#046A38] border shadow-sm' : 'text-gray-400'}`}
+              >
+                <Car size={20} className={pilihanKendaraan === 'mobil' ? 'animate-bounce' : ''} />
+                <span className="text-[9px] font-black uppercase mt-1">Ololu-Car (Mobil)</span>
+              </button>
+           </div>
+        )}
+
         <div className="grid grid-cols-6 gap-1 bg-white p-1 rounded-xl border border-gray-150 shadow-xs">
           {['ojek', 'kirim', 'belanja', 'makanan', 'wisata', 'market'].map(s => (
             <button key={s} onClick={() => selectSubLayanan(s as any)} className={`flex flex-col items-center py-2 rounded-lg transition-all ${subLayanan === s ? 'bg-[#E6F4EC] text-[#046A38] font-black' : 'text-gray-400'}`}>
