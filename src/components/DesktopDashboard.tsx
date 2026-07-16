@@ -23,8 +23,8 @@ export default function DesktopDashboard() {
   const [time, setTime] = useState(new Date());
   const [activeOrders, setActiveOrders] = useState<Pesanan[]>([]);
   const [drivers, setDrivers] = useState<DetailSopir[]>([]);
-  const [rates, setRates] = useState(OloluStore.getPengaturan());
-  const [alertLogs, setAlertLogs] = useState(OloluStore.getAllEmergency());
+  const [rates, setRates] = useState<any>(null);
+  const [alertLogs, setAlertLogs] = useState<any[]>([]);
 
   // Update clock every second
   useEffect(() => {
@@ -34,11 +34,18 @@ export default function DesktopDashboard() {
 
   // Fetch real-time data and subscribe to store changes
   useEffect(() => {
-    const updateLocalState = () => {
-      setActiveOrders(OloluStore.getAllPesanan());
-      setDrivers(OloluStore.getAllSopir());
-      setRates(OloluStore.getPengaturan());
-      setAlertLogs(OloluStore.getAllEmergency());
+    const updateLocalState = async () => {
+      const [orders, listSopir, settings, emergencies] = await Promise.all([
+        OloluStore.getAllPesanan(),
+        OloluStore.getAllSopir(),
+        OloluStore.getPengaturan(),
+        OloluStore.getAllEmergency()
+      ]);
+
+      setActiveOrders(orders);
+      setDrivers(listSopir);
+      setRates(settings);
+      setAlertLogs(emergencies);
     };
 
     updateLocalState();
@@ -117,66 +124,41 @@ export default function DesktopDashboard() {
 
     try {
       OloluStore.buatPesanan(
-        chosenLayanan,
-        idPenumpang,
-        chosenName,
-        '6281987654321',
-        origin.alamat,
-        origin.lat,
-        origin.lng,
-        destinationsWithDetails,
-        jarak,
-        true
+        {
+          jenisLayanan: chosenLayanan,
+          idPenumpang: idPenumpang,
+          asalAlamat: origin.alamat,
+          asalLat: origin.lat,
+          asalLng: origin.lng,
+          jarakKm: jarak,
+          totalBayarAkhir: 25000,
+          pembayaranTunai: true
+        },
+        destinationsWithDetails as any
       );
     } catch (e) {
       console.error("Gagal simulasikan order:", e);
     }
   };
 
-  const toggleDriverStatus = (driverId: string) => {
-    const s = OloluStore.getSopir(driverId);
-    if (s) {
-      const updateSopir = OloluStore.getAllSopir().map(drv => {
-        if (drv.id === driverId) {
-          return { ...drv, statusOnline: !drv.statusOnline };
-        }
-        return drv;
-      });
-      // Simpan kembali
-      localStorage.setItem('ololu_sopir_detail', JSON.stringify(updateSopir));
-      // Notify
-      const event = new Event('storage');
-      window.dispatchEvent(event);
-      // For instant reactive re-run in current frame
-      const listenersField = (OloluStore as any).listeners || new Set();
-      listenersField.forEach((cb: any) => cb());
-    }
+  const toggleDriverStatus = async (driverId: string) => {
+    // Note: This logic is legacy and might need full Supabase update
+    // For now, let's just make it not crash
+    await OloluStore.toggleOnlineSopir(driverId);
   };
 
-  const triggerPanicSimulation = () => {
+  const triggerPanicSimulation = async () => {
     const onlineDrivers = drivers.filter(d => d.statusOnline);
-    const reporterName = onlineDrivers.length > 0 ? onlineDrivers[0].platNomor + " (" + onlineDrivers[0].id.replace('sopir-', '').toUpperCase() + ")" : 'Penumpang Lumajang';
-    const reporterRole = onlineDrivers.length > 0 ? 'sopir' : 'penumpang';
+    const reporterName = onlineDrivers.length > 0 ? 'Driver' : 'Penumpang';
 
-    const id = `emg-${Date.now()}`;
-    const emg = {
-      id,
-      idPesanan: 'sim-panic',
-      namaPelapor: onlineDrivers.length > 0 ? 'Pak Joko' : 'Mbak Rahma',
-      peranPelapor: reporterRole as 'penumpang' | 'sopir',
-      nomorHpPelapor: '6281234567890',
-      lat: -8.1331,
-      lng: 113.2240,
-      timestamp: new Date().toISOString(),
-      status: 'baru' as const
-    };
-
-    const currentEmergency = OloluStore.getAllEmergency();
-    currentEmergency.unshift(emg);
-    localStorage.setItem('ololu_emergency', JSON.stringify(currentEmergency));
-    // Trigger update
-    const listenersField = (OloluStore as any).listeners || new Set();
-    listenersField.forEach((cb: any) => cb());
+    await OloluStore.tambahEmergency(
+      'sim-panic',
+      onlineDrivers.length > 0 ? 'Pak Joko' : 'Mbak Rahma',
+      '6281234567890',
+      onlineDrivers.length > 0 ? 'sopir' : 'penumpang',
+      -8.1331,
+      113.2240
+    );
   };
 
   // Kelola hitung-hitungan statistics
@@ -187,6 +169,10 @@ export default function DesktopDashboard() {
     .reduce((acc, curr) => acc + (curr.biayaPerjalananTotal || 0), 0);
 
   const emergency = getEmergencyStatus();
+
+  if (!rates) {
+    return <div className="p-8 text-center text-slate-500 font-bold">Inisialisasi Telemetri...</div>;
+  }
 
   return (
     <div className="w-full flex-1 max-w-[850px] bg-slate-900 border border-slate-800 rounded-3xl p-6 text-white font-sans flex flex-col space-y-6 shadow-2xl overflow-hidden self-stretch relative">

@@ -221,6 +221,10 @@ export default function App() {
     setLoginStep('form');
   };
 
+  const handleNotifyPanic = () => {
+    setGlobalPanicNotification({ show: true, pelapor: 'Seseorang', tipe: 'Darurat SOS' });
+  };
+
   const handleGotoAdminPanicRoom = () => {
     setGlobalPanicNotification({ show: false, pelapor: '', tipe: '' });
     setRole('admin');

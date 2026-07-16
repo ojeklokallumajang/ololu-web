@@ -81,7 +81,9 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
   const [activeNotaStopId, setActiveNotaStopId] = useState<string | null>(null);
 
   // SUPABASE REALTIME & AUTOBID STATES
+  const [config, setConfig] = useState<any>(null);
   const [realtimeOrderAlert, setRealtimeOrderAlert] = useState<Pesanan | null>(null);
+  const [historyOrders, setHistoryOrders] = useState<Pesanan[]>([]);
   const [alertCountdown, setAlertCountdown] = useState<number>(15);
   const [isAutobidActive, setIsAutobidActive] = useState<boolean>(true);
   const [autobidCountdown, setAutobidCountdown] = useState<number>(3);
@@ -94,6 +96,10 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
     const initDriver = async () => {
       const p = await OloluStore.getProfilLogin();
       setProfile(p);
+
+      const cfg = await OloluStore.getPengaturan();
+      setConfig(cfg);
+
       if (p) {
         const detail = await OloluStore.getSopir(p.id);
         setDriverDetail(detail || null);
@@ -111,6 +117,9 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
 
         const txs = await OloluStore.getTransaksiSopir(p.id);
         setTransactions(txs);
+
+        const orders = await OloluStore.getAllPesanan();
+        setHistoryOrders(orders.filter(o => o.idSopir === p.id));
       }
     };
 
@@ -172,8 +181,6 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
 
     return () => unsubscribe();
   }, [activeOrder, driverDetail, profile]);
-
-  const config = OloluStore.getPengaturan();
 
   // Haversine distance calculator to check if driver is close enough to order pickup
   const getDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -460,6 +467,10 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
 
     await OloluStore.selesaikanPesanan(activeOrder.id, activeOrder);
 
+    // Refresh history
+    const orders = await OloluStore.getAllPesanan();
+    if (profile) setHistoryOrders(orders.filter(o => o.idSopir === profile.id));
+
     alert("🎉 PESANAN SELESAI!\nData telah diarsipkan ke database.");
     setActiveOrder(null);
   };
@@ -509,16 +520,11 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
     );
   };
 
-  // JIKA SESSION TIDAK VALID
-  if (!profile || !driverDetail) {
+  if (!profile || !driverDetail || !config) {
     return (
-      <div className="max-w-md mx-auto p-8 text-center space-y-4">
-        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-          <AlertTriangle size={48} className="mx-auto text-amber-500 mb-4" />
-          <h2 className="text-lg font-black text-gray-800">Sesi Tidak Valid</h2>
-          <p className="text-xs text-gray-500">Silakan login kembali untuk mengakses menu sopir.</p>
-          <button onClick={onLogout} className="mt-6 w-full py-3 bg-[#046A38] text-white rounded-xl font-bold">Kembali ke Login</button>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <div className="w-10 h-10 border-4 border-[#046A38]/20 border-t-[#046A38] rounded-full animate-spin"></div>
+        <p className="mt-4 text-xs font-bold text-gray-400 uppercase">Menyiapkan Dashboard Driver...</p>
       </div>
     );
   }
@@ -1080,7 +1086,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                 : 'bg-white border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
-            <span>🛵 Riwayat Order ({OloluStore.getAllPesanan().filter(p => p.idSopir === profile?.id).length})</span>
+            <span>🛵 Riwayat Order ({historyOrders.length})</span>
           </button>
           <button
             onClick={() => setActiveHistoryTab('finance')}
@@ -1218,7 +1224,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
               <h3 className="text-xs font-bold text-gray-700 uppercase">RIWAYAT PERJALANAN ANDA</h3>
             </div>
 
-            {OloluStore.getAllPesanan().filter(p => p.idSopir === profile?.id).length === 0 ? (
+            {historyOrders.length === 0 ? (
               <div className="p-6 text-center text-gray-400 italic text-xs space-y-2">
                 <span className="text-3xl block">📭</span>
                 <p>Belum ada orderan yang Anda selesaikan.</p>
@@ -1226,8 +1232,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
               </div>
             ) : (
               <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
-                {OloluStore.getAllPesanan()
-                  .filter(p => p.idSopir === profile?.id)
+                {historyOrders
                   .slice()
                   .reverse()
                   .map((p) => {

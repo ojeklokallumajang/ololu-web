@@ -486,9 +486,11 @@ interface PassengerViewProps {
 export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChange, lockedOrderId }: PassengerViewProps) {
   // --- IN-APP STATE SINKRONISASI ---
   const [profile, setProfile] = useState<any>(null);
+  const [config, setConfig] = useState<any>(null);
   const isSuperUser = profile?.nomorHp === '6285156766317';
   const [activeOrder, setActiveOrder] = useState<Pesanan | null>(null);
   const [driverLoc, setDriverLoc] = useState<{ lat: number; lng: number } | null>(null);
+  const [historyOrders, setHistoryOrders] = useState<Pesanan[]>([]);
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [ratingsSubmitted, setRatingsSubmitted] = useState<boolean>(false);
   const [ratingVal, setRatingVal] = useState<number>(5);
@@ -638,12 +640,18 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     }
   ]);
 
-  const config = OloluStore.getPengaturan();
-
   useEffect(() => {
     const initPassenger = async () => {
       const p = await OloluStore.getProfilLogin();
       setProfile(p);
+
+      const cfg = await OloluStore.getPengaturan();
+      setConfig(cfg);
+
+      if (p) {
+        const orders = await OloluStore.getAllPesanan();
+        setHistoryOrders(orders.filter(o => o.idPenumpang === p.id));
+      }
 
       // RECOVERY: Jika ada kunci order (Refresh F5), ambil data dasar dari DB
       if (lockedOrderId) {
@@ -1020,8 +1028,14 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
 
   // --- RENDERING VIEWS ---
 
-  // JIKA PENUMPANG BELUM DAFTAR / LOGIN SIMULASI
-  if (!profile) {
+  if (!profile || !config) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <div className="w-10 h-10 border-4 border-[#046A38]/20 border-t-[#046A38] rounded-full animate-spin"></div>
+        <p className="mt-4 text-xs font-bold text-gray-400 uppercase">Menyiapkan Dashboard Ololu...</p>
+      </div>
+    );
+  }
     // --- VIEW: PROFILE ---
   if (viewMode === 'profile' && profile) {
     return (
@@ -1186,8 +1200,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   if (activeOrder) {
     const isCompleted = activeOrder.status === 'selesai';
     const isCancelled = activeOrder.status === 'dibatalkan';
-    const activeDriver = activeOrder.idSopir ? OloluStore.getSopir(activeOrder.idSopir) : null;
-    const currentLoc = activeDriver?.lokasiSaatIni || { lat: activeOrder.asalLat, lng: activeOrder.asalLng };
+    const currentLoc = driverLoc || { lat: activeOrder.asalLat, lng: activeOrder.asalLng };
 
     // --- VIEW: PROFILE ---
   if (viewMode === 'profile' && profile) {
@@ -1698,7 +1711,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   };
 
   if (viewMode === 'history') {
-    const passengerOrders = OloluStore.getAllPesanan().filter(p => p.idPenumpang === profile?.id);
+    // historyOrders state is used instead of OloluStore.getAllPesanan()
     
     // --- VIEW: PROFILE ---
   if (viewMode === 'profile' && profile) {
@@ -1799,7 +1812,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
 
         {/* CONTAINER PESANAN */}
         <div className="p-4 space-y-3">
-          {passengerOrders.length === 0 ? (
+          {historyOrders.length === 0 ? (
             <div className="bg-white rounded-3xl p-8 text-center border border-gray-150 space-y-4 shadow-sm mt-4">
               <span className="text-4xl block">📝</span>
               <div>
@@ -1820,9 +1833,8 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
             </div>
           ) : (
             <div className="space-y-3">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">DAFTAR AKTIVITAS ({passengerOrders.length})</h3>
-              {passengerOrders.slice().reverse().map((p) => {
-                const driverProfile = p.idSopir ? OloluStore.getProfil(p.idSopir) : null;
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">DAFTAR AKTIVITAS ({historyOrders.length})</h3>
+              {historyOrders.slice().reverse().map((p) => {
                 const dateStr = p.waktuDibuat ? new Date(p.waktuDibuat).toLocaleDateString('id-ID', {
                   day: 'numeric',
                   month: 'short',
@@ -1971,12 +1983,12 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
                     {/* DETAIL HARGA DAN SOPIR */}
                     <div className="bg-[#FAFBF9] p-3 rounded-xl border border-gray-100 flex justify-between items-center text-xs">
                       <div>
-                        {driverProfile ? (
+                        {p.namaSopir ? (
                           <div className="flex items-center space-x-1.5">
                             <span className="text-base">🛵</span>
                             <div>
                               <p className="text-[9px] font-bold uppercase text-gray-400 leading-none">Mitra Driver</p>
-                              <p className="text-gray-800 font-bold mt-0.5">{driverProfile.nama}</p>
+                              <p className="text-gray-800 font-bold mt-0.5">{p.namaSopir}</p>
                             </div>
                           </div>
                         ) : (

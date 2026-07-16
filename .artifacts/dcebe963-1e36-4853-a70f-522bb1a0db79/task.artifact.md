@@ -2,5 +2,5 @@
 - [x] Implementasi State & Audio Alarm di `AdminView.tsx`
 - [x] Buat Overlay Panic Mode (Visual Alert)
 - [x] Implementasi Tab "🚨 Darurat" untuk managemen laporan
-- [/] Sinkronisasi ke GitHub
-- [ ] Laporan akhir (Walkthrough)
+- [x] Sinkronisasi ke GitHub
+- [x] Laporan akhir (Walkthrough)
