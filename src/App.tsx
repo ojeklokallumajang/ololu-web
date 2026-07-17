@@ -485,7 +485,11 @@ export default function App() {
         {!showLogin && (
           <div className="w-full md:max-w-[420px] min-h-screen md:min-h-[780px] md:h-[780px] bg-white md:shadow-2xl md:rounded-[36px] border-none md:border md:border-gray-100 flex flex-col relative overflow-hidden self-center">
             {role === 'admin' ? (
-              <div className="flex-1 overflow-y-auto scrollbar-none"><AdminView /></div>
+              <div className="flex-1 overflow-y-auto scrollbar-none">
+                <ErrorBoundary name="AdminView">
+                  <AdminView />
+                </ErrorBoundary>
+              </div>
             ) : (
               <>
                 <div className="flex-1 overflow-y-auto pb-14 relative scrollbar-none">
