@@ -483,20 +483,7 @@ export default function App() {
                 </div>
               </>
             )}
-            <footer className="absolute bottom-0 left-0 right-0 bg-[#E6F4EC] border-t border-emerald-950/5 py-2.5 flex flex-col items-center justify-center shrink-0">
-              <div className="flex items-center space-x-3">
-                <a href="https://tiktok.com/@ololuojeklokallumajang" target="_blank" rel="noreferrer" className="flex items-center space-x-1 text-[#046A38] hover:opacity-80 transition-opacity">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.13-1.47-.13 3.35-.12 6.7-.13 10.05-.03 2.1-.53 4.26-2.02 5.73-1.57 1.64-3.96 2.32-6.15 2.05-2.26-.23-4.43-1.47-5.46-3.51-1.07-2.14-.92-4.9.48-6.84 1.25-1.78 3.42-2.8 5.6-2.6v4.07c-1.21-.11-2.48.33-3.23 1.25-.79 1.05-.73 2.58.19 3.47.88.85 2.35.95 3.28.19 1.11-.9 1.11-2.73 1.12-4.11V0z"/>
-                  </svg>
-                  <span className="text-[7px] font-black uppercase">ololuojeklokallumajang</span>
-                </a>
-                <a href="https://instagram.com/ololu_ojeklokallumajang" target="_blank" rel="noreferrer" className="flex items-center space-x-1 text-[#046A38] hover:opacity-80 transition-opacity">
-                  <span className="text-[10px]">📸</span>
-                  <span className="text-[7px] font-black uppercase">ololu_ojeklokallumajang</span>
-                </a>
-              </div>
-            </footer>
+            <footer className="absolute bottom-0 left-0 right-0 bg-[#E6F4EC] border-t border-emerald-950/5 py-2.5 text-center text-[8px] text-[#046A38] font-bold tracking-widest uppercase shrink-0">© 2026 PT Ololu Pengantaran Nusantara Lumajang</footer>
           </div>
         )}
       </div>
