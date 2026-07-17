@@ -9,6 +9,9 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log("DOM Content Loaded");
+      });
       window.onerror = function(msg, url, line, col, error) {
         var errDiv = document.createElement('div');
         errDiv.style.position = 'fixed';
