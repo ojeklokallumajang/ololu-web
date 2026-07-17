@@ -500,23 +500,19 @@ export default function App() {
               <>
                 <div className="flex-1 overflow-y-auto pb-14 relative scrollbar-none">
                   {role === 'penumpang' && (
-                    <ErrorBoundary name="PassengerView">
-                      <PassengerView
-                        onNotifyAdminPanic={handleNotifyPanic}
-                        onLogout={handleLogout}
-                        onRoleChange={(r) => setRole(r)}
-                        lockedOrderId={lockedOrder?.role === 'penumpang' ? lockedOrder.orderId : undefined}
-                      />
-                    </ErrorBoundary>
+                    <PassengerView
+                      onNotifyAdminPanic={handleNotifyPanic}
+                      onLogout={handleLogout}
+                      onRoleChange={(r) => setRole(r)}
+                      lockedOrderId={lockedOrder?.role === 'penumpang' ? lockedOrder.orderId : undefined}
+                    />
                   )}
                   {role === 'sopir' && (
-                    <ErrorBoundary name="DriverView">
-                      <DriverView
-                        onNotifyAdminPanic={handleNotifyPanic}
-                        onLogout={handleLogout}
-                        lockedOrderId={lockedOrder?.role === 'sopir' ? lockedOrder.orderId : undefined}
-                      />
-                    </ErrorBoundary>
+                    <DriverView
+                      onNotifyAdminPanic={handleNotifyPanic}
+                      onLogout={handleLogout}
+                      lockedOrderId={lockedOrder?.role === 'sopir' ? lockedOrder.orderId : undefined}
+                    />
                   )}
                 </div>
               </>
