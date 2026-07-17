@@ -484,10 +484,12 @@ export default function App() {
       )}
 
       <div className="flex-grow w-full max-w-7xl mx-auto p-0 md:p-4 lg:p-6 flex flex-col justify-center items-center">
-        {!showLogin && (
+        {initializing ? (
+          <div className="text-gray-400 font-bold uppercase text-[10px]">Memuat Ololu...</div>
+        ) : !showLogin ? (
           <div className="w-full md:max-w-[420px] min-h-screen md:min-h-[780px] md:h-[780px] bg-white md:shadow-2xl md:rounded-[36px] border-none md:border md:border-gray-100 flex flex-col relative overflow-hidden self-center">
             {!role ? (
-              <div className="flex-1 flex items-center justify-center">Memuat Peran...</div>
+              <div className="flex-1 flex items-center justify-center">Gagal Memuat Peran. Silakan Login Ulang.</div>
             ) : role === 'admin' ? (
               <div className="flex-1 overflow-y-auto scrollbar-none">
                 <ErrorBoundary name="AdminView">
@@ -521,7 +523,7 @@ export default function App() {
             )}
             <footer className="absolute bottom-0 left-0 right-0 bg-[#E6F4EC] border-t border-emerald-950/5 py-2.5 text-center text-[8px] text-[#046A38] font-bold tracking-widest uppercase shrink-0">© 2026 PT Ololu Pengantaran Nusantara Lumajang</footer>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
