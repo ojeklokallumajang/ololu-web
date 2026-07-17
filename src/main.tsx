@@ -1,10 +1,10 @@
-import { StrictMode } from 'react';
+import React, { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
 // GLOBAL ERROR BOUNDARY FOR WHITE SCREEN CATCHING
-class GlobalErrorBoundary extends import('react').Component<{children: import('react').ReactNode}, {hasError: boolean, error: any}> {
+class GlobalErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: any}> {
   constructor(props: any) {
     super(props);
     this.state = { hasError: false, error: null };
