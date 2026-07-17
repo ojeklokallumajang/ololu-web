@@ -142,9 +142,9 @@ const mapOrder = (db: any): Pesanan | null => {
     asalLat: safeParseFloat(db.asal_lat, KOORDINAT_LUMAJANG.lat),
     asalLng: safeParseFloat(db.asal_lng, KOORDINAT_LUMAJANG.lng),
     jarakKm: safeParseFloat(db.jarak_km, 1),
-    tarifDasar: 0, // Placeholder as it's computed now or from settings
-    tarifPerKm: 0,
-    tarifMinimum: 0,
+    tarifDasar: safeParseFloat(db.tarif_dasar, 0),
+    tarifPerKm: safeParseFloat(db.tarif_per_km, 0),
+    tarifMinimum: safeParseFloat(db.tarif_minimum, 0),
     tarifPerjalananMurni: safeParseFloat(db.tarif_perjalanan_murni, 0),
     totalBayarAkhir: safeParseFloat(db.total_bayar_akhir, 0),
     tambahanTujuan: safeParseFloat(db.tambahan_tujuan, 0),
@@ -169,7 +169,7 @@ const mapOrder = (db: any): Pesanan | null => {
         jumlah: i.jumlah,
         perkiraanHarga: i.perkiraan_harga
       })),
-      pilihanParkir: 'tidak_ada',
+      pilihanParkir: s.pilihan_parkir || 'tidak_ada',
       nota: s.nota ? {
         namaToko: s.nota.nama_toko,
         totalToko: s.nota.total_toko,
@@ -361,6 +361,17 @@ export const OloluStore = {
     await getSupabase()!.from('emergency_reports').insert({ id_pesanan: idPesanan, nama_pelapor: nama, nomor_hp_pelapor: hp, peran_pelapor: peran, lat, lng });
   },
 
+  async tambahRating(idPesanan: string, idSopir: string, namaPenumpang: string, bintang: number, ulasan: string) {
+    const supabase = getSupabase();
+    if (!supabase) return;
+    await supabase.from('ratings').insert({ id_pesanan: idPesanan, id_sopir: idSopir, nama_penumpang: namaPenumpang, bintang, ulasan });
+    const { data: ratings } = await supabase.from('ratings').select('bintang').eq('id_sopir', idSopir);
+    if (ratings && ratings.length > 0) {
+      const avg = ratings.reduce((acc, cur) => acc + cur.bintang, 0) / ratings.length;
+      await supabase.from('driver_details').update({ rating_rata_rata: avg }).eq('id', idSopir);
+    }
+  },
+
   async getAllEmergency(): Promise<LaporanDarurat[]> {
     const { data } = await getSupabase()!.from('emergency_reports').select('*').order('timestamp', { ascending: false });
     return (data || []).map(d => ({ id: d.id, idPesanan: d.id_pesanan, namaPelapor: d.nama_pelapor, nomorHpPelapor: d.nomor_hp_pelapor, peranPelapor: d.peran_pelapor, lat: d.lat, lng: d.lng, status: d.status, timestamp: d.timestamp }));
@@ -392,6 +403,37 @@ export const OloluStore = {
     const { error } = await getSupabase()!.from('driver_details').update({ disetujui_admin: ok, ditolak_admin: !ok, alasan_ditolak: alasan || '' }).eq('id', id);
     if (error) return { success: false, error: error.message };
     return { success: true };
+  },
+
+  async getAllAuditLogs(): Promise<LogAudit[]> {
+    const { data } = await getSupabase()!.from('audit_logs').select('*').order('timestamp', { ascending: false });
+    return (data || []).map(d => ({ id: d.id, adminId: d.id_admin, adminNama: d.nama_admin, aksi: d.aksi, detail: d.detail, timestamp: d.timestamp }));
+  },
+
+  async addAuditLog(idAdmin: string, namaAdmin: string, aksi: string, detail: string) {
+    await getSupabase()!.from('audit_logs').insert({ id_admin: idAdmin, nama_admin: namaAdmin, aksi, detail });
+  },
+
+  async getAllAdmins(): Promise<ProfilPengguna[]> {
+    const { data } = await getSupabase()!.from('profiles').select('*').or("peran.eq.admin,is_sub_admin.eq.true");
+    return (data || []).map(p => mapProfile(p)).filter(Boolean) as ProfilPengguna[];
+  },
+
+  async promoteToAdmin(nomorHp: string, nama: string) {
+    const { error } = await getSupabase()!.from('profiles').update({ is_sub_admin: true, peran: 'admin' }).eq('nomor_hp', nomorHp);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  },
+
+  async removeAdminStatus(id: string) {
+    const { error } = await getSupabase()!.from('profiles').update({ is_sub_admin: false, peran: 'penumpang' }).eq('id', id);
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  },
+
+  async savePengaturan(newCfg: PengaturanTarif, adminId: string, adminNama: string) {
+    await getSupabase()!.from('system_settings').upsert({ key: 'global_config', value: newCfg });
+    pengaturans = { ...newCfg };
   },
 
   getLocalOrderLock() { const stored = localStorage.getItem(ORDER_LOCK_KEY); return stored ? JSON.parse(stored) : null; },

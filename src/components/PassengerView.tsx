@@ -259,6 +259,47 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     return Math.max(h, m) + (stops.length > 1 ? (stops.length - 1) * s : 0);
   };
 
+  const handleAddStop = () => {
+    if (stops.length >= 5) return;
+    const newStop = { id: `stop-${Date.now()}`, alamat: 'Tentukan tujuan...', lat: -8.1385, lng: 113.2208, items: [] };
+    setStops([...stops, newStop]);
+  };
+
+  const handleRemoveStop = (id: string) => {
+    if (stops.length > 1) {
+      setStops(stops.filter(s => s.id !== id));
+    }
+  };
+
+  const handleOpenMapPicker = (target: 'asal' | string) => {
+    setMapPickerTarget(target);
+    if (target === 'asal') {
+      setTempLat(asalLat);
+      setTempLng(asalLng);
+      setTempAlamat(asalAlamat);
+    } else {
+      const stop = stops.find(s => s.id === target);
+      if (stop) {
+        setTempLat(stop.lat);
+        setTempLng(stop.lng);
+        setTempAlamat(stop.alamat);
+      }
+    }
+    setMapSearchQuery('');
+    setSuggestions([]);
+  };
+
+  const handleConfirmMapPicker = () => {
+    if (mapPickerTarget === 'asal') {
+      setAsalLat(tempLat);
+      setAsalLng(tempLng);
+      setAsalAlamat(tempAlamat);
+    } else {
+      setStops(stops.map(s => s.id === mapPickerTarget ? { ...s, lat: tempLat, lng: tempLng, alamat: tempAlamat } : s));
+    }
+    setMapPickerTarget(null);
+  };
+
   const handlePesan = async () => {
     if (!profile) return;
     const j = hitungTotalJarak(), h = hitungHarga();
