@@ -156,7 +156,7 @@ export default function App() {
                 <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Nomor WhatsApp" className="w-full p-4 bg-gray-50 rounded-2xl outline-none text-sm font-bold" />
                 <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Kata Sandi" className="w-full p-4 bg-gray-50 rounded-2xl outline-none text-sm font-bold" />
                 <button onClick={handleLoginSubmit} disabled={loading} className="w-full py-4 bg-[#046A38] text-white font-black rounded-2xl uppercase tracking-widest">{loading?"Proses...":"Masuk"}</button>
-                <button onClick={()=>setAuthMode('register')} className="w-full text-xs font-bold text-gray-400">Daftar Akun Baru</button>
+                <button onClick={()=>setAuthMode('register')} className="w-full text-xs font-bold text-gray-400 text-center">Daftar Akun Baru</button>
               </div>
             ) : loginStep === 'peran' ? (
               <div className="space-y-3">
@@ -170,7 +170,7 @@ export default function App() {
                 <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Nomor WhatsApp" className="w-full p-3 bg-gray-50 rounded-xl outline-none text-xs font-bold" />
                 <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Sandi Baru" className="w-full p-3 bg-gray-50 rounded-xl outline-none text-xs font-bold" />
                 <button onClick={handleRegisterSubmit} disabled={loading} className="w-full py-3 bg-[#046A38] text-white font-black rounded-xl uppercase text-xs">{loading?"Memproses...":"Daftar Sekarang"}</button>
-                <button onClick={()=>setLoginStep('peran')} className="w-full text-xs font-bold text-gray-400">Kembali</button>
+                <button onClick={()=>setLoginStep('peran')} className="w-full text-xs font-bold text-gray-400 text-center">Kembali</button>
               </div>
             ) : (
               <div className="space-y-6 text-center">
@@ -189,12 +189,12 @@ export default function App() {
               <PassengerView onNotifyAdminPanic={()=>{}} onLogout={handleLogout} onRoleChange={r=>setRole(r)} lockedOrderId={lockedOrder?.orderId} />
             }
           </div>
-          <footer className="p-4 bg-[#E6F4EC] text-center">
-            <div className="flex justify-center space-x-4 mb-2">
-              <span className="text-[10px] font-black text-[#046A38]">TIKTOK: @ololuojeklokallumajang</span>
-              <span className="text-[10px] font-black text-[#046A38]">IG: @ololu_ojeklokallumajang</span>
+          <footer className="p-4 bg-[#E6F4EC] text-center space-y-2">
+            <div className="flex justify-center space-x-4">
+              <a href="https://tiktok.com/@ololuojeklokallumajang" target="_blank" rel="noreferrer" className="text-[9px] font-black text-[#046A38] uppercase">TikTok: ololuojeklokallumajang</a>
+              <a href="https://instagram.com/ololu_ojeklokallumajang" target="_blank" rel="noreferrer" className="text-[9px] font-black text-[#046A38] uppercase">IG: ololu_ojeklokallumajang</a>
             </div>
-            <p className="text-[8px] text-gray-400 uppercase font-bold">© 2026 PT Ololu Lumajang</p>
+            <p className="text-[7px] text-gray-400 uppercase font-bold tracking-widest">PT Ololu Lumajang</p>
           </footer>
         </div>
       )}
