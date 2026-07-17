@@ -11,7 +11,7 @@ import { PeranPengguna } from './types';
 import { OloluStore } from './services/store';
 import { AlertTriangle, ShieldCheck, UserPlus, Camera, Upload, KeyRound, ArrowLeft, Calendar, MapPin as MapPinIcon } from 'lucide-react';
 
-// --- ROBUST ERROR BOUNDARY (Safe for React 19) ---
+// --- ROBUST ERROR BOUNDARY ---
 class SafeErrorBoundary extends React.Component<{children: React.ReactNode, name: string}, {hasError: boolean, error: any}> {
   constructor(props: any) {
     super(props);
@@ -75,6 +75,12 @@ export default function App() {
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const [globalPanicNotification, setGlobalPanicNotification] = useState<{
+    show: boolean;
+    pelapor: string;
+    tipe: string;
+  }>({ show: false, pelapor: '', tipe: '' });
 
   useEffect(() => {
     async function checkSession() {
@@ -186,13 +192,21 @@ export default function App() {
     setRole('penumpang');
   };
 
+  const handleNotifyPanic = (pelapor?: string, tipe?: string) => {
+    setGlobalPanicNotification({
+      show: true,
+      pelapor: pelapor || 'Seseorang',
+      tipe: tipe || 'Darurat SOS'
+    });
+  };
+
   if (fatalError) {
     return (
       <div className="min-h-screen bg-red-50 flex flex-col items-center justify-center p-6 text-center">
         <AlertTriangle size={64} className="text-red-500 mb-4" />
-        <h1 className="text-xl font-black text-gray-800">SISTEM TERHENTI</h1>
+        <h1 className="text-xl font-black text-gray-800 uppercase tracking-tighter">Sistem Terhenti</h1>
         <p className="text-xs text-gray-500 mt-2">{fatalError}</p>
-        <button onClick={() => { localStorage.clear(); window.location.reload(); }} className="mt-6 px-8 py-3 bg-red-600 text-white font-bold rounded-xl shadow-lg">Reset & Muat Ulang</button>
+        <button onClick={() => { localStorage.clear(); window.location.reload(); }} className="mt-8 px-8 py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg uppercase text-[10px] tracking-widest">Bersihkan & Reset</button>
       </div>
     );
   }
@@ -201,7 +215,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-[#046A38] flex flex-col items-center justify-center text-white">
         <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
-        <p className="text-xs font-bold tracking-widest uppercase">Ololu Memuat Sistem...</p>
+        <p className="text-[10px] font-bold tracking-widest uppercase opacity-80">Ololu Lumajang</p>
       </div>
     );
   }
@@ -210,86 +224,101 @@ export default function App() {
     <div className="min-h-screen bg-[#FAFBF9] flex flex-col items-center antialiased">
       {showLogin ? (
         <div className="fixed inset-0 bg-[#046A38] z-[10000] flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-[32px] w-full max-w-sm p-8 space-y-6 shadow-2xl my-auto">
+          <div className="bg-white rounded-[40px] w-full max-w-sm p-10 space-y-8 shadow-2xl my-auto text-left">
             <div className="text-center space-y-1">
-              <h1 className="text-2xl font-black text-[#046A38]">Ololu Lumajang</h1>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ojek Lokal Kebanggaan</p>
+              <h1 className="text-3xl font-black text-[#046A38] tracking-tighter">OLOLU</h1>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em]">Ojek Lokal Lumajang</p>
             </div>
 
-            {error && <p className="text-red-500 text-[10px] font-bold text-center bg-red-50 p-2 rounded-lg border border-red-100">{error}</p>}
+            {error && <p className="text-red-500 text-[10px] font-black text-center bg-red-50 p-3 rounded-2xl border border-red-100">{error}</p>}
 
             {authMode === 'login' ? (
               <div className="space-y-4">
-                <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Nomor WhatsApp (628...)" className="w-full p-4 bg-gray-50 rounded-2xl outline-none text-sm font-bold border-2 border-transparent focus:border-[#046A38]" />
+                <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="WhatsApp (628...)" className="w-full p-4 bg-gray-50 rounded-2xl outline-none text-sm font-bold border-2 border-transparent focus:border-[#046A38]" />
                 <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Kata Sandi" className="w-full p-4 bg-gray-50 rounded-2xl outline-none text-sm font-bold border-2 border-transparent focus:border-[#046A38]" />
-                <button onClick={handleLoginSubmit} disabled={loading} className="w-full py-4 bg-[#046A38] text-white font-black rounded-2xl uppercase tracking-widest shadow-lg">{loading?"Masuk...":"Masuk Sekarang"}</button>
-                <button onClick={()=>setAuthMode('register')} className="w-full text-xs font-bold text-gray-400">Daftar Akun Baru</button>
+                <button onClick={handleLoginSubmit} disabled={loading} className="w-full py-4.5 bg-[#046A38] text-white font-black rounded-2xl uppercase tracking-widest shadow-lg active:scale-95 transition-all">{loading?"Masuk...":"Masuk Sekarang"}</button>
+                <button onClick={()=>setAuthMode('register')} className="w-full text-xs font-bold text-gray-400 mt-2 text-center hover:text-[#046A38] transition-colors">Daftar Akun Baru</button>
               </div>
             ) : loginStep === 'peran' ? (
-              <div className="space-y-3">
-                <button onClick={()=>handleStartRegister('penumpang')} className="w-full p-5 border-2 border-gray-100 rounded-2xl font-black text-left hover:border-[#046A38] flex justify-between items-center"><span>👤 Penumpang</span> <span>→</span></button>
-                <button onClick={()=>handleStartRegister('sopir')} className="w-full p-5 border-2 border-gray-100 rounded-2xl font-black text-left hover:border-[#046A38] flex justify-between items-center"><span>🛵 Mitra Driver</span> <span>→</span></button>
-                <button onClick={()=>setAuthMode('login')} className="w-full text-xs font-bold text-gray-400 mt-4 text-center">Sudah punya akun? Login</button>
+              <div className="space-y-4">
+                <p className="text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Daftar Sebagai:</p>
+                <button onClick={()=>handleStartRegister('penumpang')} className="w-full p-5 border-2 border-gray-100 rounded-3xl font-black text-left hover:border-[#046A38] transition-all flex justify-between items-center group"><span>👤 PENUMPANG</span><span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span></button>
+                <button onClick={()=>handleStartRegister('sopir')} className="w-full p-5 border-2 border-gray-100 rounded-3xl font-black text-left hover:border-[#046A38] transition-all flex justify-between items-center group"><span>🛵 MITRA DRIVER</span><span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span></button>
+                <button onClick={()=>setAuthMode('login')} className="w-full text-xs font-bold text-gray-400 mt-6 text-center hover:underline">Sudah punya akun? Login</button>
               </div>
             ) : loginStep === 'form' ? (
               <div className="space-y-4">
                 <div className="flex flex-col items-center space-y-2 mb-2">
-                  <div className="w-16 h-16 bg-gray-50 border-2 border-dashed border-gray-200 rounded-full flex items-center justify-center overflow-hidden cursor-pointer" onClick={() => handleFilePicker(setProfilePic)}>
-                    {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <Camera size={20} className="text-gray-300" />}
+                  <div className="w-20 h-20 bg-gray-50 border-2 border-dashed border-gray-200 rounded-full flex items-center justify-center overflow-hidden cursor-pointer" onClick={() => handleFilePicker(setProfilePic)}>
+                    {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <Camera size={24} className="text-gray-300" />}
                   </div>
-                  <label className="text-[8px] font-bold text-gray-400 uppercase">Foto Profil {selectedRole==='sopir'&&'(Wajib)'}</label>
+                  <label className="text-[9px] font-black text-gray-400 uppercase">Foto Profil {selectedRole==='sopir'&&'(Wajib)'}</label>
                 </div>
-                <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="Nama Lengkap" className="w-full p-3.5 bg-gray-50 rounded-xl outline-none text-xs font-bold border-2 border-transparent focus:border-[#046A38]" />
-                <div className="grid grid-cols-2 gap-2">
-                  <input type="text" value={tempatLahir} onChange={e=>setTempatLahir(e.target.value)} placeholder="Tempat Lahir" className="w-full p-3.5 bg-gray-50 rounded-xl outline-none text-[10px] font-bold border-2 border-transparent focus:border-[#046A38]" />
-                  <input type="date" value={tanggalLahir} onChange={e=>setTanggalLahir(e.target.value)} className="w-full p-3.5 bg-gray-50 rounded-xl outline-none text-[10px] font-bold border-2 border-transparent focus:border-[#046A38]" />
+                <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="Nama Lengkap" className="w-full p-4 bg-gray-50 rounded-2xl outline-none text-sm font-bold border-2 border-transparent focus:border-[#046A38]" />
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="text" value={tempatLahir} onChange={e=>setTempatLahir(e.target.value)} placeholder="Tempat Lahir" className="w-full p-3.5 bg-gray-50 rounded-xl outline-none text-[11px] font-bold border-2 border-transparent focus:border-[#046A38]" />
+                  <input type="date" value={tanggalLahir} onChange={e=>setTanggalLahir(e.target.value)} className="w-full p-3.5 bg-gray-50 rounded-xl outline-none text-[11px] font-bold border-2 border-transparent focus:border-[#046A38]" />
                 </div>
-                <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="WhatsApp (628...)" className="w-full p-3.5 bg-gray-50 rounded-xl outline-none text-xs font-bold border-2 border-transparent focus:border-[#046A38]" />
-                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Sandi Baru" className="w-full p-3.5 bg-gray-50 rounded-xl outline-none text-xs font-bold border-2 border-transparent focus:border-[#046A38]" />
-                <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Ulangi Sandi" className="w-full p-3.5 bg-gray-50 rounded-xl outline-none text-xs font-bold border-2 border-transparent focus:border-[#046A38]" />
+                <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="WhatsApp (628...)" className="w-full p-4 bg-gray-50 rounded-2xl outline-none text-sm font-bold border-2 border-transparent focus:border-[#046A38]" />
+                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Sandi Baru" className="w-full p-4 bg-gray-50 rounded-2xl outline-none text-sm font-bold border-2 border-transparent focus:border-[#046A38]" />
+                <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Ulangi Sandi" className="w-full p-4 bg-gray-50 rounded-2xl outline-none text-sm font-bold border-2 border-transparent focus:border-[#046A38]" />
 
                 {selectedRole === 'sopir' && (
-                  <div className="space-y-3 pt-2 border-t border-dashed">
-                    <p className="text-[9px] font-black text-gray-400 uppercase">Berkas Kendaraan</p>
+                  <div className="space-y-3 pt-4 border-t border-dashed">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest text-center">Berkas Kendaraan & Driver</p>
                     <div className="grid grid-cols-2 gap-2">
-                      <button onClick={()=>handleFilePicker(setDocKtp)} className={`p-2 rounded border-2 border-dashed text-[8px] font-bold ${docKtp?'border-emerald-500 text-emerald-600':'text-gray-400'}`}>FOTO KTP {docKtp&&'✅'}</button>
-                      <button onClick={()=>handleFilePicker(setDocSim)} className={`p-2 rounded border-2 border-dashed text-[8px] font-bold ${docSim?'border-emerald-500 text-emerald-600':'text-gray-400'}`}>FOTO SIM {docSim&&'✅'}</button>
-                      <button onClick={()=>handleFilePicker(setDocStnk)} className={`p-2 rounded border-2 border-dashed text-[8px] font-bold ${docStnk?'border-emerald-500 text-emerald-600':'text-gray-400'}`}>FOTO STNK {docStnk&&'✅'}</button>
-                      <button onClick={()=>handleFilePicker(setDocVehicle)} className={`p-2 rounded border-2 border-dashed text-[8px] font-bold ${docVehicle?'border-emerald-500 text-emerald-600':'text-gray-400'}`}>FOTO MOTOR {docVehicle&&'✅'}</button>
+                      <button onClick={()=>handleFilePicker(setDocKtp)} className={`p-3 rounded-xl border-2 border-dashed text-[8px] font-black ${docKtp?'bg-emerald-50 border-emerald-500 text-emerald-600':'text-gray-400 border-gray-100'}`}>FOTO KTP {docKtp&&'✅'}</button>
+                      <button onClick={()=>handleFilePicker(setDocSim)} className={`p-3 rounded-xl border-2 border-dashed text-[8px] font-black ${docSim?'bg-emerald-50 border-emerald-500 text-emerald-600':'text-gray-400 border-gray-100'}`}>FOTO SIM {docSim&&'✅'}</button>
+                      <button onClick={()=>handleFilePicker(setDocStnk)} className={`p-3 rounded-xl border-2 border-dashed text-[8px] font-black ${docStnk?'bg-emerald-50 border-emerald-500 text-emerald-600':'text-gray-400 border-gray-100'}`}>FOTO STNK {docStnk&&'✅'}</button>
+                      <button onClick={()=>handleFilePicker(setDocVehicle)} className={`p-3 rounded-xl border-2 border-dashed text-[8px] font-black ${docVehicle?'bg-emerald-50 border-emerald-500 text-emerald-600':'text-gray-400 border-gray-100'}`}>FOTO MOTOR {docVehicle&&'✅'}</button>
                     </div>
-                    <input type="text" value={platNomor} onChange={e=>setPlatNomor(e.target.value.toUpperCase())} placeholder="N-XXXX-YX" className="w-full p-2.5 bg-gray-50 rounded-lg text-[10px] font-bold border-2 border-transparent focus:border-[#046A38]" />
-                    <input type="text" value={jenisMotor} onChange={e=>setJenisMotor(e.target.value)} placeholder="Tipe Motor (cth: Vario 125)" className="w-full p-2.5 bg-gray-50 rounded-lg text-[10px] font-bold border-2 border-transparent focus:border-[#046A38]" />
+                    <input type="text" value={platNomor} onChange={e=>setPlatNomor(e.target.value.toUpperCase())} placeholder="PLAT NOMOR (N-XXXX-YX)" className="w-full p-3 bg-gray-50 rounded-xl text-[10px] font-black border-2 border-transparent focus:border-[#046A38] uppercase" />
+                    <input type="text" value={jenisMotor} onChange={e=>setJenisMotor(e.target.value)} placeholder="TIPE MOTOR (cth: Honda Vario 125)" className="w-full p-3 bg-gray-50 rounded-xl text-[10px] font-black border-2 border-transparent focus:border-[#046A38] uppercase" />
                   </div>
                 )}
 
-                <button onClick={handleRegisterSubmit} disabled={loading} className="w-full py-4 bg-[#046A38] text-white font-black rounded-2xl uppercase text-xs shadow-lg">{loading?"Mengirim...":"Daftar Sekarang"}</button>
-                <button onClick={()=>setLoginStep('peran')} className="w-full text-xs font-bold text-gray-400 text-center">Kembali</button>
+                <button onClick={handleRegisterSubmit} disabled={loading} className="w-full py-4.5 bg-[#046A38] text-white font-black rounded-3xl uppercase text-xs shadow-xl active:scale-95 transition-all">{loading?"Memproses...":"Kirim Pendaftaran"}</button>
+                <button onClick={()=>setLoginStep('peran')} className="w-full text-xs font-bold text-gray-400 text-center hover:text-gray-600">Kembali ke Pilihan Peran</button>
               </div>
             ) : (
-              <div className="space-y-6 text-center">
-                <p className="text-xs text-gray-500">Masukkan kode OTP dari WhatsApp</p>
-                <input type="text" maxLength={6} value={otp} onChange={e=>setOtp(e.target.value)} placeholder="000000" className="w-full text-center p-5 bg-gray-50 rounded-2xl text-3xl font-black tracking-[0.5em] outline-none border-2 border-transparent focus:border-[#046A38]" />
-                <button onClick={handleVerifyOtp} disabled={loading} className="w-full py-4 bg-[#046A38] text-white font-black rounded-2xl">{loading?"Proses...":"Konfirmasi"}</button>
+              <div className="space-y-8 text-center">
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-500 font-black uppercase tracking-[0.2em]">Verifikasi OTP</p>
+                  <p className="text-[10px] text-gray-400">Kode telah dikirim ke nomor <strong>{phone}</strong></p>
+                </div>
+                <input type="text" maxLength={6} value={otp} onChange={e=>setOtp(e.target.value)} placeholder="000000" className="w-full text-center p-5 bg-gray-50 rounded-[32px] text-3xl font-black tracking-[0.6em] outline-none border-2 border-transparent focus:border-[#046A38] text-[#046A38]" />
+                <button onClick={handleVerifyOtp} disabled={loading} className="w-full py-5 bg-[#046A38] text-white font-black rounded-[32px] shadow-2xl active:scale-95 transition-transform">{loading?"Memverifikasi...":"Konfirmasi & Selesai"}</button>
               </div>
             )}
           </div>
         </div>
       ) : (
-        <div className="w-full max-w-[420px] min-h-screen bg-white relative flex flex-col shadow-2xl overflow-hidden">
+        <div className="w-full max-w-[420px] min-h-screen bg-white relative flex flex-col shadow-2xl overflow-hidden border-x border-gray-100">
+          {globalPanicNotification.show && (
+            <div className="absolute top-4 left-4 right-4 z-[9999] bg-red-600 text-white p-4 rounded-3xl shadow-2xl flex items-center justify-between animate-in slide-in-from-top duration-500">
+               <div className="flex items-center space-x-3">
+                 <AlertTriangle className="animate-pulse" />
+                 <div><p className="text-[10px] font-black uppercase">Darurat Terdeteksi!</p><p className="text-[11px] font-bold">{globalPanicNotification.pelapor} butuh bantuan.</p></div>
+               </div>
+               <button onClick={()=>setRole('admin')} className="bg-white text-red-600 px-4 py-1.5 rounded-full font-black text-[9px] uppercase shadow-sm">PANTAU</button>
+            </div>
+          )}
+
           <div className="flex-1 overflow-y-auto scrollbar-none">
             <SafeErrorBoundary name={role.toUpperCase()}>
               {role === 'admin' ? <AdminView /> : role === 'sopir' ?
-                <DriverView onNotifyAdminPanic={()=>{}} onLogout={handleLogout} lockedOrderId={lockedOrder?.orderId} /> :
-                <PassengerView onNotifyAdminPanic={()=>{}} onLogout={handleLogout} onRoleChange={r=>setRole(r)} lockedOrderId={lockedOrder?.orderId} />
+                <DriverView onNotifyAdminPanic={()=>handleNotifyPanic('Mitra Driver', 'SOS')} onLogout={handleLogout} lockedOrderId={lockedOrder?.orderId} /> :
+                <PassengerView onNotifyAdminPanic={(p, t)=>handleNotifyPanic(p, t)} onLogout={handleLogout} onRoleChange={r=>setRole(r)} lockedOrderId={lockedOrder?.orderId} />
               }
             </SafeErrorBoundary>
           </div>
-          <footer className="p-4 bg-[#E6F4EC] border-t border-emerald-100 text-center space-y-2 shrink-0">
+
+          <footer className="p-6 bg-gray-50 border-t border-gray-100 text-center space-y-3 shrink-0">
             <div className="flex justify-center space-x-6">
-              <a href="https://tiktok.com/@ololuojeklokallumajang" target="_blank" rel="noreferrer" className="text-[9px] font-black text-[#046A38] uppercase hover:underline transition-all">TikTok</a>
-              <a href="https://instagram.com/ololu_ojeklokallumajang" target="_blank" rel="noreferrer" className="text-[9px] font-black text-[#046A38] uppercase hover:underline transition-all">Instagram</a>
+              <a href="https://tiktok.com/@ololuojeklokallumajang" target="_blank" rel="noreferrer" className="text-[9px] font-black text-[#046A38] uppercase flex items-center space-x-1.5 hover:text-emerald-700 transition-colors">TikTok</a>
+              <a href="https://instagram.com/ololu_ojeklokallumajang" target="_blank" rel="noreferrer" className="text-[9px] font-black text-[#046A38] uppercase flex items-center space-x-1.5 hover:text-emerald-700 transition-colors">Instagram</a>
             </div>
-            <p className="text-[7px] text-emerald-800/50 uppercase font-bold tracking-[0.3em]">PT Ololu Pengantaran Nusantara Lumajang</p>
+            <p className="text-[7px] text-gray-400 uppercase font-black tracking-[0.5em]">PT Ololu Pengantaran Nusantara</p>
           </footer>
         </div>
       )}
