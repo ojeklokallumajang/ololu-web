@@ -287,7 +287,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#FAFBF9] text-[#1A1A1A] font-sans antialiased selection:bg-[#046A38] selection:text-[#D4AF37] flex flex-col">
-      
+      <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 99999, fontSize: '8px', color: '#ccc' }}>v1.0.1-stable</div>
+
       {showLogin && (
         <div className="fixed inset-0 bg-[#046A38]/95 z-[10000] flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-[32px] w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
