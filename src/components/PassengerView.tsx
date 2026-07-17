@@ -181,6 +181,32 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   const [ratingVal, setRatingVal] = useState(5);
   const [reviewText, setReviewText] = useState('');
   const [ratingsSubmitted, setRatingsSubmitted] = useState(false);
+  const [routeDistance, setRouteDistance] = useState<number | null>(null);
+
+  const mapsLib = useMapsLibrary('routes');
+
+  useEffect(() => {
+    if (!mapsLib || !asalLat || stops.length === 0) return;
+
+    const directionsService = new google.maps.DirectionsService();
+    const waypoints = stops.slice(0, -1).map(s => ({ location: { lat: s.lat, lng: s.lng }, stopover: true }));
+    const destination = stops[stops.length - 1];
+
+    directionsService.route({
+      origin: { lat: asalLat, lng: asalLng },
+      destination: { lat: destination.lat, lng: destination.lng },
+      waypoints: waypoints,
+      travelMode: google.maps.TravelMode.DRIVING,
+    }, (result, status) => {
+      if (status === google.maps.DirectionsStatus.OK && result?.routes[0]?.legs) {
+        let total = 0;
+        result.routes[0].legs.forEach(leg => {
+          total += leg.distance?.value || 0;
+        });
+        setRouteDistance(Math.ceil(total / 1000));
+      }
+    });
+  }, [mapsLib, asalLat, asalLng, stops]);
 
   const [mapPickerTarget, setMapPickerTarget] = useState<'asal' | string | null>(null);
   const [tempLat, setTempLat] = useState(KOORDINAT_LUMAJANG.lat);
@@ -239,6 +265,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   };
 
   const hitungTotalJarak = () => {
+    if (routeDistance !== null) return routeDistance;
     let total = 0, prevLat = asalLat, prevLng = asalLng;
     stops.forEach(st => { total += (Math.abs(st.lat - prevLat) + Math.abs(st.lng - prevLng)) * 111 * 0.75; prevLat = st.lat; prevLng = st.lng; });
     return Math.max(1, Math.ceil(total));
@@ -287,6 +314,11 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     }
     setMapSearchQuery('');
     setSuggestions([]);
+
+    // Otomatis deteksi lokasi jika alamat masih default/kosong
+    if (asalAlamat === 'Pilih lokasi penjemputan...' || (target !== 'asal' && !stops.find(s => s.id === target)?.alamat) || tempAlamat === 'Tentukan tujuan...') {
+       handleUseCurrentLocation();
+    }
   };
 
   const handleConfirmMapPicker = () => {
@@ -298,6 +330,26 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       setStops(stops.map(s => s.id === mapPickerTarget ? { ...s, lat: tempLat, lng: tempLng, alamat: tempAlamat } : s));
     }
     setMapPickerTarget(null);
+  };
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Browser Anda tidak mendukung deteksi lokasi.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setTempLat(latitude);
+        setTempLng(longitude);
+        setTempAlamat(`Lokasi Saya (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`);
+      },
+      (err) => {
+        alert("Gagal mendapatkan lokasi: " + err.message);
+      },
+      { enableHighAccuracy: true }
+    );
   };
 
   const [isBooking, setIsBooking] = useState(false);
@@ -544,9 +596,33 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
                 <AdvancedMarker position={{ lat: tempLat, lng: tempLng }} draggable onDragEnd={(e) => { if(e.latLng) { setTempLat(e.latLng.lat()); setTempLng(e.latLng.lng()); setTempAlamat(`Titik Terpilih (${e.latLng.lat().toFixed(5)}, ${e.latLng.lng().toFixed(5)})`); } }}><Pin scale={1.2} background={mapPickerTarget === 'asal' ? '#046A38' : '#D4AF37'} /></AdvancedMarker>
               </Map>
             </APIProvider>
+
+            {/* Tombol Lokasi Saat Ini */}
+            <button
+              onClick={handleUseCurrentLocation}
+              className="absolute bottom-6 right-6 bg-white p-3 rounded-full shadow-2xl border border-gray-100 text-[#046A38] hover:bg-gray-50 active:scale-90 transition-all z-10"
+              title="Gunakan Lokasi Saat Ini"
+            >
+              <Navigation size={20} fill="currentColor" />
+            </button>
           </div>
           <div className="p-4 bg-white border-t space-y-3">
-            <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 flex items-start space-x-2"><MapPin size={16} className="text-[#046A38] mt-0.5" /><div><span className="text-[10px] font-bold text-gray-400 uppercase">Alamat Terpilih</span><p className="text-xs font-bold text-gray-800 leading-snug">{tempAlamat || 'Silakan pilih lokasi...'}</p></div></div>
+            <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 flex items-start justify-between space-x-2">
+              <div className="flex items-start space-x-2">
+                <MapPin size={16} className="text-[#046A38] mt-0.5" />
+                <div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase">Alamat Terpilih</span>
+                  <p className="text-xs font-bold text-gray-800 leading-snug">{tempAlamat || 'Silakan pilih lokasi...'}</p>
+                </div>
+              </div>
+              <button
+                onClick={handleUseCurrentLocation}
+                className="bg-white p-2 rounded-lg border shadow-sm text-[#046A38] active:scale-95 transition-all"
+                title="Deteksi Lokasi"
+              >
+                <Zap size={14} fill="currentColor" />
+              </button>
+            </div>
             <button onClick={handleConfirmMapPicker} className="w-full py-4 bg-[#034F2A] text-white font-black rounded-2xl uppercase text-xs tracking-widest shadow-md">Pilih Lokasi Ini</button>
           </div>
         </div>

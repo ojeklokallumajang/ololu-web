@@ -94,6 +94,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
   // TABS FOR FINANCE VS ORDER HISTORY
   const [activeHistoryTab, setActiveHistoryTab] = useState<'finance' | 'orders'>('orders');
   const [isTogglingOnline, setIsTogglingOnline] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const initDriver = async () => {
     const p = await OloluStore.getProfilLogin();
@@ -243,6 +244,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
 
       // 5. Order is matching and relevant! Trigger real-time alert!
       console.log('⚡ [Realtime Notification] RELEVANT NEW ORDER RECEIVED!', order);
+
       setRealtimeOrderAlert(order);
       setAlertCountdown(15);
       setAutobidCountdown(3);
@@ -252,6 +254,22 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
     const unsubscribe = ololuRealtime.subscribeToNewOrders(handleNewOrder);
     return () => unsubscribe();
   }, [driverDetail, activeOrder, config]);
+
+  // --- AUDIO NOTIFICATION LOGIC ---
+  useEffect(() => {
+    if (realtimeOrderAlert) {
+      if (!audioRef.current) {
+        audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3');
+        audioRef.current.loop = true;
+      }
+      audioRef.current.play().catch(e => console.warn("Audio play blocked:", e));
+    } else {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    }
+  }, [realtimeOrderAlert]);
 
   // Interval for countdown and Autobid triggers
   useEffect(() => {
@@ -780,6 +798,18 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
               {isAutobidActive ? '⚡ AUTOBID' : '✋ MANUAL'}
             </button>
           </div>
+          <div className="text-center mt-2">
+            <button
+              onClick={() => {
+                const testAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3');
+                testAudio.play().catch(() => alert("Aktifkan suara browser Anda!"));
+              }}
+              className="text-[8px] font-black text-[#F5E6A8] hover:text-white transition-all uppercase tracking-widest opacity-60 hover:opacity-100"
+            >
+              🔊 KLIK UNTUK TES SUARA NOTIFIKASI
+            </button>
+          </div>
+        </>
         )}
 
         {!driverDetail.statusOnline && (

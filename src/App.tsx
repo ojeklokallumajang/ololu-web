@@ -317,10 +317,10 @@ export default function App() {
 
           <footer className="p-6 bg-gray-50 border-t border-gray-100 text-center space-y-3 shrink-0">
             <div className="flex justify-center space-x-6">
-              <a href="https://tiktok.com/@ololuojeklokallumajang" target="_blank" rel="noreferrer" className="text-[10px] font-black text-[#046A38] uppercase hover:text-emerald-700 transition-colors">TikTok</a>
-              <a href="https://instagram.com/ololu_ojeklokallumajang" target="_blank" rel="noreferrer" className="text-[10px] font-black text-[#046A38] uppercase hover:text-emerald-700 transition-colors">Instagram</a>
+              <a href="https://tiktok.com/@ololuojeklokallumajang" target="_blank" rel="noreferrer" className="text-[10px] font-black text-[#046A38] uppercase flex items-center space-x-1.5 hover:text-emerald-700 transition-colors">📸 <span>TikTok</span></a>
+              <a href="https://instagram.com/ololu_ojeklokallumajang" target="_blank" rel="noreferrer" className="text-[10px] font-black text-[#046A38] uppercase flex items-center space-x-1.5 hover:text-emerald-700 transition-colors">📸 <span>Instagram</span></a>
             </div>
-            <p className="text-[7px] text-gray-400 uppercase font-black tracking-[0.5em]">PT Ololu Pengantaran Nusantara Lumajang</p>
+            <p className="text-[8px] text-gray-400 uppercase font-black tracking-[0.5em]">PT Ololu Pengantaran Nusantara Lumajang</p>
           </footer>
         </div>
       )}
