@@ -72,7 +72,8 @@ import {
   Car,
   ShoppingBag,
   Package,
-  User
+  User,
+  X
 } from 'lucide-react';
 
 export default function AdminView() {
@@ -128,25 +129,30 @@ export default function AdminView() {
     initAdmin();
 
     const syncData = async () => {
-      const [orders, sopir, users, settings, logs, admins, emergencies] = await Promise.all([
-        OloluStore.getAllPesanan(),
-        OloluStore.getAllSopir(),
-        OloluStore.getAllUsers(),
-        OloluStore.getPengaturan(),
-        OloluStore.getAllAuditLogs(),
-        OloluStore.getAllAdmins(),
-        OloluStore.getAllEmergency()
-      ]);
+      try {
+        const [orders, sopir, users, settings, logs, admins, emergencies] = await Promise.all([
+          OloluStore.getAllPesanan(),
+          OloluStore.getAllSopir(),
+          OloluStore.getAllUsers(),
+          OloluStore.getPengaturan(),
+          OloluStore.getAllAuditLogs(),
+          OloluStore.getAllAdmins(),
+          OloluStore.getAllEmergency()
+        ]);
 
-      setPesananList(orders);
-      setSopirList(sopir);
-      setProfilList(users);
-      setConfig(settings);
-      setTempConfig(settings);
-      setAuditLogs(logs);
-      setAdminList(admins);
-      setEmergencyList(emergencies);
-      setLoading(false);
+        setPesananList(orders);
+        setSopirList(sopir);
+        setProfilList(users);
+        setConfig(settings);
+        setTempConfig(settings);
+        setAuditLogs(logs);
+        setAdminList(admins);
+        setEmergencyList(emergencies);
+      } catch (err) {
+        console.error("Critical Dashboard Sync Failure:", err);
+      } finally {
+        setLoading(false);
+      }
     };
 
     syncData();

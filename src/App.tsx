@@ -124,13 +124,20 @@ export default function App() {
   };
 
   const handleRegisterSubmit = async () => {
-    if (!name || !phone || !password) {
-      setError('Lengkapi data pendaftaran');
+    if (!name || !phone || !password || !tempatLahir || !tanggalLahir) {
+      setError('Lengkapi data pendaftaran termasuk TTL');
       return;
     }
     if (password !== confirmPassword) {
       setError('Konfirmasi sandi tidak cocok');
       return;
+    }
+    if (selectedRole === 'sopir') {
+      if (!profilePic) { setError('Foto profil wajib'); return; }
+      if (!docKtp || !docSim || !docStnk || !docVehicle || !platNomor || !jenisMotor) {
+        setError('Lengkapi semua berkas dan data kendaraan!');
+        return;
+      }
     }
     setLoading(true);
     await OloluStore.kirimFonnteOtp(phone);
