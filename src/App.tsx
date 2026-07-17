@@ -156,23 +156,29 @@ export default function App() {
       } else {
         let finalRole = selectedRole;
         if (phone === '6285156766317') finalRole = 'admin';
-        const res = await OloluStore.registerPengguna(name, phone, finalRole, password, tempatLahir, tanggalLahir);
-        if (res.success && res.profil) {
-          const profil = { ...res.profil }; // Clone to ensure extensibility
-          if (profilePic) profil.fotoProfil = profilePic;
 
-          if (finalRole === 'sopir' || finalRole === 'admin') {
-            await OloluStore.updateSopirDokumen(profil.id, {
-              fotoKtp: docKtp || '', fotoSim: docSim || '', fotoStnk: docStnk || '',
-              fotoKendaraan: docVehicle || '', platNomor, jenisMotor, bisaBarangBesar,
-              jenisKendaraan, warnaKendaraan
-            });
+        try {
+          const res = await OloluStore.registerPengguna(name, phone, finalRole, password, tempatLahir, tanggalLahir);
+          if (res.success && res.profil) {
+            const profil = { ...res.profil };
+            if (profilePic) profil.fotoProfil = profilePic;
+
+            if (finalRole === 'sopir' || finalRole === 'admin') {
+              await OloluStore.updateSopirDokumen(profil.id, {
+                fotoKtp: docKtp || '', fotoSim: docSim || '', fotoStnk: docStnk || '',
+                fotoKendaraan: docVehicle || '', platNomor, jenisMotor, bisaBarangBesar,
+                jenisKendaraan, warnaKendaraan
+              });
+            }
+            OloluStore.setSesi({ userId: profil.id, role: profil.peran });
+            setRole(profil.peran);
+            setShowLogin(false);
+          } else {
+            setError(res.error || "Gagal mendaftar");
           }
-          OloluStore.setSesi({ userId: profil.id, role: profil.peran });
-          setRole(profil.peran);
-          setShowLogin(false);
-        } else {
-          setError(res.error || "Gagal mendaftar");
+        } catch (err: any) {
+          console.error("Registration crash:", err);
+          setFatalError("Gagal memproses pendaftaran: " + (err?.message || "Unknown error"));
         }
         setLoading(false);
       }
@@ -238,15 +244,30 @@ export default function App() {
   if (fatalError) {
     return (
       <div className="min-h-screen bg-red-50 flex flex-col items-center justify-center p-6 text-center">
-        <AlertTriangle size={64} className="text-red-500 mb-4" />
-        <h1 className="text-xl font-black text-gray-800">Ups! Terjadi Kesalahan</h1>
-        <p className="text-sm text-gray-500 mt-2 mb-6">{fatalError}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="px-8 py-3 bg-red-600 text-white font-bold rounded-xl shadow-lg"
-        >
-          Muat Ulang Halaman
-        </button>
+        <div className="bg-white p-8 rounded-[40px] shadow-xl border-2 border-red-100 max-w-sm w-full space-y-6">
+          <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto">
+            <AlertTriangle size={48} className="text-red-500 animate-bounce" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-xl font-black text-gray-800 uppercase tracking-tighter">Sistem Terhenti</h1>
+            <p className="text-xs text-gray-500 leading-relaxed font-medium">Terjadi kesalahan teknis saat memproses data akun Anda. Jangan khawatir, data Anda tetap aman.</p>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-2xl text-[10px] font-mono text-red-600 break-all border border-red-50 text-left">
+            Error: {fatalError}
+          </div>
+          <button
+            onClick={() => { localStorage.clear(); window.location.reload(); }}
+            className="w-full py-4 bg-red-600 text-white font-black rounded-2xl text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-transform"
+          >
+            Bersihkan Cache & Reset
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full py-3 text-gray-400 font-bold text-[10px] uppercase"
+          >
+            Muat Ulang Saja
+          </button>
+        </div>
       </div>
     );
   }

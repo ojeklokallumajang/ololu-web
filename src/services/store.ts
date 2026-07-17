@@ -434,7 +434,7 @@ export const OloluStore = {
 
     // Broadcast realtime
     ololuRealtime.broadcastNewOrder(newOrder);
-    return newOrder as any;
+    return mapOrder(newOrder);
   },
 
   async selesaikanPesanan(orderId: string, finalData: Partial<Pesanan>) {
@@ -557,6 +557,29 @@ export const OloluStore = {
       statusTarik: d.status_tarik,
       buktiTransfer: d.bukti_transfer,
       alasanPenolakan: d.alasan_penolakan,
+      timestamp: d.timestamp
+    } as any));
+  },
+
+  async getTransaksiSopir(sopirId: string): Promise<TransaksiDompet[]> {
+    const supabase = getSupabase();
+    if (!supabase) return [];
+    const { data } = await supabase
+      .from('wallet_transactions')
+      .select('*')
+      .eq('id_sopir', sopirId)
+      .order('timestamp', { ascending: false });
+
+    return (data || []).map(d => ({
+      id: d.id,
+      idSopir: d.id_sopir,
+      jenis: d.jenis,
+      jumlah: d.jumlah,
+      saldoAwal: d.saldo_awal,
+      saldoAkhir: d.saldo_akhir,
+      deskripsi: d.deskripsi,
+      statusTarik: d.status_tarik,
+      buktiTransfer: d.bukti_transfer,
       timestamp: d.timestamp
     } as any));
   },

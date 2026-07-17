@@ -1,48 +1,39 @@
-# Sistem Verifikasi Deposit (Top Up) Otomatis via Bukti Foto
+# Critical Fix for White Screen (Runtime Crashes)
 
-Rencana ini akan memindahkan alur Top Up driver dari WhatsApp ke dalam aplikasi, memungkinkan driver mengambil foto bukti transfer dari HP mereka dan Admin melakukan review serta ACC/Tolak deposit secara langsung di Control Panel.
+This plan identifies and fixes several runtime errors that cause the "White Screen" crash, especially after registration or during specific view initializations.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Alur Kerja Baru:**
-> 1. Driver memilih nominal dan mengklik tombol **"Ambil Foto Bukti Transfer"** (akan membuka kamera/galeri HP).
-> 2. Setelah foto dipilih, driver klik **"Kirim Deposit"**.
-> 3. Deposit masuk ke status **"Menunggu"** di sisi Admin (Saldo belum bertambah).
-> 4. Admin meninjau foto bukti di tab **💰 Dompet**.
-> 5. Jika Admin klik **ACC**, saldo driver otomatis bertambah detik itu juga.
+> **Technical Fix:** I found that the app was calling a function (`getTransaksiSopir`) that didn't exist in the data layer, which caused an immediate crash for some users. I am also adding a global error catcher so that if anything else fails, you'll see a clear error message instead of a blank screen.
 
 ## Proposed Changes
 
 ### Data Layer (`store.ts`)
 
 #### [MODIFY] [store.ts](file:///W:/ololuv1/src/services/store.ts)
-- Tambahkan fungsi `ajukanTopUpSopir(sopirId, jumlah, buktiBase64)`.
-- Perbarui `prosesTransaksi` agar mendukung logika penambahan saldo (untuk Top Up) dan pengurangan saldo (untuk Withdraw).
-- Pastikan `getAllTransactions` mengambil kolom `bukti_transfer` dan `alasan_penolakan`.
+- Implement `getTransaksiSopir(id)` to safely fetch history for a specific driver.
+- Ensure `mapOrder` includes all fields to prevent `NaN` in calculations.
+- Add `try-catch` inside `getSesi` to handle corrupted local storage.
 
-### Driver Interface (`DriverView.tsx`)
+### Views (`DriverView.tsx` & `PassengerView.tsx`)
 
 #### [MODIFY] [DriverView.tsx](file:///W:/ololuv1/src/components/DriverView.tsx)
-- Tambahkan input file tersembunyi yang mendukung akses kamera (`capture="environment"`).
-- Implementasi fungsi `handlePickProof` untuk mengonversi gambar ke Base64.
-- Perbarui UI Top Up: Tampilkan preview foto bukti sebelum dikirim.
+- Ensure it uses the correct function names from `OloluStore`.
+- Add safety checks for `driverDetail` properties.
 
-### Admin Interface (`AdminView.tsx`)
+#### [MODIFY] [PassengerView.tsx](file:///W:/ololuv1/src/components/PassengerView.tsx)
+- Add safety check for `profile.nomorHp` before rendering superuser-only buttons.
 
-#### [MODIFY] [AdminView.tsx](file:///W:/ololuv1/src/components/AdminView.tsx)
-- Perbarui tab **💰 Dompet**:
-  - Tampilkan pengajuan **Deposit Masuk** (Top Up) di bagian atas antrian.
-  - Tambahkan tombol **"LIHAT BUKTI"** yang akan membuka modal gambar untuk verifikasi Admin.
-  - Tombol **ACC** akan secara otomatis menjalankan fungsi `topUpSopir` di backend.
+### Main Entry (`App.tsx`)
+
+#### [MODIFY] [App.tsx](file:///W:/ololuv1/src/App.tsx)
+- Wrap the entire initialization in a robust error handler.
+- Clear any potential state conflicts during logout/login.
 
 ## Verification Plan
 
 ### Manual Verification
-1. Login sebagai **Driver** melalui HP (atau emulator).
-2. Lakukan pengajuan Top Up dengan mengunggah foto.
-3. Pastikan status di riwayat driver adalah "MENUNGGU".
-4. Login sebagai **Admin**.
-5. Buka tab **Dompet**, lihat foto bukti transfer driver tersebut.
-6. Klik **ACC & TAMBAH SALDO**.
-7. Verifikasi saldo driver bertambah secara otomatis.
+1. Register a new user.
+2. **Expected:** Dashboard loads successfully.
+3. If an error still occurs, a Red Screen with the error details will appear instead of a white screen, allowing for instant diagnosis.
