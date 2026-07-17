@@ -10,7 +10,7 @@ import DriverView from './components/DriverView';
 import AdminView from './components/AdminView';
 import { PeranPengguna } from './types';
 import { OloluStore } from './services/store';
-import { ShieldAlert, AlertTriangle, Info, BellRing, Phone, ShieldCheck, UserPlus, LogIn, Camera, Check, ArrowRight, Upload, KeyRound, ArrowLeft, Calendar, MapPin as MapPinIcon, Instagram } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Info, BellRing, Phone, ShieldCheck, UserPlus, LogIn, Camera, Check, ArrowRight, Upload, KeyRound, ArrowLeft, Calendar, MapPin as MapPinIcon } from 'lucide-react';
 import OloluLogo from './components/OloluLogo';
 
 export default function App() {
@@ -56,15 +56,18 @@ export default function App() {
   }>({ show: false, pelapor: '', tipe: '' });
 
   useEffect(() => {
+    console.log("App Initializing...");
     async function checkSession() {
       try {
         const s = await OloluStore.getSesi();
+        console.log("Session loaded:", s);
         if (s) {
           setSesi(s);
           setRole(s.role);
           setShowLogin(false);
 
           const lock = OloluStore.getLocalOrderLock();
+          console.log("Lock loaded:", lock);
           if (lock) {
             setLockedOrder(lock);
             if (lock.role) setRole(lock.role);
@@ -74,6 +77,7 @@ export default function App() {
         console.error("Session check error:", err);
         setFatalError(err?.message || "Gagal memuat sesi");
       } finally {
+        console.log("App Initialization complete.");
         setInitializing(false);
       }
     }
@@ -488,7 +492,7 @@ export default function App() {
                   <span className="text-[7px] font-black uppercase">ololuojeklokallumajang</span>
                 </a>
                 <a href="https://instagram.com/ololu_ojeklokallumajang" target="_blank" rel="noreferrer" className="flex items-center space-x-1 text-[#046A38] hover:opacity-80 transition-opacity">
-                  <Instagram size={10} />
+                  <span className="text-[10px]">📸</span>
                   <span className="text-[7px] font-black uppercase">ololu_ojeklokallumajang</span>
                 </a>
               </div>
