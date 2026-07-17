@@ -183,11 +183,12 @@ export const OloluStore = {
 
   // --- SESI LOGIN ---
   async getSesi(): Promise<{ userId: string; role: PeranPengguna } | null> {
-    const stored = localStorage.getItem(SESSION_KEY);
-    if (!stored) return null;
     try {
+      const stored = localStorage.getItem(SESSION_KEY);
+      if (!stored) return null;
       return JSON.parse(stored);
-    } catch {
+    } catch (e) {
+      console.error("Local storage error:", e);
       return null;
     }
   },
