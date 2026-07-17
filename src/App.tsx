@@ -198,8 +198,10 @@ export default function App() {
               });
             }
             OloluStore.setSesi({ userId: profil.id, role: profil.peran });
+            console.log("Session set success for:", profil.id);
             setRole(profil.peran);
             setShowLogin(false);
+            console.log("Login modal closed.");
           } else {
             setError(res.error || "Gagal mendaftar");
           }
