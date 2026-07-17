@@ -9,7 +9,7 @@ import DriverView from './components/DriverView';
 import AdminView from './components/AdminView';
 import { PeranPengguna } from './types';
 import { OloluStore } from './services/store';
-import { AlertTriangle, ShieldCheck, UserPlus, Camera, Upload, KeyRound, ArrowLeft, Calendar, MapPin as MapPinIcon } from 'lucide-react';
+import { AlertTriangle, ShieldCheck, Camera, Upload, KeyRound } from 'lucide-react';
 
 // --- ROBUST ERROR BOUNDARY ---
 class SafeErrorBoundary extends React.Component<{children: React.ReactNode, name: string}, {hasError: boolean, error: any}> {
@@ -124,7 +124,7 @@ export default function App() {
   };
 
   const handleRegisterSubmit = async () => {
-    if (!name || !phone || !password || !tempatLahir || !tanggalLahir) {
+    if (!name || !phone || !password) {
       setError('Lengkapi data pendaftaran');
       return;
     }
@@ -132,11 +132,6 @@ export default function App() {
       setError('Konfirmasi sandi tidak cocok');
       return;
     }
-    if (selectedRole === 'sopir') {
-      if (!profilePic) { setError('Foto profil wajib'); return; }
-      if (!docKtp || !docSim || !docStnk || !docVehicle) { setError('Dokumen wajib lengkap'); return; }
-    }
-
     setLoading(true);
     await OloluStore.kirimFonnteOtp(phone);
     setLoading(false);
@@ -151,7 +146,7 @@ export default function App() {
       if (phone === '6285156766317') finalRole = 'admin';
 
       try {
-        const res = await OloluStore.registerPengguna(name, phone, finalRole, password, tempatLahir, tanggalLahir);
+        const res = await OloluStore.registerPengguna(name, phone, finalRole, password, tempatLahir, tanggalLahir, profilePic || undefined);
         if (res.success && res.profil) {
           if (finalRole === 'sopir' || finalRole === 'admin') {
             await OloluStore.updateSopirDokumen(res.profil.id, {
@@ -230,7 +225,7 @@ export default function App() {
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em]">Ojek Lokal Lumajang</p>
             </div>
 
-            {error && <p className="text-red-500 text-[10px] font-black text-center bg-red-50 p-3 rounded-2xl border border-red-100">{error}</p>}
+            {error && <p className="text-red-500 text-[10px] font-bold text-center bg-red-50 p-3 rounded-2xl border border-red-100">{error}</p>}
 
             {authMode === 'login' ? (
               <div className="space-y-4">
@@ -296,11 +291,11 @@ export default function App() {
         <div className="w-full max-w-[420px] min-h-screen bg-white relative flex flex-col shadow-2xl overflow-hidden border-x border-gray-100">
           {globalPanicNotification.show && (
             <div className="absolute top-4 left-4 right-4 z-[9999] bg-red-600 text-white p-4 rounded-3xl shadow-2xl flex items-center justify-between animate-in slide-in-from-top duration-500">
-               <div className="flex items-center space-x-3">
-                 <AlertTriangle className="animate-pulse" />
+               <div className="flex items-center space-x-3 text-left">
+                 <AlertTriangle className="animate-pulse shrink-0" />
                  <div><p className="text-[10px] font-black uppercase">Darurat Terdeteksi!</p><p className="text-[11px] font-bold">{globalPanicNotification.pelapor} butuh bantuan.</p></div>
                </div>
-               <button onClick={()=>setRole('admin')} className="bg-white text-red-600 px-4 py-1.5 rounded-full font-black text-[9px] uppercase shadow-sm">PANTAU</button>
+               <button onClick={()=>setRole('admin')} className="bg-white text-red-600 px-4 py-1.5 rounded-full font-black text-[9px] uppercase shadow-sm shrink-0">PANTAU</button>
             </div>
           )}
 
@@ -315,8 +310,8 @@ export default function App() {
 
           <footer className="p-6 bg-gray-50 border-t border-gray-100 text-center space-y-3 shrink-0">
             <div className="flex justify-center space-x-6">
-              <a href="https://tiktok.com/@ololuojeklokallumajang" target="_blank" rel="noreferrer" className="text-[9px] font-black text-[#046A38] uppercase flex items-center space-x-1.5 hover:text-emerald-700 transition-colors">TikTok</a>
-              <a href="https://instagram.com/ololu_ojeklokallumajang" target="_blank" rel="noreferrer" className="text-[9px] font-black text-[#046A38] uppercase flex items-center space-x-1.5 hover:text-emerald-700 transition-colors">Instagram</a>
+              <a href="https://tiktok.com/@ololuojeklokallumajang" target="_blank" rel="noreferrer" className="text-[10px] font-black text-[#046A38] uppercase hover:text-emerald-700 transition-colors">TikTok</a>
+              <a href="https://instagram.com/ololu_ojeklokallumajang" target="_blank" rel="noreferrer" className="text-[10px] font-black text-[#046A38] uppercase hover:text-emerald-700 transition-colors">Instagram</a>
             </div>
             <p className="text-[7px] text-gray-400 uppercase font-black tracking-[0.5em]">PT Ololu Pengantaran Nusantara</p>
           </footer>
