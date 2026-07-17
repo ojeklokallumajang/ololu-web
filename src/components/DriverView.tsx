@@ -1243,7 +1243,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                 <p className="text-xs text-gray-400 italic text-center py-4">Belum ada catatan keuangan.</p>
               ) : (
                 <div className="space-y-2.5 max-h-52 overflow-y-auto pr-1">
-                  {transactions.slice().reverse().map((tx) => (
+                  {transactions.map((tx) => (
                     <div key={tx.id} className="p-2.5 bg-[#FAFBF9] rounded-lg border border-gray-100 flex justify-between items-start text-xs">
                       <div>
                         <span className="text-[10px] text-gray-400 block">{new Date(tx.timestamp).toLocaleDateString('id-ID')} {new Date(tx.timestamp).toLocaleTimeString('id-ID')}</span>
@@ -1290,8 +1290,6 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
             ) : (
               <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
                 {historyOrders
-                  .slice()
-                  .reverse()
                   .map((p) => {
                     const dateStr = p.waktuDibuat ? new Date(p.waktuDibuat).toLocaleDateString('id-ID', {
                       day: 'numeric',

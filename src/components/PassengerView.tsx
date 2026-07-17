@@ -394,7 +394,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
         <h1 className="text-xl font-black">Riwayat Order</h1>
       </div>
       <div className="p-4 space-y-3 text-left">
-        {historyOrders.length === 0 ? <p className="text-center text-gray-400 py-10 italic">Belum ada riwayat pesanan.</p> : historyOrders.slice().reverse().map(p => {
+        {historyOrders.length === 0 ? <p className="text-center text-gray-400 py-10 italic">Belum ada riwayat pesanan.</p> : historyOrders.map(p => {
           if (!p) return null;
           return (
             <div key={p.id} className="bg-white p-4 rounded-2xl border border-gray-150 space-y-2 shadow-xs">
