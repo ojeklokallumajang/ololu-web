@@ -74,7 +74,6 @@ import {
   Package,
   User
 } from 'lucide-react';
-import { ReusableTable, ColumnDef, FilterDef } from './ReusableTable';
 
 export default function AdminView() {
   const [profile, setProfile] = useState<ProfilPengguna | null>(null);
