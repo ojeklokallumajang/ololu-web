@@ -731,16 +731,16 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
         {/* BUTTON ONLINE / OFFLINE SOPIR (SANGAT MENCOLOK DI ATAS) */}
         <button
           onClick={handleToggleOnline}
-          disabled={!driverDetail.disetujuiAdmin && !activeOrder}
-          className={`w-full py-3.5 rounded-2xl text-xs font-black tracking-wider flex items-center justify-center space-x-2 transition-all border border-[#D4AF37] shadow-md ${
+          disabled={!driverDetail.disetujuiAdmin || !!activeOrder || (!driverDetail.statusOnline && driverDetail.saldoDompet < config.saldoMinimalOnlineSopir)}
+          className={`w-full py-4 rounded-2xl text-xs font-black tracking-widest flex items-center justify-center space-x-3 transition-all border-b-4 shadow-xl active:scale-95 ${
             driverDetail.statusOnline
-              ? 'bg-[#0A8A4E] text-white hover:bg-[#034F2A]'
-              : 'bg-gray-400 text-white cursor-not-allowed opacity-80'
-          }`}
+              ? 'bg-[#0A8A4E] text-white border-emerald-800'
+              : 'bg-[#1A1A1A] text-white border-gray-900'
+          } disabled:opacity-50 disabled:bg-gray-400 disabled:border-gray-500 disabled:cursor-not-allowed`}
         >
-          <Power size={16} className={driverDetail.statusOnline ? 'animate-pulse text-[#D4AF37]' : ''} />
+          <Power size={18} className={driverDetail.statusOnline ? 'animate-pulse text-[#D4AF37]' : ''} />
           <span>
-            {driverDetail.statusOnline ? '🟢 ANDA SEDANG ONLINE (SIAP TERIMA ORDER)' : '🔴 MODE ONLINE OFFLINE'}
+            {driverDetail.statusOnline ? '🟢 ANDA SEDANG ONLINE' : '🔴 AKTIFKAN MODE ONLINE'}
           </span>
         </button>
 

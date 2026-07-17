@@ -275,11 +275,20 @@ export const OloluStore = {
     });
   },
 
-  async toggleOnlineSopir(id: string) {
+  async toggleOnlineSopir(id: string): Promise<{ success: boolean; error?: string }> {
     const supabase = getSupabase();
-    if (!supabase) return;
-    const { data } = await supabase.from('driver_details').select('status_online').eq('id', id).single();
-    if (data) await supabase.from('driver_details').update({ status_online: !data.status_online }).eq('id', id);
+    if (!supabase) return { success: false, error: "Database offline" };
+    try {
+      const { data, error: fetchError } = await supabase.from('driver_details').select('status_online').eq('id', id).single();
+      if (fetchError) throw fetchError;
+
+      const { error: updateError } = await supabase.from('driver_details').update({ status_online: !data.status_online }).eq('id', id);
+      if (updateError) throw updateError;
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   },
 
   async topUpSopir(sopirId: string, jumlah: number, deskripsi: string) {
