@@ -311,221 +311,75 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFBF9] text-[#1A1A1A] font-sans antialiased selection:bg-[#046A38] selection:text-[#D4AF37] flex flex-col">
-      <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 99999, fontSize: '8px', color: '#ccc' }}>v1.0.1-stable</div>
+    <div className="min-h-screen bg-[#FAFBF9] text-[#1A1A1A] font-sans antialiased flex flex-col">
+      <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 99999, fontSize: '8px', color: '#ccc' }}>v1.0.2-stable</div>
 
-      {showLogin && (
-        <div className="fixed inset-0 bg-[#046A38]/95 z-[10000] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-[32px] w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
-
-            <div className="bg-[#E6F4EC] p-6 text-center border-b border-emerald-100">
-              <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto mb-3 border border-emerald-50">
-                <ShieldCheck className="w-10 h-10 text-[#046A38]" />
-              </div>
-              <h1 className="text-xl font-black text-[#046A38] tracking-tight">Ololu Lumajang</h1>
+      {fatalError ? (
+        <div className="flex-1 flex flex-col items-center justify-center p-10 text-center">
+          <h1 className="text-red-600 font-black">Sistem Error</h1>
+          <p className="text-xs text-gray-500">{fatalError}</p>
+          <button onClick={() => location.reload()} className="mt-4 px-4 py-2 bg-gray-100 rounded-lg">Muat Ulang</button>
+        </div>
+      ) : initializing ? (
+        <div className="flex-1 flex flex-col items-center justify-center bg-[#046A38] text-white">
+          <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+          <p className="mt-4 text-[10px] font-bold uppercase tracking-widest">Ololu Memuat...</p>
+        </div>
+      ) : (
+        <div className="flex-grow w-full max-w-7xl mx-auto flex flex-col justify-center items-center">
+          {!showLogin ? (
+            <div className="w-full md:max-w-[420px] min-h-screen md:min-h-[780px] md:h-[780px] bg-white md:shadow-2xl md:rounded-[36px] border-none md:border md:border-gray-100 flex flex-col relative overflow-hidden self-center">
+              {!role ? (
+                <div className="flex-1 flex items-center justify-center">Error Peran.</div>
+              ) : role === 'admin' ? (
+                <div className="flex-1 overflow-y-auto scrollbar-none"><AdminView /></div>
+              ) : (
+                <div className="flex-1 overflow-y-auto pb-14 relative scrollbar-none">
+                  {role === 'penumpang' && (
+                    <PassengerView
+                      onNotifyAdminPanic={handleNotifyPanic}
+                      onLogout={handleLogout}
+                      onRoleChange={(r) => setRole(r)}
+                      lockedOrderId={lockedOrder?.role === 'penumpang' ? lockedOrder.orderId : undefined}
+                    />
+                  )}
+                  {role === 'sopir' && (
+                    <DriverView
+                      onNotifyAdminPanic={handleNotifyPanic}
+                      onLogout={handleLogout}
+                      lockedOrderId={lockedOrder?.role === 'sopir' ? lockedOrder.orderId : undefined}
+                    />
+                  )}
+                </div>
+              )}
+              <footer className="absolute bottom-0 left-0 right-0 bg-[#E6F4EC] border-t border-emerald-950/5 py-2.5 text-center text-[8px] text-[#046A38] font-bold tracking-widest uppercase shrink-0">© 2026 PT Ololu Lumajang</footer>
             </div>
-
-            <div className="p-6 max-h-[80vh] overflow-y-auto scrollbar-none">
-              {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl flex items-center space-x-2 text-red-600">
-                  <AlertTriangle size={14} />
-                  <span className="text-[10px] font-bold">{error}</span>
-                </div>
-              )}
-
-              {authMode === 'login' && (
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Nomor WhatsApp</label>
-                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="628xxx" className="w-full p-3.5 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-2xl outline-none text-sm font-bold" />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between">
-                      <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Kata Sandi</label>
-                      <button onClick={() => { setAuthMode('forgot'); setLoginStep('form'); setError(''); }} className="text-[10px] font-bold text-[#046A38]">Lupa Password?</button>
+          ) : (
+            <div className="fixed inset-0 bg-[#046A38] flex items-center justify-center p-4 z-[10000]">
+               {/* Minimal Login UI for testing */}
+               <div className="bg-white p-10 rounded-3xl text-center space-y-4 max-w-sm w-full">
+                  <h1 className="font-black text-xl text-[#046A38]">Ololu Login</h1>
+                  {authMode === 'login' ? (
+                    <div className="space-y-4">
+                       <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="628..." className="w-full p-4 bg-gray-50 rounded-2xl border-none outline-none" />
+                       <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password" className="w-full p-4 bg-gray-50 rounded-2xl border-none outline-none" />
+                       <button onClick={handleLoginSubmit} className="w-full py-4 bg-[#046A38] text-white font-black rounded-2xl">MASUK</button>
+                       <button onClick={()=>setAuthMode('register')} className="text-xs font-bold text-gray-400">Daftar Akun Baru</button>
                     </div>
-                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full p-3.5 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-2xl outline-none text-sm font-bold" />
-                  </div>
-                  <button onClick={handleLoginSubmit} disabled={loading} className="w-full py-4 bg-[#046A38] text-white font-black rounded-2xl text-xs tracking-widest uppercase shadow-lg transition-all">{loading ? "Memproses..." : "Masuk Sekarang"}</button>
-                  <div className="text-center pt-2">
-                    <p className="text-[10px] text-gray-500">Belum punya akun?</p>
-                    <button onClick={() => { setAuthMode('register'); setLoginStep('peran'); setError(''); }} className="text-[10px] font-bold text-[#046A38] underline">Daftar Akun Baru</button>
-                  </div>
-                </div>
-              )}
-
-              {authMode === 'forgot' && loginStep === 'form' && (
-                <div className="space-y-4">
-                  <div className="text-center pb-2">
-                    <h3 className="font-bold text-base">Reset Kata Sandi</h3>
-                    <p className="text-[10px] text-gray-500">Masukkan nomor HP terdaftar untuk verifikasi OTP</p>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Nomor WhatsApp</label>
-                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="628xxx" className="w-full p-3.5 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-2xl outline-none text-sm font-bold" />
-                  </div>
-                  <button onClick={handleForgotSubmit} disabled={loading} className="w-full py-4 bg-[#046A38] text-white font-black rounded-2xl text-xs tracking-widest uppercase shadow-lg transition-all">{loading ? "Mengirim OTP..." : "Kirim Kode Reset"}</button>
-                  <button onClick={() => setAuthMode('login')} className="w-full text-[10px] font-bold text-gray-400 flex items-center justify-center space-x-1"><ArrowLeft size={12} /> <span>Kembali ke Login</span></button>
-                </div>
-              )}
-
-              {authMode === 'forgot' && loginStep === 'reset' && (
-                <div className="space-y-4">
-                  <div className="text-center pb-2">
-                    <h3 className="font-bold text-base">Buat Kata Sandi Baru</h3>
-                    <p className="text-[10px] text-gray-500">Gunakan kombinasi yang aman dan mudah diingat</p>
-                  </div>
-                  <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Kata Sandi Baru" className="w-full p-3.5 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-2xl outline-none text-sm font-bold" />
-                  <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Konfirmasi" className="w-full p-3.5 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-2xl outline-none text-sm font-bold" />
-                  <button onClick={handleResetPassword} disabled={loading} className="w-full py-4 bg-[#046A38] text-white font-black rounded-2xl text-xs tracking-widest uppercase shadow-lg transition-all">Simpan Kata Sandi</button>
-                </div>
-              )}
-
-              {authMode === 'register' && loginStep === 'peran' && (
-                <div className="space-y-3">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center mb-4">Daftar Sebagai Apa?</p>
-                  <button onClick={() => handleStartRegister('penumpang')} className="w-full flex items-center justify-between p-4 bg-white border-2 border-gray-100 hover:border-[#046A38] rounded-2xl transition-all"><div className="flex items-center space-x-4"><div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-[#046A38]"><UserPlus size={20} /></div><div className="text-left"><p className="font-bold text-sm">Penumpang</p><p className="text-[9px] text-gray-500">Butuh tumpangan/kirim barang</p></div></div></button>
-                  <button onClick={() => handleStartRegister('sopir')} className="w-full flex items-center justify-between p-4 bg-white border-2 border-gray-100 hover:border-[#046A38] rounded-2xl transition-all"><div className="flex items-center space-x-4"><div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-[#046A38]"><Phone size={20} /></div><div className="text-left"><p className="font-bold text-sm">Mitra Rider/Driver</p><p className="text-[9px] text-gray-500">Ingin menambah penghasilan</p></div></div></button>
-                  <div className="text-center pt-4"><button onClick={() => { setAuthMode('login'); setError(''); }} className="text-[10px] font-bold text-gray-400">Sudah punya akun? Login</button></div>
-                </div>
-              )}
-
-              {authMode === 'register' && loginStep === 'form' && (
-                <div className="space-y-4">
-                  <div className="flex flex-col items-center space-y-2 mb-2">
-                    <div className="relative group cursor-pointer" onClick={() => handleFilePicker(setProfilePic)}>
-                      <div className="w-16 h-16 bg-gray-50 border-2 border-dashed border-gray-200 rounded-full flex items-center justify-center overflow-hidden">{profilePic ? <img src={profilePic} alt="Preview" className="w-full h-full object-cover" /> : <Camera size={20} className="text-gray-300" />}</div>
-                      <div className="absolute -bottom-1 -right-1 bg-[#046A38] text-white p-1 rounded-full border border-white shadow-sm"><Upload size={8} /></div>
-                    </div>
-                    <label className="text-[8px] font-bold text-gray-400 uppercase">Foto Profil {selectedRole === 'sopir' && '(Wajib)'}</label>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="relative">
-                      <UserPlus size={14} className="absolute left-3 top-3.5 text-gray-400" />
-                      <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nama Lengkap" className="w-full pl-9 p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-xl outline-none text-xs font-bold" />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="relative">
-                        <MapPinIcon size={14} className="absolute left-3 top-3.5 text-gray-400" />
-                        <input type="text" value={tempatLahir} onChange={(e) => setTempatLahir(e.target.value)} placeholder="Tempat Lahir" className="w-full pl-9 p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-xl outline-none text-[10px] font-bold" />
-                      </div>
-                      <div className="relative">
-                        <Calendar size={14} className="absolute left-3 top-3.5 text-gray-400" />
-                        <input type="date" value={tanggalLahir} onChange={(e) => setTanggalLahir(e.target.value)} className="w-full pl-9 p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-xl outline-none text-[10px] font-bold" />
-                      </div>
-                    </div>
-
-                    <div className="relative">
-                      <Phone size={14} className="absolute left-3 top-3.5 text-gray-400" />
-                      <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="WhatsApp (628xxx)" className="w-full pl-9 p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-xl outline-none text-xs font-bold" />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="relative">
-                        <KeyRound size={14} className="absolute left-3 top-3.5 text-gray-400" />
-                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Sandi" className="w-full pl-9 p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-xl outline-none text-xs font-bold" />
-                      </div>
-                      <div className="relative">
-                        <KeyRound size={14} className="absolute left-3 top-3.5 text-gray-400" />
-                        <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Ulangi" className="w-full pl-9 p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-xl outline-none text-xs font-bold" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {selectedRole === 'sopir' && (
-                    <div className="space-y-3 pt-2 border-t border-dashed">
-                      <div className="flex bg-emerald-50 p-1 rounded-xl border border-emerald-100 mb-2">
-                        <button
-                          onClick={() => setJenisKendaraan('motor')}
-                          disabled={!OloluStore.getPengaturanSync().daftarMotorAktif}
-                          className={`flex-1 py-2 rounded-lg text-[10px] font-black transition-all ${jenisKendaraan === 'motor' ? 'bg-[#046A38] text-white shadow-sm' : 'text-emerald-700 opacity-60'}`}
-                        >
-                          MOTOR {!OloluStore.getPengaturanSync().daftarMotorAktif && '(Tutup)'}
-                        </button>
-                        <button
-                          onClick={() => setJenisKendaraan('mobil')}
-                          disabled={!OloluStore.getPengaturanSync().daftarMobilAktif}
-                          className={`flex-1 py-2 rounded-lg text-[10px] font-black transition-all ${jenisKendaraan === 'mobil' ? 'bg-[#046A38] text-white shadow-sm' : 'text-emerald-700 opacity-60'}`}
-                        >
-                          MOBIL {!OloluStore.getPengaturanSync().daftarMobilAktif && '(Tutup)'}
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <button onClick={() => handleFilePicker(setDocKtp)} className={`p-2.5 rounded-lg border-2 border-dashed text-center ${docKtp ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-100'}`}><Upload size={12} className={docKtp ? 'text-emerald-500 mx-auto' : 'text-gray-300 mx-auto'} /><p className="text-[7px] font-bold">KTP {docKtp && '✅'}</p></button>
-                        <button onClick={() => handleFilePicker(setDocSim)} className={`p-2.5 rounded-lg border-2 border-dashed text-center ${docSim ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-100'}`}><Upload size={12} className={docSim ? 'text-emerald-500 mx-auto' : 'text-gray-300 mx-auto'} /><p className="text-[7px] font-bold">SIM {docSim && '✅'}</p></button>
-                        <button onClick={() => handleFilePicker(setDocStnk)} className={`p-2.5 rounded-lg border-2 border-dashed text-center ${docStnk ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-100'}`}><Upload size={12} className={docStnk ? 'text-emerald-500 mx-auto' : 'text-gray-300 mx-auto'} /><p className="text-[7px] font-bold">STNK {docStnk && '✅'}</p></button>
-                        <button onClick={() => handleFilePicker(setDocVehicle)} className={`p-2.5 rounded-lg border-2 border-dashed text-center ${docVehicle ? 'bg-emerald-50 border-emerald-200' : 'bg-gray-50 border-gray-100'}`}><Upload size={12} className={docVehicle ? 'text-emerald-500 mx-auto' : 'text-gray-300 mx-auto'} /><p className="text-[7px] font-bold">FOTO {jenisKendaraan.toUpperCase()} {docVehicle && '✅'}</p></button>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input type="text" value={platNomor} onChange={(e) => setPlatNomor(e.target.value.toUpperCase())} placeholder="N-XXXX-YX" className="p-2.5 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-lg outline-none text-[10px] font-bold" />
-                        <input type="text" value={warnaKendaraan} onChange={(e) => setWarnaKendaraan(e.target.value)} placeholder="Warna Kendaraan" className="p-2.5 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-lg outline-none text-[10px] font-bold" />
-                      </div>
-                      <input type="text" value={jenisMotor} onChange={(e) => setJenisMotor(e.target.value)} placeholder={`Tipe ${jenisKendaraan === 'motor' ? 'Motor' : 'Mobil'} (Avanza, Vario, dll)`} className="w-full p-2.5 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-lg outline-none text-[10px] font-bold" />
+                  ) : (
+                    <div className="space-y-4">
+                       {/* Register minimal UI */}
+                       <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="Nama Lengkap" className="w-full p-3 bg-gray-50 rounded-xl" />
+                       <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="Nomor WhatsApp" className="w-full p-3 bg-gray-50 rounded-xl" />
+                       <button onClick={handleRegisterSubmit} className="w-full py-3 bg-[#046A38] text-white font-black rounded-xl">DAFTAR</button>
+                       <button onClick={()=>setAuthMode('login')} className="text-xs font-bold text-gray-400">Kembali ke Login</button>
                     </div>
                   )}
-                  <button onClick={handleRegisterSubmit} disabled={loading} className="w-full py-3.5 bg-[#046A38] text-white font-black rounded-2xl text-[10px] tracking-widest uppercase shadow-lg transition-all">{loading ? "Memproses..." : selectedRole === 'sopir' ? "Kirim Verifikasi" : "Daftar & Kirim OTP"}</button>
-                  <button onClick={() => setLoginStep('peran')} className="w-full text-[10px] font-bold text-gray-400">Kembali</button>
-                </div>
-              )}
-
-              {(authMode === 'register' || authMode === 'forgot') && loginStep === 'otp' && (
-                <div className="space-y-6 text-center">
-                  <div className="space-y-2"><h3 className="font-bold text-lg">Verifikasi OTP</h3><p className="text-xs text-gray-500">Masukkan kode dari WhatsApp <strong>{phone}</strong></p></div>
-                  <input type="text" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="000000" className="w-full text-center p-4 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-2xl outline-none text-2xl font-black tracking-[0.5em]" />
-                  <button onClick={handleVerifyOtp} disabled={loading} className="w-full py-4 bg-[#046A38] text-white font-black rounded-2xl text-xs tracking-widest uppercase shadow-lg transition-all">{loading ? "Memproses..." : "Konfirmasi"}</button>
-                </div>
-              )}
+               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
-
-      <div className="flex-grow w-full max-w-7xl mx-auto p-0 md:p-4 lg:p-6 flex flex-col justify-center items-center">
-        {initializing ? (
-          <div className="min-h-screen bg-[#046A38] flex flex-col items-center justify-center text-white w-full">
-            <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
-            <p className="text-xs font-bold tracking-widest uppercase">Ololu Memuat Sistem...</p>
-          </div>
-        ) : (
-          <>
-            {!showLogin && (
-              <div className="w-full md:max-w-[420px] min-h-screen md:min-h-[780px] md:h-[780px] bg-white md:shadow-2xl md:rounded-[36px] border-none md:border md:border-gray-100 flex flex-col relative overflow-hidden self-center">
-                {!role ? (
-                  <div className="flex-1 flex items-center justify-center">Gagal Memuat Peran. Silakan Login Ulang.</div>
-                ) : role === 'admin' ? (
-                  <div className="flex-1 overflow-y-auto scrollbar-none">
-                    <AdminView />
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex-1 overflow-y-auto pb-14 relative scrollbar-none">
-                      {role === 'penumpang' && (
-                        <PassengerView
-                          onNotifyAdminPanic={handleNotifyPanic}
-                          onLogout={handleLogout}
-                          onRoleChange={(r) => setRole(r)}
-                          lockedOrderId={lockedOrder?.role === 'penumpang' ? lockedOrder.orderId : undefined}
-                        />
-                      )}
-                      {role === 'sopir' && (
-                        <DriverView
-                          onNotifyAdminPanic={handleNotifyPanic}
-                          onLogout={handleLogout}
-                          lockedOrderId={lockedOrder?.role === 'sopir' ? lockedOrder.orderId : undefined}
-                        />
-                      )}
-                    </div>
-                  </>
-                )}
-                <footer className="absolute bottom-0 left-0 right-0 bg-[#E6F4EC] border-t border-emerald-950/5 py-2.5 text-center text-[8px] text-[#046A38] font-bold tracking-widest uppercase shrink-0">© 2026 PT Ololu Pengantaran Nusantara Lumajang</footer>
-              </div>
-            )}
-          </>
-        )}
-      </div>
     </div>
   );
 }
