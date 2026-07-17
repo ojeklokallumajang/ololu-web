@@ -330,8 +330,47 @@ export const OloluStore = {
   },
 
   async getAllTransactions(): Promise<TransaksiDompet[]> {
-    const { data } = await getSupabase()!.from('wallet_transactions').select('*, profiles:id_sopir(nama)').order('created_at', { ascending: false });
-    return (data || []).map(d => ({ id: d.id, idSopir: d.id_sopir, namaSopir: d.profiles?.nama || 'Sopir', jenis: d.jenis, jumlah: d.jumlah, saldoAwal: d.saldo_awal, saldoAkhir: d.saldo_akhir, deskripsi: d.deskripsi, statusTarik: d.status_tarik, buktiTransfer: d.bukti_transfer, timestamp: d.created_at } as any));
+    const supabase = getSupabase();
+    if (!supabase) return [];
+
+    // Use a simple query first to see if it works, joining manually if needed
+    const { data, error } = await supabase
+      .from('wallet_transactions')
+      .select('*, profiles:id_sopir(nama)')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("❌ ERROR FETCHING TRANSACTIONS:", error.message);
+      // Fallback: try without join to at least get the numbers
+      const { data: rawData } = await supabase.from('wallet_transactions').select('*').order('created_at', { ascending: false });
+      return (rawData || []).map(d => ({
+        id: d.id,
+        idSopir: d.id_sopir,
+        namaSopir: 'Mitra',
+        jenis: d.jenis,
+        jumlah: d.jumlah,
+        saldoAwal: d.saldo_awal,
+        saldoAkhir: d.saldo_akhir,
+        deskripsi: d.deskripsi,
+        statusTarik: d.status_tarik,
+        buktiTransfer: d.bukti_transfer,
+        timestamp: d.created_at
+      } as any));
+    }
+
+    return (data || []).map(d => ({
+      id: d.id,
+      idSopir: d.id_sopir,
+      namaSopir: d.profiles?.nama || 'Sopir',
+      jenis: d.jenis,
+      jumlah: d.jumlah,
+      saldoAwal: d.saldo_awal,
+      saldoAkhir: d.saldo_akhir,
+      deskripsi: d.deskripsi,
+      statusTarik: d.status_tarik,
+      buktiTransfer: d.bukti_transfer,
+      timestamp: d.created_at
+    } as any));
   },
 
   async prosesTransaksi(txId: string, status: 'disetujui' | 'ditolak', alasan?: string) {
