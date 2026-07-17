@@ -130,14 +130,15 @@ export default function AdminView() {
 
     const syncData = async () => {
       try {
-        const [orders, sopir, users, settings, logs, admins, emergencies] = await Promise.all([
+        const [orders, sopir, users, settings, logs, admins, emergencies, txs] = await Promise.all([
           OloluStore.getAllPesanan(),
           OloluStore.getAllSopir(),
           OloluStore.getAllUsers(),
           OloluStore.getPengaturan(),
           OloluStore.getAllAuditLogs(),
           OloluStore.getAllAdmins(),
-          OloluStore.getAllEmergency()
+          OloluStore.getAllEmergency(),
+          OloluStore.getAllTransactions()
         ]);
 
         setPesananList(orders);
@@ -148,6 +149,7 @@ export default function AdminView() {
         setAuditLogs(logs);
         setAdminList(admins);
         setEmergencyList(emergencies);
+        setTransaksiList(txs);
       } catch (err) {
         console.error("Critical Dashboard Sync Failure:", err);
       } finally {
@@ -157,6 +159,14 @@ export default function AdminView() {
 
     syncData();
     const unsubscribeStore = OloluStore.subscribeToStore(syncData);
+
+    // REAL-TIME DRIVER ONLINE STATUS SYNC
+    const unsubscribeDrivers = ololuRealtime.subscribeToDriversOnline((state) => {
+      setSopirList(current => current.map(s => {
+        const isOnline = !!state[s.id];
+        return { ...s, statusOnline: isOnline };
+      }));
+    });
 
     // REAL-TIME PANIC LISTENER
     const unsubscribeEmergency = ololuRealtime.subscribeToEmergencies((newEmergency: LaporanDarurat) => {
@@ -169,6 +179,7 @@ export default function AdminView() {
     return () => {
       unsubscribeStore();
       unsubscribeEmergency();
+      unsubscribeDrivers();
       stopSiren();
     };
   }, []);
