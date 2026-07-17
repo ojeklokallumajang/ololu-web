@@ -161,6 +161,7 @@ function LiveDriversMap() {
 }
 
 export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChange, lockedOrderId }: PassengerViewProps) {
+  useEffect(() => { console.log("PassengerView Mounted"); }, []);
   const [profile, setProfile] = useState<any>(null);
   const isSuperUser = profile?.nomorHp === '6285156766317';
   const [config, setConfig] = useState<any>(null);
