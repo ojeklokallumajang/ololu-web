@@ -1145,17 +1145,15 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
               {/* TOP UP REQUEST WITH PHOTO PROOF */}
               <div className="space-y-3">
                 <span className="text-[10px] font-bold text-gray-500 block">⚡ ISI SALDO DOMPET:</span>
-                <div className="grid grid-cols-3 gap-1.5 text-xs text-gray-700">
-                  {[10000, 25000, 50000, 100000, 200000, 500000].slice(0, 3).map(amt => (
-                    <button
-                      key={amt}
-                      type="button"
-                      onClick={() => setTopUpAmount(amt)}
-                      className={`py-1.5 rounded-lg border text-center font-bold ${topUpAmount === amt ? 'bg-[#FAFBF9] border-[#046A38] text-[#046A38]' : 'bg-white'}`}
-                    >
-                      {amt/1000} Rb
-                    </button>
-                  ))}
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-bold text-gray-400 uppercase ml-1">Nominal Deposit (Rp)</label>
+                  <input
+                    type="number"
+                    value={topUpAmount || ''}
+                    onChange={(e) => setTopUpAmount(parseInt(e.target.value) || 0)}
+                    placeholder="Masukkan nominal..."
+                    className="w-full p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-2xl outline-none text-sm font-black text-[#046A38]"
+                  />
                 </div>
 
                 <div className="flex flex-col space-y-2">
