@@ -36,6 +36,7 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode, name: st
 }
 
 export default function App() {
+  console.log("App Component Rendering...");
   const [sesi, setSesi] = useState<{ userId: string; role: PeranPengguna } | null>(null);
   const [role, setRole] = useState<PeranPengguna>('penumpang');
   const [showLogin, setShowLogin] = useState(true);
