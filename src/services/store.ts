@@ -509,6 +509,102 @@ export const OloluStore = {
     this.removeLocalOrderLock();
   },
 
+  async ajukanTarikDana(sopirId: string, jumlah: number): Promise<{ success: boolean; error?: string }> {
+    const supabase = getSupabase();
+    if (!supabase) return { success: false, error: "Database offline" };
+
+    // 1. Cek Saldo & Pengaturan
+    const { data: driver } = await supabase.from('driver_details').select('saldo_dompet').eq('id', sopirId).single();
+    const settings = await this.getPengaturan();
+
+    if (!driver || driver.saldo_dompet < jumlah + settings.biayaAdminTarik) {
+      return { success: false, error: "Saldo tidak mencukupi (termasuk biaya admin)." };
+    }
+
+    // 2. Buat Transaksi Pending
+    const { error } = await supabase.from('wallet_transactions').insert({
+      id_sopir: sopirId,
+      jenis: 'tarik_dana',
+      jumlah: jumlah,
+      saldo_awal: driver.saldo_dompet,
+      saldo_akhir: driver.saldo_dompet - (jumlah + settings.biayaAdminTarik),
+      deskripsi: `Penarikan dana ke rekening`,
+      status_tarik: 'menunggu'
+    });
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  },
+
+  async getAllTransactions(): Promise<TransaksiDompet[]> {
+    const supabase = getSupabase();
+    if (!supabase) return [];
+    const { data } = await supabase.from('wallet_transactions').select('*, profiles:id_sopir(nama)').order('timestamp', { ascending: false });
+    return (data || []).map(d => ({
+      id: d.id,
+      idSopir: d.id_sopir,
+      namaSopir: d.profiles?.nama || 'Sopir',
+      jenis: d.jenis,
+      jumlah: d.jumlah,
+      saldoAwal: d.saldo_awal,
+      saldoAkhir: d.saldo_akhir,
+      deskripsi: d.deskripsi,
+      statusTarik: d.status_tarik,
+      timestamp: d.timestamp
+    } as any));
+  },
+
+  async prosesTransaksi(txId: string, status: 'disetujui' | 'ditolak', alasan?: string) {
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    const { data: tx } = await supabase.from('wallet_transactions').select('*').eq('id', txId).single();
+    if (!tx || tx.status_tarik !== 'menunggu') return;
+
+    if (status === 'disetujui') {
+      // Potong saldo driver secara riil jika disetujui
+      const { data: driver } = await supabase.from('driver_details').select('saldo_dompet').eq('id', tx.id_sopir).single();
+      if (driver) {
+        const settings = await this.getPengaturan();
+        const totalPotong = tx.jumlah + settings.biayaAdminTarik;
+        await supabase.from('driver_details').update({
+          saldo_dompet: driver.saldo_dompet - totalPotong
+        }).eq('id', tx.id_sopir);
+      }
+    }
+
+    await supabase.from('wallet_transactions').update({
+      status_tarik: status,
+      alasan_penolakan: alasan
+    }).eq('id', txId);
+  },
+
+  async topUpSopir(sopirId: string, jumlah: number, deskripsi: string): Promise<{ success: boolean; error?: string }> {
+    const supabase = getSupabase();
+    if (!supabase) return { success: false, error: "Database offline" };
+
+    const { data: driver } = await supabase.from('driver_details').select('saldo_dompet').eq('id', sopirId).single();
+    if (!driver) return { success: false, error: "Driver tidak ditemukan" };
+
+    const saldoBaru = (driver.saldo_dompet || 0) + jumlah;
+
+    // 1. Update Saldo
+    const { error: err1 } = await supabase.from('driver_details').update({ saldo_dompet: saldoBaru }).eq('id', sopirId);
+    if (err1) return { success: false, error: err1.message };
+
+    // 2. Record Transaction
+    await supabase.from('wallet_transactions').insert({
+      id_sopir: sopirId,
+      jenis: 'topup',
+      jumlah: jumlah,
+      saldo_awal: driver.saldo_dompet,
+      saldo_akhir: saldoBaru,
+      deskripsi: deskripsi
+    });
+
+    return { success: true };
+  },
+
   async getPesananById(id: string): Promise<Pesanan | null> {
     const supabase = getSupabase();
     if (!supabase) return null;

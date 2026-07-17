@@ -1,3 +1,3 @@
-- [ ] Ganti `.update()` ke `.upsert()` di fungsi `updateSopirDokumen` (`store.ts`)
-- [ ] Sinkronisasi & Push ke GitHub
-- [ ] Laporan Akhir (Walkthrough)
+- [x] Ganti `.update()` ke `.upsert()` di fungsi `updateSopirDokumen` (`store.ts`)
+- [x] Sinkronisasi & Push ke GitHub
+- [x] Laporan Akhir (Walkthrough)

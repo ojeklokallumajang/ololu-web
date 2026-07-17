@@ -87,6 +87,7 @@ export default function AdminView() {
   const [profilList, setProfilList] = useState<ProfilPengguna[]>([]);
   const [emergencyList, setEmergencyList] = useState<LaporanDarurat[]>([]);
   const [transaksiList, setTransaksiList] = useState<TransaksiDompet[]>([]);
+  const [activeDompetTab, setActiveDompetTab] = useState<'pending' | 'history'>('pending');
   const [ratingList, setRatingList] = useState<RatingUlasan[]>([]);
   const [config, setConfig] = useState<PengaturanTarif>(DEFAULT_PENGATURAN_TARIF);
   const [adminList, setAdminList] = useState<ProfilPengguna[]>([]);
@@ -98,7 +99,10 @@ export default function AdminView() {
   const [showSopirModal, setShowSopirModal] = useState(false);
   const [alasanTolakSopir, setAlasanTolakSopir] = useState('');
   const [complaintFilter, setComplaintFilter] = useState<string>('semua');
-  
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [topUpTargetId, setTopUpModalTargetId] = useState<string | null>(null);
+  const [topUpAmount, setTopUpAmount] = useState<string>('');
+
   // FORM ADD SUB-ADMIN
   const [newAdminPhone, setNewAdminPhone] = useState('');
   const [newAdminName, setNewAdminName] = useState('');
@@ -289,6 +293,27 @@ export default function AdminView() {
     }
   };
 
+  const handleProsesTx = async (id: string, status: 'disetujui' | 'ditolak') => {
+    let alasan = '';
+    if (status === 'ditolak') {
+      alasan = prompt("Alasan penolakan:") || 'Ditolak admin';
+    }
+    await OloluStore.prosesTransaksi(id, status, alasan);
+    alert(status === 'disetujui' ? "Berhasil disetujui!" : "Berhasil ditolak.");
+  };
+
+  const handleAdminTopUp = async () => {
+    if (!topUpTargetId || !topUpAmount) return;
+    const res = await OloluStore.topUpSopir(topUpTargetId, parseInt(topUpAmount), "Isi saldo oleh Admin");
+    if (res.success) {
+      alert("Saldo berhasil diisi!");
+      setShowTopUpModal(false);
+      setTopUpAmount('');
+    } else {
+      alert("Gagal: " + res.error);
+    }
+  };
+
   const driverColumns = [
     { id: 'nama', header: 'Sopir', accessor: (s: any) => <div className="text-left font-bold">{s.platNomor || 'Rider'}</div> },
     { id: 'motor', header: 'Motor', accessor: (s: any) => <div className="text-left text-[10px]">{s.jenisMotor}</div> },
@@ -309,6 +334,7 @@ export default function AdminView() {
         {[
           { id: 'stats', label: '📊 Statistik' },
           { id: 'sopir', label: '🛵 Rider' },
+          { id: 'dompet', label: '💰 Dompet' },
           { id: 'penumpang', label: '👤 User' },
           { id: 'pesanan', label: '📋 Order' },
           { id: 'darurat', label: '🚨 Darurat' },
@@ -384,11 +410,19 @@ export default function AdminView() {
                             <p className="text-[9px] text-gray-500 font-medium">{s.platNomor} • {s.jenisMotor}</p>
                           </div>
                        </div>
-                       <div className="text-right">
+                       <div className="text-right flex flex-col items-end space-y-1">
                           <p className="text-[10px] font-black text-emerald-600">Rp {s.saldoDompet?.toLocaleString()}</p>
-                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${s.statusOnline ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
-                            {s.statusOnline ? 'ONLINE' : 'OFFLINE'}
-                          </span>
+                          <div className="flex space-x-1">
+                             <button
+                               onClick={() => { setTopUpModalTargetId(s.id); setShowTopUpModal(true); }}
+                               className="bg-emerald-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded shadow-sm hover:bg-emerald-700"
+                             >
+                               ISI SALDO
+                             </button>
+                             <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${s.statusOnline ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
+                               {s.statusOnline ? 'ONLINE' : 'OFFLINE'}
+                             </span>
+                          </div>
                        </div>
                     </div>
                   ))
@@ -397,7 +431,59 @@ export default function AdminView() {
           </div>
         )}
 
-        {activeTab === 'penumpang' && (
+        {activeTab === 'dompet' && (
+          <div className="space-y-4">
+             <div className="flex bg-white p-1 rounded-xl border border-gray-150 gap-1 shadow-sm">
+                <button onClick={()=>setActiveDompetTab('pending')} className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${activeDompetTab==='pending' ? 'bg-[#E6F4EC] text-[#046A38]' : 'text-gray-400'}`}>PENGAJUAN TARIK (ACC)</button>
+                <button onClick={()=>setActiveDompetTab('history')} className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${activeDompetTab==='history' ? 'bg-[#E6F4EC] text-[#046A38]' : 'text-gray-400'}`}>SEMUA TRANSAKSI</button>
+             </div>
+
+             {activeDompetTab === 'pending' ? (
+                <div className="space-y-3">
+                   {transaksiList.filter(t => t.jenis === 'tarik_dana' && t.statusTarik === 'menunggu').length === 0 ? (
+                     <p className="text-[10px] italic text-gray-400 text-center py-10 bg-white rounded-xl border border-dashed">Tidak ada pengajuan tarik dana baru.</p>
+                   ) : (
+                     transaksiList.filter(t => t.jenis === 'tarik_dana' && t.statusTarik === 'menunggu').map(t => (
+                       <div key={t.id} className="bg-white p-4 rounded-2xl border-2 border-[#D4AF37] shadow-md space-y-3">
+                          <div className="flex justify-between items-start">
+                             <div>
+                                <p className="text-xs font-black text-gray-800 uppercase">{(t as any).namaSopir}</p>
+                                <p className="text-[9px] text-gray-500">{new Date(t.timestamp).toLocaleString()}</p>
+                             </div>
+                             <span className="bg-amber-100 text-[#B8941F] px-2 py-0.5 rounded text-[8px] font-black uppercase">PENGAJUAN TARIK</span>
+                          </div>
+                          <div className="bg-gray-50 p-3 rounded-xl border text-center">
+                             <span className="text-[9px] font-bold text-gray-400 uppercase block">Nominal Pencairan:</span>
+                             <p className="text-xl font-black text-[#B8941F]">Rp {t.jumlah?.toLocaleString()}</p>
+                          </div>
+                          <div className="flex space-x-2">
+                             <button onClick={()=>handleProsesTx(t.id, 'ditolak')} className="flex-1 py-2.5 bg-white text-red-600 border border-red-100 font-black rounded-xl text-[9px] uppercase">TOLAK</button>
+                             <button onClick={()=>handleProsesTx(t.id, 'disetujui')} className="flex-[2] py-2.5 bg-emerald-600 text-white font-black rounded-xl text-[9px] uppercase shadow-md">ACC & CAIRKAN</button>
+                          </div>
+                       </div>
+                     ))
+                   )}
+                </div>
+             ) : (
+                <div className="space-y-2">
+                   {transaksiList.map(t => (
+                     <div key={t.id} className="bg-white p-3 rounded-xl border flex items-center justify-between shadow-xs">
+                        <div>
+                           <p className="text-[10px] font-black text-gray-800 leading-tight">{t.deskripsi}</p>
+                           <p className="text-[8px] text-gray-400">{(t as any).namaSopir} • {new Date(t.timestamp).toLocaleDateString()}</p>
+                        </div>
+                        <div className="text-right">
+                           <p className={`text-[10px] font-black ${t.jenis==='pendapatan'||t.jenis==='topup' ? 'text-green-600':'text-red-500'}`}>
+                             {t.jenis==='pendapatan'||t.jenis==='topup'?'+':'-'} Rp {t.jumlah?.toLocaleString()}
+                           </p>
+                           <span className="text-[7px] text-gray-400 uppercase font-bold">{t.statusTarik || t.jenis}</span>
+                        </div>
+                     </div>
+                   ))}
+                </div>
+             )}
+          </div>
+        )}
            <div className="space-y-2">
              <h3 className="text-xs font-black text-gray-700 uppercase mb-3">Daftar Pengguna (Penumpang)</h3>
              {profilList.length === 0 ? <p className="text-xs italic text-gray-400 text-center py-10">Belum ada pengguna terdaftar.</p> :
@@ -825,6 +911,30 @@ export default function AdminView() {
            </div>
         )}
       </div>
+
+      {/* MODAL ISI SALDO OLEH ADMIN */}
+      {showTopUpModal && (
+        <div className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+           <div className="bg-white w-full max-w-xs rounded-3xl p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="text-center">
+                 <DollarSign size={32} className="mx-auto text-emerald-600 mb-2" />
+                 <h3 className="font-black text-sm uppercase">Isi Saldo Mitra</h3>
+                 <p className="text-[10px] text-gray-500">Masukkan nominal penambahan saldo</p>
+              </div>
+              <input
+                type="number"
+                value={topUpAmount}
+                onChange={(e)=>setTopUpAmount(e.target.value)}
+                placeholder="cth: 50000"
+                className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-center font-black text-emerald-600"
+              />
+              <div className="flex space-x-2">
+                 <button onClick={()=>setShowTopUpModal(false)} className="flex-1 py-2.5 bg-gray-100 text-gray-500 font-bold rounded-xl text-[10px]">BATAL</button>
+                 <button onClick={handleAdminTopUp} className="flex-1 py-2.5 bg-emerald-600 text-white font-black rounded-xl text-[10px] shadow-md">ISI SEKARANG</button>
+              </div>
+           </div>
+        </div>
+      )}
 
       {/* MODAL VERIFIKASI SOPIR (ACC BUTTON HERE) */}
       {showSopirModal && selectedSopir && (

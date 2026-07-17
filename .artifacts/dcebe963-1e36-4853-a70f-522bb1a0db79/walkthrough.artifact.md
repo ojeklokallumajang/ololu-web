@@ -1,35 +1,23 @@
-# Walkthrough - Implementasi Sistem Verifikasi & Tombol ACC Driver
+# Walkthrough - Perbaikan Penyimpanan Berkas Driver (Fix Missing Docs)
 
-Saya telah menambahkan fitur verifikasi mitra di Dashboard Admin. Sekarang Anda dapat mereview data pendaftar baru dan menyetujui (ACC) atau menolak akun mereka dengan satu klik.
+Saya telah memperbaiki masalah di mana data kendaraan dan foto dokumen driver (KTP, SIM, STNK) tidak muncul di Panel Admin meskipun sudah diisi lengkap oleh pendaftar.
 
-## Fitur Baru di Dashboard Admin (Tab Rider)
+## Perubahan yang Dilakukan
 
-### 1. Daftar Antrian Pendaftaran
-- Sekarang tab **Rider** dibagi menjadi dua bagian: **⏳ Menunggu Verifikasi** dan **✅ Mitra Aktif**.
-- Pendaftar baru yang sudah mengunggah berkas akan otomatis muncul di daftar antrian dengan label kuning.
+### 1. Perbaikan Logika Database (`store.ts`)
+- **Ganti Update ke Upsert:** Sebelumnya, aplikasi menggunakan perintah `update` yang hanya bekerja jika data sudah ada di tabel detail driver. Sekarang saya menggunakan `upsert` (Update or Insert).
+- **Auto-Create Detail:** Jika ini adalah pendaftaran pertama kali, sistem akan otomatis **membuat baris baru** di tabel detail driver saat mereka mengunggah dokumen. Jika sudah ada, sistem akan **memperbaruinya**.
 
-### 2. Modal Review Berkas (Tombol ACC)
-- **Klik Nama Rider** di antrian untuk membuka modal detail.
-- Di dalam modal tersebut, Anda bisa melihat:
-  - Nama Lengkap & Nomor HP asli pendaftar.
-  - Foto **KTP, SIM, STNK**, dan **Kendaraan** yang mereka unggah.
-- Terdapat tombol besar berwarna hijau: **"ACC / SETUJUI MITRA"** untuk meloloskan mereka.
-- Terdapat tombol putih: **"TOLAK"** jika berkas tidak sesuai (lengkap dengan input alasan penolakan).
-
-### 3. Sinkronisasi Nama Profil
-- Sebelumnya hanya muncul tulisan "RIDER BARU", sekarang sistem sudah saya perbaiki agar otomatis mengambil nama asli dari profil mereka di database.
+### 2. Keamanan Data
+- Memastikan status verifikasi tetap `false` saat dokumen diperbarui, sehingga Admin harus melakukan review ulang setiap ada perubahan berkas.
 
 ## Verifikasi yang Dilakukan
 
-- [x] **Database Join:** Berhasil menghubungkan tabel `driver_details` dengan `profiles`.
-- [x] **Tombol ACC:** Berhasil mengupdate kolom `disetujui_admin` di database saat diklik.
-- [x] **UI Modal:** Memastikan seluruh foto dokumen tampil dengan benar untuk direview Admin.
+- [x] **Tes Simpan:** Mensimulasikan pendaftaran driver baru; data sekarang tersimpan dengan benar di tabel `driver_details`.
+- [x] **Sinkronisasi Admin:** Memastikan modal verifikasi di Admin sekarang menampilkan Plat Nomor, Tipe Motor, dan foto dokumen secara lengkap.
+- [x] **GitHub Push:** Perbaikan sudah aktif di repositori `main`.
 
 ---
-> [!TIP]
-> **Cara Pakai:**
-> 1. Tunggu 1 menit agar Cloudflare update.
-> 2. Lakukan **Hard Refresh (Ctrl + F5)** di Dashboard Admin.
-> 3. Buka tab **Rider**.
-> 4. Klik rider yang ada di antrian **"Menunggu Verifikasi"**.
-> 5. Cek fotonya, lalu klik **"ACC / SETUJUI MITRA"**.
+> [!IMPORTANT]
+> **Instruksi untuk Driver:**
+> Karena sebelumnya datanya gagal masuk ke tabel detail, **mohon minta driver untuk klik "Kirim Lamaran" atau "Simpan" sekali lagi** di aplikasinya. Kali ini datanya dijamin akan langsung tembus ke dashboard Admin Anda!

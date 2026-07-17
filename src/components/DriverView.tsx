@@ -351,14 +351,10 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
     }
   };
 
-  // --- WALLET ACTIONS (SIMULATED) ---
-  const handleTopUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!driverDetail) return;
-    await OloluStore.topUpSaldoSopir(driverDetail.id, topUpAmount, 'Top Up Saldo (Simulasi)');
-    setWalletSuccess(`🎉 Top Up Saldo Rp ${topUpAmount.toLocaleString('id-ID')} Berhasil!`);
-    setWalletError('');
-    setTimeout(() => setWalletSuccess(''), 4000);
+  // --- WALLET ACTIONS ---
+  const handleTopUpRequest = () => {
+    const message = encodeURIComponent(`Halo Admin Ololu, saya ingin Top Up Saldo Dompet.\n\nNama: ${profile?.nama}\nNomor HP: ${profile?.nomorHp}\nNominal: Rp ${topUpAmount.toLocaleString('id-ID')}\n\nMohon instruksi pembayarannya.`);
+    window.open(`https://wa.me/6285156766317?text=${message}`, '_blank');
   };
 
   const handleWithdraw = async (e: React.FormEvent) => {
@@ -1111,9 +1107,9 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                 </div>
               </div>
 
-              {/* SIMULASI TOP UP INSTAN */}
-              <form onSubmit={handleTopUp} className="space-y-3">
-                <span className="text-[10px] font-bold text-gray-500 block">⚡ ISI SALDO MANDIRI (SIMULASI FAST TEST):</span>
+              {/* TOP UP REQUEST */}
+              <div className="space-y-3">
+                <span className="text-[10px] font-bold text-gray-500 block">⚡ ISI SALDO DOMPET:</span>
                 <div className="grid grid-cols-3 gap-1.5 text-xs text-gray-700">
                   <button
                     type="button"
@@ -1138,12 +1134,13 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                   </button>
                 </div>
                 <button
-                  type="submit"
-                  className="w-full py-2 bg-[#034F2A] text-white hover:bg-[#046A38] rounded-xl text-xs font-bold border border-[#D4AF37]"
+                  onClick={handleTopUpRequest}
+                  className="w-full py-2 bg-[#034F2A] text-white hover:bg-[#046A38] rounded-xl text-xs font-bold border border-[#D4AF37] flex items-center justify-center space-x-1"
                 >
-                  Isi Saldo Mandiri Rp {topUpAmount.toLocaleString('id-ID')}
+                  <Phone size={12} />
+                  <span>Request Top Up Rp {topUpAmount.toLocaleString('id-ID')}</span>
                 </button>
-              </form>
+              </div>
 
               {/* SIMULASI TARIK DANA */}
               <form onSubmit={handleWithdraw} className="space-y-3 pt-3 border-t border-dashed">
