@@ -1,9 +1,9 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
+import App from './App';
 import './index.css';
 
-window.alert("JavaScript Initializing...");
+console.log("main.tsx Initializing...");
 
 try {
   const rootElement = document.getElementById('root');
