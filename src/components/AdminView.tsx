@@ -103,6 +103,8 @@ export default function AdminView() {
   const [topUpTargetId, setTopUpModalTargetId] = useState<string | null>(null);
   const [topUpAmount, setTopUpAmount] = useState<string>('');
 
+  const [showProofModal, setShowProofModal] = useState<string | null>(null);
+
   // FORM ADD SUB-ADMIN
   const [newAdminPhone, setNewAdminPhone] = useState('');
   const [newAdminName, setNewAdminName] = useState('');
@@ -299,7 +301,7 @@ export default function AdminView() {
       alasan = prompt("Alasan penolakan:") || 'Ditolak admin';
     }
     await OloluStore.prosesTransaksi(id, status, alasan);
-    alert(status === 'disetujui' ? "Berhasil disetujui!" : "Berhasil ditolak.");
+    alert(status === 'disetujui' ? "Berhasil disetujui! Saldo driver telah diupdate." : "Berhasil ditolak.");
   };
 
   const handleAdminTopUp = async () => {
@@ -440,25 +442,45 @@ export default function AdminView() {
 
              {activeDompetTab === 'pending' ? (
                 <div className="space-y-3">
-                   {transaksiList.filter(t => t.jenis === 'tarik_dana' && t.statusTarik === 'menunggu').length === 0 ? (
-                     <p className="text-[10px] italic text-gray-400 text-center py-10 bg-white rounded-xl border border-dashed">Tidak ada pengajuan tarik dana baru.</p>
+                   {transaksiList.filter(t => (t.jenis === 'tarik_dana' || t.jenis === 'topup') && t.statusTarik === 'menunggu').length === 0 ? (
+                     <p className="text-[10px] italic text-gray-400 text-center py-10 bg-white rounded-xl border border-dashed">Tidak ada pengajuan deposit atau tarik dana baru.</p>
                    ) : (
-                     transaksiList.filter(t => t.jenis === 'tarik_dana' && t.statusTarik === 'menunggu').map(t => (
-                       <div key={t.id} className="bg-white p-4 rounded-2xl border-2 border-[#D4AF37] shadow-md space-y-3">
+                     transaksiList.filter(t => (t.jenis === 'tarik_dana' || t.jenis === 'topup') && t.statusTarik === 'menunggu').map(t => (
+                       <div key={t.id} className={`bg-white p-4 rounded-2xl border-2 shadow-md space-y-3 ${t.jenis === 'topup' ? 'border-emerald-500' : 'border-[#D4AF37]'}`}>
                           <div className="flex justify-between items-start">
                              <div>
                                 <p className="text-xs font-black text-gray-800 uppercase">{(t as any).namaSopir}</p>
                                 <p className="text-[9px] text-gray-500">{new Date(t.timestamp).toLocaleString()}</p>
                              </div>
-                             <span className="bg-amber-100 text-[#B8941F] px-2 py-0.5 rounded text-[8px] font-black uppercase">PENGAJUAN TARIK</span>
+                             <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${t.jenis === 'topup' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-[#B8941F]'}`}>
+                               {t.jenis === 'topup' ? 'DEPOSIT MASUK' : 'PENGAJUAN TARIK'}
+                             </span>
                           </div>
-                          <div className="bg-gray-50 p-3 rounded-xl border text-center">
-                             <span className="text-[9px] font-bold text-gray-400 uppercase block">Nominal Pencairan:</span>
-                             <p className="text-xl font-black text-[#B8941F]">Rp {t.jumlah?.toLocaleString()}</p>
+
+                          <div className="bg-gray-50 p-3 rounded-xl border text-center relative overflow-hidden">
+                             {t.jenis === 'topup' && t.buktiTransfer && (
+                               <button
+                                 onClick={() => setShowProofModal(t.buktiTransfer || null)}
+                                 className="absolute right-2 top-2 bg-emerald-600 text-white p-1.5 rounded-lg shadow-sm active:scale-90 transition-transform"
+                                 title="Lihat Bukti Transfer"
+                               >
+                                 <Eye size={12} />
+                               </button>
+                             )}
+                             <span className="text-[9px] font-bold text-gray-400 uppercase block">Nominal {t.jenis === 'topup' ? 'Setoran' : 'Pencairan'}:</span>
+                             <p className={`text-xl font-black ${t.jenis === 'topup' ? 'text-emerald-600' : 'text-[#B8941F]'}`}>
+                               Rp {t.jumlah?.toLocaleString()}
+                             </p>
                           </div>
+
                           <div className="flex space-x-2">
                              <button onClick={()=>handleProsesTx(t.id, 'ditolak')} className="flex-1 py-2.5 bg-white text-red-600 border border-red-100 font-black rounded-xl text-[9px] uppercase">TOLAK</button>
-                             <button onClick={()=>handleProsesTx(t.id, 'disetujui')} className="flex-[2] py-2.5 bg-emerald-600 text-white font-black rounded-xl text-[9px] uppercase shadow-md">ACC & CAIRKAN</button>
+                             <button
+                               onClick={()=>handleProsesTx(t.id, 'disetujui')}
+                               className={`flex-[2] py-2.5 text-white font-black rounded-xl text-[9px] uppercase shadow-md ${t.jenis === 'topup' ? 'bg-emerald-600' : 'bg-[#046A38]'}`}
+                             >
+                               {t.jenis === 'topup' ? 'ACC & TAMBAH SALDO' : 'ACC & CAIRKAN'}
+                             </button>
                           </div>
                        </div>
                      ))
@@ -911,6 +933,17 @@ export default function AdminView() {
            </div>
         )}
       </div>
+
+      {/* MODAL LIHAT BUKTI TRANSFER */}
+      {showProofModal && (
+        <div className="fixed inset-0 z-[2000] bg-black/90 flex flex-col items-center justify-center p-4">
+           <button onClick={()=>setShowProofModal(null)} className="absolute top-6 right-6 text-white bg-white/10 p-2 rounded-full"><X size={24} /></button>
+           <div className="w-full max-w-sm aspect-[3/4] bg-white rounded-2xl overflow-hidden shadow-2xl">
+              <img src={showProofModal} className="w-full h-full object-contain" alt="Bukti Transfer Zoom" />
+           </div>
+           <p className="text-white text-xs font-bold mt-4 uppercase tracking-widest">Bukti Transfer Deposit</p>
+        </div>
+      )}
 
       {/* MODAL ISI SALDO OLEH ADMIN */}
       {showTopUpModal && (

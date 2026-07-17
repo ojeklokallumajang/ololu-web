@@ -70,6 +70,8 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
 
   // WALLET FORM STATE
   const [topUpAmount, setTopUpAmount] = useState<number>(50000);
+  const [topUpProof, setTopUpProof] = useState<string | null>(null);
+  const [isSubmittingDeposit, setIsSubmittingDeposit] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState<string>('');
   const [walletError, setWalletError] = useState('');
   const [walletSuccess, setWalletSuccess] = useState('');
@@ -352,9 +354,42 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
   };
 
   // --- WALLET ACTIONS ---
-  const handleTopUpRequest = () => {
-    const message = encodeURIComponent(`Halo Admin Ololu, saya ingin Top Up Saldo Dompet.\n\nNama: ${profile?.nama}\nNomor HP: ${profile?.nomorHp}\nNominal: Rp ${topUpAmount.toLocaleString('id-ID')}\n\nMohon instruksi pembayarannya.`);
-    window.open(`https://wa.me/6285156766317?text=${message}`, '_blank');
+  const handlePickProof = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    // Gunakan capture jika di HP untuk langsung buka kamera
+    if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      input.setAttribute('capture', 'environment');
+    }
+
+    input.onchange = (e: any) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => setTopUpProof(reader.result as string);
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
+  };
+
+  const handleSubmitDeposit = async () => {
+    if (!driverDetail || !topUpProof) {
+      alert("Pilih nominal dan ambil foto bukti transfer dulu!");
+      return;
+    }
+
+    setIsSubmittingDeposit(true);
+    const res = await OloluStore.ajukanTopUpSopir(driverDetail.id, topUpAmount, topUpProof);
+
+    if (res.success) {
+      alert("✅ Bukti deposit terkirim! Saldo akan bertambah setelah diverifikasi Admin.");
+      setTopUpProof(null);
+    } else {
+      alert("❌ Gagal: " + res.error);
+    }
+    setIsSubmittingDeposit(false);
   };
 
   const handleWithdraw = async (e: React.FormEvent) => {
@@ -1107,39 +1142,50 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                 </div>
               </div>
 
-              {/* TOP UP REQUEST */}
+              {/* TOP UP REQUEST WITH PHOTO PROOF */}
               <div className="space-y-3">
                 <span className="text-[10px] font-bold text-gray-500 block">⚡ ISI SALDO DOMPET:</span>
                 <div className="grid grid-cols-3 gap-1.5 text-xs text-gray-700">
+                  {[10000, 25000, 50000, 100000, 200000, 500000].slice(0, 3).map(amt => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setTopUpAmount(amt)}
+                      className={`py-1.5 rounded-lg border text-center font-bold ${topUpAmount === amt ? 'bg-[#FAFBF9] border-[#046A38] text-[#046A38]' : 'bg-white'}`}
+                    >
+                      {amt/1000} Rb
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex flex-col space-y-2">
                   <button
-                    type="button"
-                    onClick={() => setTopUpAmount(10000)}
-                    className={`py-1.5 rounded-lg border text-center font-bold ${topUpAmount === 10000 ? 'bg-[#FAFBF9] border-[#046A38] text-[#046A38]' : 'bg-white'}`}
+                    onClick={handlePickProof}
+                    className={`w-full py-3 rounded-xl border-2 border-dashed flex items-center justify-center space-x-2 transition-all ${
+                      topUpProof ? 'bg-emerald-50 border-emerald-400 text-emerald-700' : 'bg-gray-50 border-gray-200 text-gray-400'
+                    }`}
                   >
-                    10 Rb
+                    <Camera size={18} />
+                    <span className="text-[10px] font-black uppercase">
+                      {topUpProof ? 'Ganti Foto Bukti ✅' : 'Ambil Foto Bukti Transfer'}
+                    </span>
                   </button>
+
+                  {topUpProof && (
+                    <div className="h-20 w-full rounded-xl border overflow-hidden bg-black/5 flex items-center justify-center relative group">
+                      <img src={topUpProof} className="h-full object-contain" alt="Bukti Transfer" />
+                      <button onClick={()=>setTopUpProof(null)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full"><X size={10} /></button>
+                    </div>
+                  )}
+
                   <button
-                    type="button"
-                    onClick={() => setTopUpAmount(25000)}
-                    className={`py-1.5 rounded-lg border text-center font-bold ${topUpAmount === 25000 ? 'bg-[#FAFBF9] border-[#046A38] text-[#046A38]' : 'bg-white'}`}
+                    onClick={handleSubmitDeposit}
+                    disabled={!topUpProof || isSubmittingDeposit}
+                    className="w-full py-3 bg-[#034F2A] text-white font-black rounded-xl text-xs uppercase shadow-md disabled:bg-gray-300 disabled:shadow-none transition-all"
                   >
-                    25 Rb
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTopUpAmount(50000)}
-                    className={`py-1.5 rounded-lg border text-center font-bold ${topUpAmount === 50000 ? 'bg-[#FAFBF9] border-[#046A38] text-[#046A38]' : 'bg-white'}`}
-                  >
-                    50 Rb
+                    {isSubmittingDeposit ? 'Mengirim...' : `Kirim Deposit Rp ${topUpAmount.toLocaleString('id-ID')}`}
                   </button>
                 </div>
-                <button
-                  onClick={handleTopUpRequest}
-                  className="w-full py-2 bg-[#034F2A] text-white hover:bg-[#046A38] rounded-xl text-xs font-bold border border-[#D4AF37] flex items-center justify-center space-x-1"
-                >
-                  <Phone size={12} />
-                  <span>Request Top Up Rp {topUpAmount.toLocaleString('id-ID')}</span>
-                </button>
               </div>
 
               {/* SIMULASI TARIK DANA */}

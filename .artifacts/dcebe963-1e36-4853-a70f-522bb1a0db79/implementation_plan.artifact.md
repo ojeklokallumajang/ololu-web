@@ -1,24 +1,48 @@
-# Fix Missing Driver Documents (Upsert Logic)
+# Sistem Verifikasi Deposit (Top Up) Otomatis via Bukti Foto
 
-The issue is that driver documents and vehicle details are not appearing in the Admin Panel because the `updateSopirDokumen` function uses `.update()`, which fails if a row doesn't already exist in the `driver_details` table. New registrations only create a row in `profiles`.
+Rencana ini akan memindahkan alur Top Up driver dari WhatsApp ke dalam aplikasi, memungkinkan driver mengambil foto bukti transfer dari HP mereka dan Admin melakukan review serta ACC/Tolak deposit secara langsung di Control Panel.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> **Data Recovery:** This fix will use `upsert` (Update or Insert). This means if a driver's detail row is missing, it will be created automatically when they upload their documents.
+> **Alur Kerja Baru:**
+> 1. Driver memilih nominal dan mengklik tombol **"Ambil Foto Bukti Transfer"** (akan membuka kamera/galeri HP).
+> 2. Setelah foto dipilih, driver klik **"Kirim Deposit"**.
+> 3. Deposit masuk ke status **"Menunggu"** di sisi Admin (Saldo belum bertambah).
+> 4. Admin meninjau foto bukti di tab **💰 Dompet**.
+> 5. Jika Admin klik **ACC**, saldo driver otomatis bertambah detik itu juga.
 
 ## Proposed Changes
 
 ### Data Layer (`store.ts`)
 
 #### [MODIFY] [store.ts](file:///W:/ololuv1/src/services/store.ts)
-- Change `updateSopirDokumen` from `.update()` to `.upsert()`.
-- Ensure `disetujui_admin` and `ditolak_admin` are correctly initialized during upsert.
+- Tambahkan fungsi `ajukanTopUpSopir(sopirId, jumlah, buktiBase64)`.
+- Perbarui `prosesTransaksi` agar mendukung logika penambahan saldo (untuk Top Up) dan pengurangan saldo (untuk Withdraw).
+- Pastikan `getAllTransactions` mengambil kolom `bukti_transfer` dan `alasan_penolakan`.
+
+### Driver Interface (`DriverView.tsx`)
+
+#### [MODIFY] [DriverView.tsx](file:///W:/ololuv1/src/components/DriverView.tsx)
+- Tambahkan input file tersembunyi yang mendukung akses kamera (`capture="environment"`).
+- Implementasi fungsi `handlePickProof` untuk mengonversi gambar ke Base64.
+- Perbarui UI Top Up: Tampilkan preview foto bukti sebelum dikirim.
+
+### Admin Interface (`AdminView.tsx`)
+
+#### [MODIFY] [AdminView.tsx](file:///W:/ololuv1/src/components/AdminView.tsx)
+- Perbarui tab **💰 Dompet**:
+  - Tampilkan pengajuan **Deposit Masuk** (Top Up) di bagian atas antrian.
+  - Tambahkan tombol **"LIHAT BUKTI"** yang akan membuka modal gambar untuk verifikasi Admin.
+  - Tombol **ACC** akan secara otomatis menjalankan fungsi `topUpSopir` di backend.
 
 ## Verification Plan
 
 ### Manual Verification
-1. Create a new Driver account.
-2. Complete the document upload step.
-3. Check Admin Panel -> Rider tab.
-4. **Expected:** The rider's name, license plate, and photos should now appear correctly in the modal.
+1. Login sebagai **Driver** melalui HP (atau emulator).
+2. Lakukan pengajuan Top Up dengan mengunggah foto.
+3. Pastikan status di riwayat driver adalah "MENUNGGU".
+4. Login sebagai **Admin**.
+5. Buka tab **Dompet**, lihat foto bukti transfer driver tersebut.
+6. Klik **ACC & TAMBAH SALDO**.
+7. Verifikasi saldo driver bertambah secara otomatis.

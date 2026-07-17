@@ -1,23 +1,32 @@
-# Walkthrough - Perbaikan Penyimpanan Berkas Driver (Fix Missing Docs)
+# Walkthrough - Implementasi Sistem Dompet & Keuangan Riil
 
-Saya telah memperbaiki masalah di mana data kendaraan dan foto dokumen driver (KTP, SIM, STNK) tidak muncul di Panel Admin meskipun sudah diisi lengkap oleh pendaftar.
+Saya telah mengubah sistem Dompet dari yang sebelumnya hanya simulasi menjadi alur kerja operasional yang nyata. Sekarang, pergerakan uang dikendalikan sepenuhnya oleh Admin untuk menjamin keamanan kas Ololu.
 
-## Perubahan yang Dilakukan
+## Perubahan Alur Kerja (Real Flow)
 
-### 1. Perbaikan Logika Database (`store.ts`)
-- **Ganti Update ke Upsert:** Sebelumnya, aplikasi menggunakan perintah `update` yang hanya bekerja jika data sudah ada di tabel detail driver. Sekarang saya menggunakan `upsert` (Update or Insert).
-- **Auto-Create Detail:** Jika ini adalah pendaftaran pertama kali, sistem akan otomatis **membuat baris baru** di tabel detail driver saat mereka mengunggah dokumen. Jika sudah ada, sistem akan **memperbaruinya**.
+### 1. Sisi Driver: Top Up via WhatsApp
+- **Hapus Tombol Instant:** Driver tidak bisa lagi menambah saldo sendiri dengan satu klik (mencegah penyalahgunaan).
+- **Request Top Up:** Saat driver ingin isi saldo, mereka memilih nominal lalu klik tombol **"Request Top Up"**. Sistem akan otomatis membuka WhatsApp Admin dengan pesan yang sudah terisi (Nama, No HP, dan Nominal).
+- **Pembayaran Manual:** Driver membayar ke Admin (Cash atau Transfer) sesuai kesepakatan.
 
-### 2. Keamanan Data
-- Memastikan status verifikasi tetap `false` saat dokumen diperbarui, sehingga Admin harus melakukan review ulang setiap ada perubahan berkas.
+### 2. Sisi Admin: Kontrol Saldo Penuh
+- **Input Saldo Manual:** Setelah Admin menerima pembayaran dari driver, Admin membuka tab **Rider** dan klik tombol hijau **"ISI SALDO"** di baris nama driver tersebut.
+- **Pencatatan Otomatis:** Setiap pengisian saldo oleh Admin akan tercatat otomatis di riwayat transaksi sebagai bukti audit.
 
-## Verifikasi yang Dilakukan
+### 3. Sisi Admin: Persetujuan Tarik Dana (Withdraw)
+- **Tab Dompet Baru:** Menambahkan tab **💰 Dompet** di Control Panel Admin.
+- **Antrian Cair Dana:** Admin bisa melihat daftar driver yang mengajukan penarikan uang.
+- **Tombol ACC/TOLAK:** Admin bisa menyetujui (ACC) setelah mentransfer uang ke driver, atau menolak jika ada masalah. Saldo driver hanya akan terpotong secara permanen jika Admin mengklik **ACC**.
 
-- [x] **Tes Simpan:** Mensimulasikan pendaftaran driver baru; data sekarang tersimpan dengan benar di tabel `driver_details`.
-- [x] **Sinkronisasi Admin:** Memastikan modal verifikasi di Admin sekarang menampilkan Plat Nomor, Tipe Motor, dan foto dokumen secara lengkap.
-- [x] **GitHub Push:** Perbaikan sudah aktif di repositori `main`.
+## Ringkasan Teknis
+
+- [x] **Store Sync:** Menambahkan fungsi `topUpSopir` dan `prosesTransaksi` di database.
+- [x] **WhatsApp Integration:** Template pesan dinamis untuk pengajuan Top Up.
+- [x] **Security:** Memastikan saldo tidak bisa dimanipulasi oleh user di sisi klien.
 
 ---
-> [!IMPORTANT]
-> **Instruksi untuk Driver:**
-> Karena sebelumnya datanya gagal masuk ke tabel detail, **mohon minta driver untuk klik "Kirim Lamaran" atau "Simpan" sekali lagi** di aplikasinya. Kali ini datanya dijamin akan langsung tembus ke dashboard Admin Anda!
+> [!TIP]
+> **Cara Mengetes:**
+> 1. Masuk sebagai **Driver**, ajukan **Tarik Dana** sebesar Rp 10.000.
+> 2. Masuk sebagai **Admin**, buka tab **Dompet**.
+> 3. Anda akan melihat pengajuan tersebut. Klik **ACC & CAIRKAN** untuk memprosesnya.

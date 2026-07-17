@@ -550,8 +550,29 @@ export const OloluStore = {
       saldoAkhir: d.saldo_akhir,
       deskripsi: d.deskripsi,
       statusTarik: d.status_tarik,
+      buktiTransfer: d.bukti_transfer,
+      alasanPenolakan: d.alasan_penolakan,
       timestamp: d.timestamp
     } as any));
+  },
+
+  async ajukanTopUpSopir(sopirId: string, jumlah: number, buktiBase64: string): Promise<{ success: boolean; error?: string }> {
+    const supabase = getSupabase();
+    if (!supabase) return { success: false, error: "Database offline" };
+
+    const { error } = await supabase.from('wallet_transactions').insert({
+      id_sopir: sopirId,
+      jenis: 'topup',
+      jumlah: jumlah,
+      saldo_awal: 0, // Akan dihitung saat ACC
+      saldo_akhir: 0, // Akan dihitung saat ACC
+      deskripsi: `Top Up Saldo via Transfer`,
+      bukti_transfer: buktiBase64,
+      status_tarik: 'menunggu'
+    });
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
   },
 
   async prosesTransaksi(txId: string, status: 'disetujui' | 'ditolak', alasan?: string) {
@@ -562,17 +583,37 @@ export const OloluStore = {
     if (!tx || tx.status_tarik !== 'menunggu') return;
 
     if (status === 'disetujui') {
-      // Potong saldo driver secara riil jika disetujui
       const { data: driver } = await supabase.from('driver_details').select('saldo_dompet').eq('id', tx.id_sopir).single();
+      const settings = await this.getPengaturan();
+
       if (driver) {
-        const settings = await this.getPengaturan();
-        const totalPotong = tx.jumlah + settings.biayaAdminTarik;
+        let saldoBaru = driver.saldo_dompet;
+
+        if (tx.jenis === 'topup') {
+          // LOGIKA TOP UP: Saldo Bertambah
+          saldoBaru = driver.saldo_dompet + tx.jumlah;
+        } else if (tx.jenis === 'tarik_dana') {
+          // LOGIKA TARIK DANA: Saldo Berkurang (sudah termasuk biaya admin)
+          const totalPotong = tx.jumlah + settings.biayaAdminTarik;
+          saldoBaru = driver.saldo_dompet - totalPotong;
+        }
+
         await supabase.from('driver_details').update({
-          saldo_dompet: driver.saldo_dompet - totalPotong
+          saldo_dompet: saldoBaru
         }).eq('id', tx.id_sopir);
+
+        // Update record transaksi dengan saldo final
+        await supabase.from('wallet_transactions').update({
+          saldo_awal: driver.saldo_dompet,
+          saldo_akhir: saldoBaru,
+          status_tarik: 'disetujui'
+        }).eq('id', txId);
+
+        return;
       }
     }
 
+    // Jika ditolak
     await supabase.from('wallet_transactions').update({
       status_tarik: status,
       alasan_penolakan: alasan
