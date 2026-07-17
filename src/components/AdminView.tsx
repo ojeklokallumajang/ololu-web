@@ -231,7 +231,11 @@ export default function AdminView() {
 
   // --- STATS COMPUTATION ---
   const totalBiayaJasaMurni = pesananList.filter(p => p.status === 'selesai').reduce((acc, cur) => {
-    const jasa = Math.round((cur.tarifPerjalananMurni + (cur.tambahanTujuan || 0) + (cur.tambahanItem || 0)) * (cur.biayaLayananPersen || 10) / 100);
+    const perjalanan = cur.tarifPerjalananMurni || 0;
+    const tambahanT = cur.tambahanTujuan || 0;
+    const tambahanI = cur.tambahanItem || 0;
+    const persen = cur.biayaLayananPersen || 10;
+    const jasa = Math.round((perjalanan + tambahanT + tambahanI) * persen / 100);
     return acc + jasa;
   }, 0);
 

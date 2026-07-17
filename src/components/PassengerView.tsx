@@ -162,6 +162,7 @@ function LiveDriversMap() {
 
 export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChange, lockedOrderId }: PassengerViewProps) {
   const [profile, setProfile] = useState<any>(null);
+  const isSuperUser = profile?.nomorHp === '6285156766317';
   const [config, setConfig] = useState<any>(null);
   const [activeOrder, setActiveOrder] = useState<Pesanan | null>(null);
   const [driverLoc, setDriverLoc] = useState<{ lat: number; lng: number } | null>(null);
