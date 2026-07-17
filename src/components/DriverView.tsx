@@ -93,38 +93,39 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
   
   // TABS FOR FINANCE VS ORDER HISTORY
   const [activeHistoryTab, setActiveHistoryTab] = useState<'finance' | 'orders'>('orders');
+  const [isTogglingOnline, setIsTogglingOnline] = useState(false);
+
+  const initDriver = async () => {
+    const p = await OloluStore.getProfilLogin();
+    setProfile(p);
+
+    const cfg = await OloluStore.getPengaturan();
+    setConfig(cfg);
+
+    if (p) {
+      const detail = await OloluStore.getSopir(p.id);
+      setDriverDetail(detail || null);
+      if (detail) {
+        setPlatNomor(detail.platNomor || '');
+        setJenisMotor(detail.jenisMotor || '');
+        setBisaBarangBesar(detail.bisaBarangBesar || false);
+      }
+
+      // RECOVERY: Ambil order dari kunci lokal jika ada
+      if (lockedOrderId) {
+        const order = await OloluStore.getPesananById(lockedOrderId);
+        if (order) setActiveOrder(order);
+      }
+
+      const txs = await OloluStore.getTransaksiSopir(p.id);
+      setTransactions(txs);
+
+      const orders = await OloluStore.getAllPesanan();
+      setHistoryOrders(orders.filter(o => o.idSopir === p.id));
+    }
+  };
 
   useEffect(() => {
-    const initDriver = async () => {
-      const p = await OloluStore.getProfilLogin();
-      setProfile(p);
-
-      const cfg = await OloluStore.getPengaturan();
-      setConfig(cfg);
-
-      if (p) {
-        const detail = await OloluStore.getSopir(p.id);
-        setDriverDetail(detail || null);
-        if (detail) {
-          setPlatNomor(detail.platNomor || '');
-          setJenisMotor(detail.jenisMotor || '');
-          setBisaBarangBesar(detail.bisaBarangBesar || false);
-        }
-
-        // RECOVERY: Ambil order dari kunci lokal jika ada
-        if (lockedOrderId) {
-          const order = await OloluStore.getPesananById(lockedOrderId);
-          if (order) setActiveOrder(order);
-        }
-
-        const txs = await OloluStore.getTransaksiSopir(p.id);
-        setTransactions(txs);
-
-        const orders = await OloluStore.getAllPesanan();
-        setHistoryOrders(orders.filter(o => o.idSopir === p.id));
-      }
-    };
-
     initDriver();
     const unsubscribe = OloluStore.subscribeToStore(initDriver);
     return () => unsubscribe();
@@ -346,10 +347,21 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
 
   // --- ONLINE / OFFLINE TOGGLE ENGINE ---
   const handleToggleOnline = async () => {
-    if (!driverDetail) return;
-    const res = await OloluStore.toggleOnlineSopir(driverDetail.id);
-    if (!res.success) {
-      alert(`❌ GAGAL ONLINE:\n${res.error}`);
+    if (!driverDetail || isTogglingOnline) return;
+
+    setIsTogglingOnline(true);
+    try {
+      const res = await OloluStore.toggleOnlineSopir(driverDetail.id);
+      if (!res.success) {
+        alert(`❌ GAGAL MENGUBAH STATUS:\n${res.error}`);
+      } else {
+        // Force immediate refresh
+        await initDriver();
+      }
+    } catch (err: any) {
+      alert(`❌ ERROR SISTEM:\n${err.message}`);
+    } finally {
+      setIsTogglingOnline(false);
     }
   };
 
@@ -731,16 +743,20 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
         {/* BUTTON ONLINE / OFFLINE SOPIR (SANGAT MENCOLOK DI ATAS) */}
         <button
           onClick={handleToggleOnline}
-          disabled={!driverDetail.disetujuiAdmin || !!activeOrder || (!driverDetail.statusOnline && driverDetail.saldoDompet < config.saldoMinimalOnlineSopir)}
+          disabled={!driverDetail.disetujuiAdmin || !!activeOrder || (!driverDetail.statusOnline && driverDetail.saldoDompet < config.saldoMinimalOnlineSopir) || isTogglingOnline}
           className={`w-full py-4 rounded-2xl text-xs font-black tracking-widest flex items-center justify-center space-x-3 transition-all border-b-4 shadow-xl active:scale-95 ${
             driverDetail.statusOnline
               ? 'bg-[#0A8A4E] text-white border-emerald-800'
               : 'bg-[#1A1A1A] text-white border-gray-900'
           } disabled:opacity-50 disabled:bg-gray-400 disabled:border-gray-500 disabled:cursor-not-allowed`}
         >
-          <Power size={18} className={driverDetail.statusOnline ? 'animate-pulse text-[#D4AF37]' : ''} />
+          {isTogglingOnline ? (
+            <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+          ) : (
+            <Power size={18} className={driverDetail.statusOnline ? 'animate-pulse text-[#D4AF37]' : ''} />
+          )}
           <span>
-            {driverDetail.statusOnline ? '🟢 ANDA SEDANG ONLINE' : '🔴 AKTIFKAN MODE ONLINE'}
+            {isTogglingOnline ? 'MEMPROSES...' : (driverDetail.statusOnline ? '🟢 ANDA SEDANG ONLINE' : '🔴 AKTIFKAN MODE ONLINE')}
           </span>
         </button>
 
