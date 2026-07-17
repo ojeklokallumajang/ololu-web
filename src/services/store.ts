@@ -304,18 +304,34 @@ export const OloluStore = {
 
   async ajukanTopUpSopir(sopirId: string, jumlah: number, buktiBase64: string) {
     const supabase = getSupabase();
-    await supabase!.from('wallet_transactions').insert({ id_sopir: sopirId, jenis: 'topup', jumlah, deskripsi: `Deposit via transfer`, bukti_transfer: buktiBase64, status_tarik: 'menunggu' });
+    if (!supabase) return { success: false, error: "Database offline" };
+
+    const { data: drv } = await supabase.from('driver_details').select('saldo_dompet').eq('id', sopirId).single();
+    const currentSaldo = drv?.saldo_dompet || 0;
+
+    const { error } = await supabase.from('wallet_transactions').insert({
+      id_sopir: sopirId,
+      jenis: 'topup',
+      jumlah,
+      saldo_awal: currentSaldo,
+      saldo_akhir: currentSaldo, // Belum bertambah
+      deskripsi: `Deposit via transfer`,
+      bukti_transfer: buktiBase64,
+      status_tarik: 'menunggu'
+    });
+
+    if (error) return { success: false, error: error.message };
     return { success: true };
   },
 
   async getTransaksiSopir(sopirId: string): Promise<TransaksiDompet[]> {
-    const { data } = await getSupabase()!.from('wallet_transactions').select('*').eq('id_sopir', sopirId).order('timestamp', { ascending: false });
-    return (data || []).map(d => ({ id: d.id, idSopir: d.id_sopir, jenis: d.jenis, jumlah: d.jumlah, saldoAwal: d.saldo_awal, saldoAkhir: d.saldo_akhir, deskripsi: d.deskripsi, statusTarik: d.status_tarik, buktiTransfer: d.bukti_transfer, timestamp: d.timestamp } as any));
+    const { data } = await getSupabase()!.from('wallet_transactions').select('*').eq('id_sopir', sopirId).order('created_at', { ascending: false });
+    return (data || []).map(d => ({ id: d.id, idSopir: d.id_sopir, jenis: d.jenis, jumlah: d.jumlah, saldoAwal: d.saldo_awal, saldoAkhir: d.saldo_akhir, deskripsi: d.deskripsi, statusTarik: d.status_tarik, buktiTransfer: d.bukti_transfer, timestamp: d.created_at } as any));
   },
 
   async getAllTransactions(): Promise<TransaksiDompet[]> {
-    const { data } = await getSupabase()!.from('wallet_transactions').select('*, profiles:id_sopir(nama)').order('timestamp', { ascending: false });
-    return (data || []).map(d => ({ id: d.id, idSopir: d.id_sopir, namaSopir: d.profiles?.nama || 'Sopir', jenis: d.jenis, jumlah: d.jumlah, saldoAwal: d.saldo_awal, saldoAkhir: d.saldo_akhir, deskripsi: d.deskripsi, statusTarik: d.status_tarik, buktiTransfer: d.bukti_transfer, timestamp: d.timestamp } as any));
+    const { data } = await getSupabase()!.from('wallet_transactions').select('*, profiles:id_sopir(nama)').order('created_at', { ascending: false });
+    return (data || []).map(d => ({ id: d.id, idSopir: d.id_sopir, namaSopir: d.profiles?.nama || 'Sopir', jenis: d.jenis, jumlah: d.jumlah, saldoAwal: d.saldo_awal, saldoAkhir: d.saldo_akhir, deskripsi: d.deskripsi, statusTarik: d.status_tarik, buktiTransfer: d.bukti_transfer, timestamp: d.created_at } as any));
   },
 
   async prosesTransaksi(txId: string, status: 'disetujui' | 'ditolak', alasan?: string) {
@@ -373,8 +389,8 @@ export const OloluStore = {
   },
 
   async getAllEmergency(): Promise<LaporanDarurat[]> {
-    const { data } = await getSupabase()!.from('emergency_reports').select('*').order('timestamp', { ascending: false });
-    return (data || []).map(d => ({ id: d.id, idPesanan: d.id_pesanan, namaPelapor: d.nama_pelapor, nomorHpPelapor: d.nomor_hp_pelapor, peranPelapor: d.peran_pelapor, lat: d.lat, lng: d.lng, status: d.status, timestamp: d.timestamp }));
+    const { data } = await getSupabase()!.from('emergency_reports').select('*').order('created_at', { ascending: false });
+    return (data || []).map(d => ({ id: d.id, idPesanan: d.id_pesanan, namaPelapor: d.nama_pelapor, nomorHpPelapor: d.nomor_hp_pelapor, peranPelapor: d.peran_pelapor, lat: d.lat, lng: d.lng, status: d.status, timestamp: d.created_at }));
   },
 
   async getPengaturan(): Promise<PengaturanTarif> {
@@ -406,8 +422,8 @@ export const OloluStore = {
   },
 
   async getAllAuditLogs(): Promise<LogAudit[]> {
-    const { data } = await getSupabase()!.from('audit_logs').select('*').order('timestamp', { ascending: false });
-    return (data || []).map(d => ({ id: d.id, adminId: d.id_admin, adminNama: d.nama_admin, aksi: d.aksi, detail: d.detail, timestamp: d.timestamp }));
+    const { data } = await getSupabase()!.from('audit_logs').select('*').order('created_at', { ascending: false });
+    return (data || []).map(d => ({ id: d.id, adminId: d.id_admin, adminNama: d.nama_admin, aksi: d.aksi, detail: d.detail, timestamp: d.created_at }));
   },
 
   async addAuditLog(idAdmin: string, namaAdmin: string, aksi: string, detail: string) {

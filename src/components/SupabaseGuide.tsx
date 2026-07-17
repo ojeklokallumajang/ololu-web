@@ -123,7 +123,7 @@ CREATE TABLE public.wallet_transactions (
     deskripsi TEXT,
     bukti_transfer TEXT,
     alasan_penolakan TEXT,
-    status_tarik TEXT CHECK (status_tarik IN ('menunggu', 'disetujui', 'ditolak')),
+    status_tarik TEXT DEFAULT 'menunggu' CHECK (status_tarik IN ('menunggu', 'disetujui', 'ditolak')),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
