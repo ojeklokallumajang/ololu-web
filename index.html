@@ -9,6 +9,10 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <script>
+      window.onerror = function(msg, url, line, col, error) {
+        alert("🚨 CRITICAL ERROR:\n" + msg + "\nAt: " + url + ":" + line + ":" + col);
+        return false;
+      };
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
