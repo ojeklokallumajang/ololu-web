@@ -18,6 +18,13 @@ class GlobalErrorBoundary extends React.Component<{children: React.ReactNode}, {
     console.error("CRITICAL CRASH:", error, errorInfo);
   }
 
+  componentDidMount() {
+    window.onunhandledrejection = (event) => {
+      console.error("UNHANDLED REJECTION:", event.reason);
+      this.setState({ hasError: true, error: event.reason });
+    };
+  }
+
   render() {
     if (this.state.hasError) {
       return (
