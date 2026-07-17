@@ -485,7 +485,10 @@ export default function App() {
 
       <div className="flex-grow w-full max-w-7xl mx-auto p-0 md:p-4 lg:p-6 flex flex-col justify-center items-center">
         {initializing ? (
-          <div className="text-gray-400 font-bold uppercase text-[10px]">Memuat Ololu...</div>
+          <div className="min-h-screen bg-[#046A38] flex flex-col items-center justify-center text-white w-full">
+            <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
+            <p className="text-xs font-bold tracking-widest uppercase">Ololu Memuat Sistem...</p>
+          </div>
         ) : (
           <>
             {!showLogin && (
