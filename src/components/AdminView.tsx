@@ -255,7 +255,7 @@ export default function AdminView() {
     return acc + jasa;
   }, 0);
 
-  const pendingTarikList = transaksiList.filter(t => t.jenis === 'tarik_dana' && t.statusTarik === 'menunggu');
+  const pendingVerifList = transaksiList.filter(t => (t.jenis === 'tarik_dana' || t.jenis === 'topup') && t.statusTarik === 'menunggu');
   const avgRatingGlobal = ratingList.length > 0 ? parseFloat((ratingList.reduce((acc, cur) => acc + cur.bintang, 0) / ratingList.length).toFixed(1)) : 5.0;
 
   const handleApproveSopir = async (id: string, ok: boolean) => {
@@ -344,22 +344,34 @@ export default function AdminView() {
 
   return (
     <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20 relative font-sans">
-      <div className="bg-[#034F2A] text-white p-5 border-b-2 border-[#D4AF37] space-y-1 text-left">
-        <div className="flex items-center space-x-2">
-          <Activity size={18} className="text-[#D4AF37] animate-pulse" />
-          <h1 className="text-lg font-black tracking-wide">OLOLU CONTROL PANEL</h1>
+      <div className="bg-[#034F2A] text-white p-5 border-b-2 border-[#D4AF37] space-y-1 text-left relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/10 rounded-full -translate-y-16 translate-x-16 pointer-events-none"></div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Activity size={18} className="text-[#D4AF37] animate-pulse" />
+            <h1 className="text-lg font-black tracking-wide">OLOLU CONTROL PANEL</h1>
+          </div>
+          {pendingVerifList.length > 0 && (
+            <button
+              onClick={() => setActiveTab('dompet')}
+              className="bg-[#B8941F] text-white text-[8px] font-black px-3 py-1.5 rounded-full animate-bounce shadow-lg flex items-center space-x-1"
+            >
+              <Bell size={10} />
+              <span>{pendingVerifList.length} ANTRIAN</span>
+            </button>
+          )}
         </div>
-        <p className="text-[10px] text-emerald-100 uppercase font-bold tracking-widest">Administrator: {profile?.nama}</p>
+        <p className="text-[10px] text-emerald-100 uppercase font-bold tracking-widest opacity-80">Administrator: {profile?.nama}</p>
       </div>
 
       <div className="flex bg-white border-b overflow-x-auto whitespace-nowrap scrollbar-none sticky top-0 z-30 shadow-sm">
         {[
           { id: 'stats', label: '📊 Statistik' },
           { id: 'sopir', label: '🛵 Rider' },
-          { id: 'dompet', label: '💰 Dompet' },
+          { id: 'dompet', label: '💰 Dompet', badge: pendingVerifList.length },
           { id: 'penumpang', label: '👤 User' },
           { id: 'pesanan', label: '📋 Order' },
-          { id: 'darurat', label: '🚨 Darurat' },
+          { id: 'darurat', label: '🚨 Darurat', badge: emergencyList.filter(e=>e.status==='baru').length },
           { id: 'tarif', label: '⚙️ Pengaturan' },
           { id: 'admins', label: '🔑 Tim' },
           { id: 'logs', label: '📜 Log' }
@@ -367,11 +379,16 @@ export default function AdminView() {
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id as any)}
-            className={`px-5 py-3 text-[11px] font-black transition-all border-b-2 ${
+            className={`px-5 py-3 text-[11px] font-black transition-all border-b-2 relative ${
               activeTab === t.id ? 'border-[#046A38] text-[#046A38] bg-[#E6F4EC]' : 'border-transparent text-[#6B7280]'
             }`}
           >
             {t.label}
+            {t.badge > 0 && (
+              <span className="absolute top-2 right-1.5 w-3.5 h-3.5 bg-red-500 text-white text-[7px] flex items-center justify-center rounded-full border border-white">
+                {t.badge}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -421,14 +438,19 @@ export default function AdminView() {
                 {sopirList.filter(s => s.disetujuiAdmin).length === 0 ? (
                   <p className="text-[10px] italic text-gray-400 text-center py-4">Belum ada mitra aktif.</p>
                 ) : (
-                  sopirList.filter(s => s.disetujuiAdmin).map(s => (
-                    <div key={s.id} className="bg-white p-3 rounded-xl border flex items-center justify-between shadow-xs">
+                  sopirList.filter(s => s.disetujuiAdmin).map(s => {
+                    const hasPendingTopup = transaksiList.some(t => t.idSopir === s.id && t.jenis === 'topup' && t.statusTarik === 'menunggu');
+                    return (
+                    <div key={s.id} className={`bg-white p-3 rounded-xl border flex items-center justify-between shadow-xs transition-all ${hasPendingTopup ? 'border-emerald-500 bg-emerald-50/10' : ''}`}>
                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center text-[#046A38]">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${hasPendingTopup ? 'bg-emerald-500 text-white animate-pulse' : 'bg-emerald-50 text-[#046A38]'}`}>
                              <Bike size={16} />
                           </div>
                           <div>
-                            <p className="text-xs font-black text-gray-800 uppercase">{(s as any).nama}</p>
+                            <div className="flex items-center space-x-1">
+                              <p className="text-xs font-black text-gray-800 uppercase">{(s as any).nama}</p>
+                              {hasPendingTopup && <span className="bg-emerald-600 text-white text-[6px] px-1 rounded animate-bounce">DEPOSIT</span>}
+                            </div>
                             <p className="text-[9px] text-gray-500 font-medium">{s.platNomor} • {s.jenisMotor}</p>
                           </div>
                        </div>
@@ -436,10 +458,13 @@ export default function AdminView() {
                           <p className="text-[10px] font-black text-emerald-600">Rp {s.saldoDompet?.toLocaleString()}</p>
                           <div className="flex space-x-1">
                              <button
-                               onClick={() => { setTopUpModalTargetId(s.id); setShowTopUpModal(true); }}
-                               className="bg-emerald-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded shadow-sm hover:bg-emerald-700"
+                               onClick={() => {
+                                 if (hasPendingTopup) setActiveTab('dompet');
+                                 else { setTopUpModalTargetId(s.id); setShowTopUpModal(true); }
+                               }}
+                               className={`${hasPendingTopup ? 'bg-emerald-700' : 'bg-emerald-600'} text-white text-[7px] font-black px-1.5 py-0.5 rounded shadow-sm hover:bg-emerald-700`}
                              >
-                               ISI SALDO
+                               {hasPendingTopup ? 'VERIFIKASI' : 'ISI SALDO'}
                              </button>
                              <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${s.statusOnline ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
                                {s.statusOnline ? 'ONLINE' : 'OFFLINE'}
@@ -447,7 +472,7 @@ export default function AdminView() {
                           </div>
                        </div>
                     </div>
-                  ))
+                  );})
                 )}
              </div>
           </div>

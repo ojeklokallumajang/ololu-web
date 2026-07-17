@@ -386,6 +386,9 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
     if (res.success) {
       alert("✅ Bukti deposit terkirim! Saldo akan bertambah setelah diverifikasi Admin.");
       setTopUpProof(null);
+      // Refresh transactions immediately
+      const updatedTxs = await OloluStore.getTransaksiSopir(driverDetail.id);
+      setTransactions(updatedTxs);
     } else {
       alert("❌ Gagal: " + res.error);
     }
@@ -1229,7 +1232,9 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                       <div>
                         <span className="text-[10px] text-gray-400 block">{new Date(tx.timestamp).toLocaleDateString('id-ID')} {new Date(tx.timestamp).toLocaleTimeString('id-ID')}</span>
                         <p className="font-semibold text-gray-800 leading-tight mt-0.5">{tx.deskripsi}</p>
-                        <span className="text-[9px] text-gray-400 font-semibold uppercase">Saldo Akhir: Rp {tx.saldoAkhir.toLocaleString('id-ID')}</span>
+                        <span className="text-[9px] text-gray-400 font-semibold uppercase">
+                          {tx.statusTarik === 'menunggu' ? 'Status: Menunggu Verifikasi' : `Saldo Akhir: Rp ${tx.saldoAkhir.toLocaleString('id-ID')}`}
+                        </span>
                       </div>
                       <div className="text-right">
                         <span className={`font-black font-mono ${
