@@ -651,8 +651,8 @@ export default function AdminView() {
                           <input type="number" value={tempConfig.ojekBatasKmTarifDasar} onChange={(e)=>setTempConfig({...tempConfig, ojekBatasKmTarifDasar: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
                        </div>
                        <div className="space-y-1">
-                          <label className="text-[8px] font-bold text-gray-400 uppercase">Biaya Per Stop</label>
-                          <input type="number" value={tempConfig.ojekBiayaPerStop} onChange={(e)=>setTempConfig({...tempConfig, ojekBiayaPerStop: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Potongan Jasa (%)</label>
+                          <input type="number" value={tempConfig.ojekPersenJasa} onChange={(e)=>setTempConfig({...tempConfig, ojekPersenJasa: parseInt(e.target.value)})} className="w-full p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl outline-none text-xs font-black text-emerald-700" />
                        </div>
                     </div>
                     <div className="flex items-center justify-between bg-emerald-50 p-3 rounded-xl border border-emerald-100">
@@ -689,6 +689,10 @@ export default function AdminView() {
                           <label className="text-[8px] font-bold text-gray-400 uppercase">Biaya Per Stop</label>
                           <input type="number" value={tempConfig.mobilBiayaPerStop} onChange={(e)=>setTempConfig({...tempConfig, mobilBiayaPerStop: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
                        </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Potongan Jasa (%)</label>
+                          <input type="number" value={tempConfig.mobilPersenJasa} onChange={(e)=>setTempConfig({...tempConfig, mobilPersenJasa: parseInt(e.target.value)})} className="w-full p-2.5 bg-blue-50 border border-blue-200 rounded-xl outline-none text-xs font-black text-blue-700" />
+                       </div>
                     </div>
                     {/* Reuse existing mobil active toggle if relevant */}
                  </div>
@@ -721,6 +725,10 @@ export default function AdminView() {
                           <label className="text-[8px] font-bold text-gray-400 uppercase">Biaya Per Stop</label>
                           <input type="number" value={tempConfig.makananBiayaPerStop} onChange={(e)=>setTempConfig({...tempConfig, makananBiayaPerStop: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
                        </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Potongan Jasa (%)</label>
+                          <input type="number" value={tempConfig.makananPersenJasa} onChange={(e)=>setTempConfig({...tempConfig, makananPersenJasa: parseInt(e.target.value)})} className="w-full p-2.5 bg-amber-50 border border-amber-200 rounded-xl outline-none text-xs font-black text-amber-700" />
+                       </div>
                     </div>
                  </div>
                )}
@@ -752,6 +760,10 @@ export default function AdminView() {
                           <label className="text-[8px] font-bold text-gray-400 uppercase">Biaya Per Stop</label>
                           <input type="number" value={tempConfig.paketBiayaPerStop} onChange={(e)=>setTempConfig({...tempConfig, paketBiayaPerStop: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
                        </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Potongan Jasa (%)</label>
+                          <input type="number" value={tempConfig.paketPersenJasa} onChange={(e)=>setTempConfig({...tempConfig, paketPersenJasa: parseInt(e.target.value)})} className="w-full p-2.5 bg-indigo-50 border border-indigo-200 rounded-xl outline-none text-xs font-black text-indigo-700" />
+                       </div>
                     </div>
                  </div>
                )}
@@ -782,6 +794,10 @@ export default function AdminView() {
                        <div className="space-y-1">
                           <label className="text-[8px] font-bold text-gray-400 uppercase">Biaya Per Stop</label>
                           <input type="number" value={tempConfig.barangBesarBiayaPerStop} onChange={(e)=>setTempConfig({...tempConfig, barangBesarBiayaPerStop: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Potongan Jasa (%)</label>
+                          <input type="number" value={tempConfig.barangBesarPersenJasa} onChange={(e)=>setTempConfig({...tempConfig, barangBesarPersenJasa: parseInt(e.target.value)})} className="w-full p-2.5 bg-purple-50 border border-purple-200 rounded-xl outline-none text-xs font-black text-purple-700" />
                        </div>
                     </div>
                  </div>
