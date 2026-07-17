@@ -506,6 +506,8 @@ export default function AdminView() {
              )}
           </div>
         )}
+
+        {activeTab === 'penumpang' && (
            <div className="space-y-2">
              <h3 className="text-xs font-black text-gray-700 uppercase mb-3">Daftar Pengguna (Penumpang)</h3>
              {profilList.length === 0 ? <p className="text-xs italic text-gray-400 text-center py-10">Belum ada pengguna terdaftar.</p> :

@@ -1,5 +1,5 @@
-- [ ] Update `store.ts` with `ajukanTopUpSopir` and enhanced `prosesTransaksi`
-- [ ] Implement Mobile Camera upload logic in `DriverView.tsx`
-- [ ] Add Deposit Review UI with Proof Viewer in `AdminView.tsx`
-- [ ] Sinkronisasi & Push ke GitHub
-- [ ] Laporan Akhir (Walkthrough)
+- [x] Update `store.ts` with `ajukanTopUpSopir` and enhanced `prosesTransaksi`
+- [x] Implement Mobile Camera upload logic in `DriverView.tsx`
+- [x] Add Deposit Review UI with Proof Viewer in `AdminView.tsx`
+- [x] Sinkronisasi & Push ke GitHub
+- [x] Laporan Akhir (Walkthrough)
