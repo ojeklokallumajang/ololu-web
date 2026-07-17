@@ -300,11 +300,37 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     setMapPickerTarget(null);
   };
 
+  const [isBooking, setIsBooking] = useState(false);
+
   const handlePesan = async () => {
     if (!profile) return;
-    const j = hitungTotalJarak(), h = hitungHarga();
-    const order = await OloluStore.buatPesanan({ jenisLayanan: selectedLayanan, idPenumpang: profile.id, asalAlamat, asalLat, asalLng, jarakKm: j, totalBayarAkhir: h, pembayaranTunai, tarifPerjalananMurni: h }, stops.map((s, i) => ({ ...s, urutan: i + 1 })));
-    if (order) setActiveOrder(order as any);
+    setIsBooking(true);
+    try {
+      const j = hitungTotalJarak(), h = hitungHarga();
+      console.log("Memulai proses pemesanan...", { selectedLayanan, h, j });
+
+      const order = await OloluStore.buatPesanan({
+        jenisLayanan: selectedLayanan,
+        idPenumpang: profile.id,
+        asalAlamat, asalLat, asalLng,
+        jarakKm: j,
+        totalBayarAkhir: h,
+        pembayaranTunai,
+        tarifPerjalananMurni: h
+      }, stops.map((s, i) => ({ ...s, urutan: i + 1 })));
+
+      if (order) {
+        console.log("Pesanan berhasil dibuat!", order);
+        setActiveOrder(order as any);
+      } else {
+        alert("Gagal membuat pesanan. Pastikan koneksi internet stabil dan data lokasi sudah benar.");
+      }
+    } catch (err: any) {
+      console.error("Error saat memesan:", err);
+      alert("Terjadi kesalahan sistem: " + err.message);
+    } finally {
+      setIsBooking(false);
+    }
   };
 
   if (!profile || !config) return <div className="flex flex-col items-center justify-center min-h-[400px]"><div className="w-10 h-10 border-4 border-t-[#046A38] rounded-full animate-spin"></div><p className="mt-4 text-xs font-bold text-gray-400">Memuat Ololu...</p></div>;
@@ -495,7 +521,13 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
           </div>
         </div>
 
-        <button onClick={handlePesan} className="w-full py-3.5 bg-[#034F2A] text-white font-black rounded-2xl text-xs uppercase tracking-widest border-b-4 border-emerald-900 shadow-lg active:scale-95 transition-all">Konfirmasi Pesanan</button>
+        <button
+          onClick={handlePesan}
+          disabled={isBooking || asalAlamat === 'Pilih lokasi penjemputan...' || stops.some(s => s.alamat === 'Tentukan tujuan...')}
+          className={`w-full py-3.5 ${isBooking ? 'bg-gray-400' : 'bg-[#034F2A]'} text-white font-black rounded-2xl text-xs uppercase tracking-widest border-b-4 ${isBooking ? 'border-gray-500' : 'border-emerald-900'} shadow-lg active:scale-95 transition-all`}
+        >
+          {isBooking ? 'Memproses Pesanan...' : 'Konfirmasi Pesanan'}
+        </button>
       </div>
 
       {mapPickerTarget && (

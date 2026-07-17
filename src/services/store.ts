@@ -403,12 +403,46 @@ export const OloluStore = {
 
   async buatPesanan(orderData: any, stops: any[]) {
     const supabase = getSupabase();
-    const { data: newOrder } = await supabase!.from('orders').insert({ id_penumpang: orderData.idPenumpang, jenis_layanan: orderData.jenisLayanan, asal_alamat: orderData.asalAlamat, asal_lat: orderData.asalLat, asal_lng: orderData.asalLng, jarak_km: orderData.jarakKm, total_bayar_akhir: orderData.totalBayarAkhir, pembayaran_tunai: orderData.pembayaranTunai, status: 'mencari_sopir' }).select().single();
+    if (!supabase) return null;
+
+    const nomorPesanan = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const { data: newOrder, error } = await supabase.from('orders').insert({
+      nomor_pesanan: nomorPesanan,
+      id_penumpang: orderData.idPenumpang,
+      jenis_layanan: orderData.jenisLayanan,
+      asal_alamat: orderData.asalAlamat,
+      asal_lat: orderData.asalLat,
+      asal_lng: orderData.asalLng,
+      jarak_km: orderData.jarakKm,
+      tarif_perjalanan_murni: orderData.tarifPerjalananMurni || orderData.totalBayarAkhir,
+      total_bayar_akhir: orderData.totalBayarAkhir,
+      pembayaran_tunai: orderData.pembayaranTunai,
+      status: 'mencari_sopir'
+    }).select().single();
+
+    if (error) {
+      console.error("❌ GAGAL BUAT PESANAN:", error.message);
+      return null;
+    }
+
     if (!newOrder) return null;
-    await supabase!.from('order_stops').insert(stops.map(s => ({ id_pesanan: newOrder.id, alamat: s.alamat, lat: s.lat, lng: s.lng, urutan: s.urutan, items: s.items })));
-    const { data: finalOrder } = await supabase!.from('orders').select('*, order_stops(*)').eq('id', newOrder.id).single();
-    ololuRealtime.broadcastNewOrder(finalOrder);
-    return mapOrder(finalOrder);
+
+    await supabase.from('order_stops').insert(stops.map(s => ({
+      id_pesanan: newOrder.id,
+      alamat: s.alamat,
+      lat: s.lat,
+      lng: s.lng,
+      urutan: s.urutan,
+      items: s.items || []
+    })));
+
+    const { data: finalOrder } = await supabase.from('orders').select('*, order_stops(*)').eq('id', newOrder.id).single();
+    if (finalOrder) {
+      ololuRealtime.broadcastNewOrder(finalOrder);
+      return mapOrder(finalOrder);
+    }
+    return null;
   },
 
   async getAllPesanan(): Promise<Pesanan[]> {

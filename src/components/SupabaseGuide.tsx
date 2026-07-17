@@ -68,7 +68,7 @@ CREATE TABLE public.driver_details (
 CREATE TABLE public.orders (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     nomor_pesanan TEXT UNIQUE NOT NULL,
-    jenis_layanan TEXT NOT NULL CHECK (jenis_layanan IN ('ojek', 'makanan', 'paket', 'barang_besar')),
+    jenis_layanan TEXT NOT NULL CHECK (jenis_layanan IN ('ojek', 'makanan', 'paket', 'barang_besar', 'mobil')),
     id_penumpang UUID REFERENCES public.profiles(id) NOT NULL,
     id_sopir UUID REFERENCES public.driver_details(id),
     asal_alamat TEXT NOT NULL,
