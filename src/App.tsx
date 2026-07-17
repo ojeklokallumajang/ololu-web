@@ -13,6 +13,28 @@ import { OloluStore } from './services/store';
 import { ShieldAlert, AlertTriangle, Info, BellRing, Phone, ShieldCheck, UserPlus, LogIn, Camera, Check, ArrowRight, Upload, KeyRound, ArrowLeft, Calendar, MapPin as MapPinIcon } from 'lucide-react';
 import OloluLogo from './components/OloluLogo';
 
+// INNER ERROR BOUNDARY FOR VIEWS
+class ErrorBoundary extends React.Component<{children: React.ReactNode, name: string}, {hasError: boolean, error: any}> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: any) { return { hasError: true, error }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-10 text-center space-y-4">
+          <AlertTriangle size={48} className="mx-auto text-red-500" />
+          <h2 className="font-bold">Layar {this.props.name} Gagal Dimuat</h2>
+          <p className="text-xs text-gray-500">{this.state.error?.toString()}</p>
+          <button onClick={() => window.location.reload()} className="px-4 py-2 bg-[#046A38] text-white rounded-xl text-xs font-bold">Coba Lagi</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   const [sesi, setSesi] = useState<{ userId: string; role: PeranPengguna } | null>(null);
   const [role, setRole] = useState<PeranPengguna>('penumpang');
@@ -467,19 +489,23 @@ export default function App() {
               <>
                 <div className="flex-1 overflow-y-auto pb-14 relative scrollbar-none">
                   {role === 'penumpang' && (
-                    <PassengerView
-                      onNotifyAdminPanic={handleNotifyPanic}
-                      onLogout={handleLogout}
-                      onRoleChange={(r) => setRole(r)}
-                      lockedOrderId={lockedOrder?.role === 'penumpang' ? lockedOrder.orderId : undefined}
-                    />
+                    <ErrorBoundary name="PassengerView">
+                      <PassengerView
+                        onNotifyAdminPanic={handleNotifyPanic}
+                        onLogout={handleLogout}
+                        onRoleChange={(r) => setRole(r)}
+                        lockedOrderId={lockedOrder?.role === 'penumpang' ? lockedOrder.orderId : undefined}
+                      />
+                    </ErrorBoundary>
                   )}
                   {role === 'sopir' && (
-                    <DriverView
-                      onNotifyAdminPanic={handleNotifyPanic}
-                      onLogout={handleLogout}
-                      lockedOrderId={lockedOrder?.role === 'sopir' ? lockedOrder.orderId : undefined}
-                    />
+                    <ErrorBoundary name="DriverView">
+                      <DriverView
+                        onNotifyAdminPanic={handleNotifyPanic}
+                        onLogout={handleLogout}
+                        lockedOrderId={lockedOrder?.role === 'sopir' ? lockedOrder.orderId : undefined}
+                      />
+                    </ErrorBoundary>
                   )}
                 </div>
               </>
