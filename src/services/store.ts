@@ -229,7 +229,10 @@ export const OloluStore = {
     if (existing) return { success: true, profil: mapProfile(existing) as any };
 
     // 2. Insert User
-    const newId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const newId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
     const finalPassword = (cleanedPhone === '6285156766317') ? (password || 'welyryan10@Q') : password;
 
     const { data, error } = await supabase
