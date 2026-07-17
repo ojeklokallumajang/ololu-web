@@ -73,7 +73,8 @@ import {
   ShoppingBag,
   Package,
   User,
-  X
+  X,
+  Bell
 } from 'lucide-react';
 
 export default function AdminView() {
