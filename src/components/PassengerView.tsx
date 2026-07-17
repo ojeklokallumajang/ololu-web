@@ -487,7 +487,10 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
           </div>
 
           <div className="flex justify-between items-center pt-3 border-t border-dashed">
-            <span className="text-xs font-bold text-gray-600">Estimasi Biaya Perjalanan:</span>
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-gray-600">Estimasi Biaya Perjalanan:</span>
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Total Jarak: {hitungTotalJarak()} KM</span>
+            </div>
             <span className="text-lg font-black text-[#B8941F]">Rp {hitungHarga().toLocaleString('id-ID')}</span>
           </div>
         </div>
