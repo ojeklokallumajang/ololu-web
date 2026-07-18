@@ -53,10 +53,12 @@ import {
   User,
   ShieldCheck,
   ChevronRight,
-  ArrowRight
+  ArrowRight,
+  FileText
 } from 'lucide-react';
 import OloluLogo from './OloluLogo';
 import { ololuRealtime } from '../services/supabaseClient';
+import { generateReceipt } from '../utils/receiptGenerator';
 
 interface PassengerViewProps {
   onNotifyAdminPanic: (pelapor: string, tipe: string) => void;
@@ -80,35 +82,110 @@ function MapPickerSearch({
 }: {
   query: string; setQuery: (q: string) => void; onSelectSuggestion: (s: any) => void; suggestions: any[]; setSuggestions: (s: any[]) => void;
 }) {
-  const placesLib = useMapsLibrary('places');
+  const mapsLib = useMapsLibrary('places');
   const [isSearching, setIsSearching] = useState(false);
+  const [sessionToken, setSessionToken] = useState<google.maps.places.AutocompleteSessionToken | null>(null);
+
+  // Initialize Session Token
+  useEffect(() => {
+    if (window.google && window.google.maps && window.google.maps.places) {
+      setSessionToken(new google.maps.places.AutocompleteSessionToken());
+    }
+  }, []);
+
+  // Debounced Search Logic
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleSearch();
+    }, 500); // 500ms debounce to save API calls
+    return () => clearTimeout(timer);
+  }, [query]);
 
   const handleSearch = () => {
-    if (!query.trim()) return;
-    setIsSearching(true);
-    if (placesLib) {
-      placesLib.Place.searchByText({ textQuery: query + " Lumajang", fields: ['displayName', 'location', 'formattedAddress'], maxResultCount: 5 })
-        .then(({ places }) => {
-          setIsSearching(false);
-          if (places && places.length > 0) {
-            setSuggestions(places.map(p => ({ name: p.displayName || '', description: p.formattedAddress || '', lat: p.location?.lat() || 0, lng: p.location?.lng() || 0 })));
-          } else setSuggestions([]);
-        }).catch(() => { setIsSearching(false); setSuggestions([]); });
-    } else { setIsSearching(false); setSuggestions([]); }
+    if (!query.trim() || query.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    if (window.google && window.google.maps && window.google.maps.places) {
+      setIsSearching(true);
+      const service = new google.maps.places.AutocompleteService();
+
+      service.getPlacePredictions({
+        input: query,
+        sessionToken: sessionToken || undefined,
+        componentRestrictions: { country: 'id' }, // Strict Indonesia
+        locationRestriction: {
+          north: -7.9, south: -8.3, east: 113.4, west: 113.1 // Tight Lumajang Boundary
+        }
+      }, (predictions, status) => {
+        setIsSearching(false);
+        if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
+          setSuggestions(predictions.map(p => ({
+            id: p.place_id,
+            name: p.structured_formatting.main_text,
+            description: p.description,
+            isPrediction: true
+          })));
+        } else {
+          setSuggestions([]);
+        }
+      });
+    }
+  };
+
+  const handleSelect = (s: any) => {
+    if (s.isPrediction && window.google) {
+      // Get detailed coordinates for the selected place
+      const div = document.createElement('div');
+      const service = new google.maps.places.PlacesService(div);
+      service.getDetails({
+        placeId: s.id,
+        fields: ['geometry', 'formatted_address'],
+        sessionToken: sessionToken || undefined
+      }, (place, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
+          onSelectSuggestion({
+            name: s.name,
+            description: place.formatted_address || s.description,
+            lat: place.geometry.location.lat(),
+            lng: place.geometry.location.lng()
+          });
+          // Refresh session token for next search
+          setSessionToken(new google.maps.places.AutocompleteSessionToken());
+        }
+      });
+    } else {
+      onSelectSuggestion(s);
+    }
   };
 
   return (
     <div className="space-y-2">
-      <div className="flex space-x-1.5">
-        <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} placeholder="Cari lokasi..." className="flex-1 p-2.5 bg-gray-50 border rounded-xl text-xs" />
-        <button onClick={handleSearch} disabled={isSearching} className="px-4 py-2.5 bg-[#046A38] text-white text-xs font-black rounded-xl">{isSearching ? '...' : <Search size={14} />}</button>
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Cari lokasi di Lumajang..."
+          className="w-full p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-2xl text-sm font-bold outline-none transition-all pr-12"
+        />
+        <div className="absolute right-4 top-3 text-gray-400">
+          {isSearching ? <div className="w-4 h-4 border-2 border-t-[#046A38] rounded-full animate-spin"></div> : <Search size={18} />}
+        </div>
       </div>
       {suggestions.length > 0 && (
-        <div className="max-h-40 overflow-y-auto border rounded-xl bg-white shadow-sm divide-y">
+        <div className="max-h-60 overflow-y-auto border-2 border-gray-100 rounded-2xl bg-white shadow-xl divide-y">
           {suggestions.map((s, idx) => (
-            <button key={idx} onClick={() => onSelectSuggestion(s)} className="w-full text-left p-2.5 hover:bg-gray-50 flex items-start space-x-2 text-xs">
-              <MapPin size={14} className="text-gray-400 mt-0.5" />
-              <div><span className="font-bold block">{s.name}</span><span className="text-[10px] text-gray-500">{s.description}</span></div>
+            <button key={idx} onClick={() => handleSelect(s)} className="w-full text-left p-3.5 hover:bg-emerald-50 flex items-start space-x-3 transition-colors">
+              <div className="bg-emerald-100 p-2 rounded-xl text-[#046A38]">
+                <MapPin size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="font-black text-gray-800 block text-xs truncate">{s.name}</span>
+                <span className="text-[10px] text-gray-500 truncate block">{s.description}</span>
+              </div>
+              <ArrowRight size={14} className="text-gray-300 mt-2" />
             </button>
           ))}
         </div>
@@ -597,7 +674,22 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
             <div key={p.id} className="bg-white p-4 rounded-2xl border border-gray-150 space-y-2 shadow-xs">
               <div className="flex justify-between border-b pb-2"><span className="text-[10px] font-mono text-gray-400">#{p.nomorPesanan || '0000'}</span><span className="text-[10px] font-black uppercase text-[#046A38]">{p.status || 'Pending'}</span></div>
               <p className="text-xs text-gray-700 truncate">{p.asalAlamat || 'Alamat tidak tersedia'}</p>
-              <div className="flex justify-between items-center"><span className="text-sm font-black text-[#B8941F]">Rp {(p.totalBayarAkhir || 0).toLocaleString('id-ID')}</span><span className="text-[9px] text-gray-400 font-bold">{p.waktuDibuat ? new Date(p.waktuDibuat).toLocaleDateString('id-ID') : '-'}</span></div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-black text-[#B8941F]">Rp {(p.totalBayarAkhir || 0).toLocaleString('id-ID')}</span>
+                <div className="flex items-center space-x-2">
+                   <span className="text-[9px] text-gray-400 font-bold">{p.waktuDibuat ? new Date(p.waktuDibuat).toLocaleDateString('id-ID') : '-'}</span>
+                   {p.status === 'selesai' && (
+                     <button
+                       onClick={() => generateReceipt(p)}
+                       className="p-1.5 bg-emerald-50 text-[#046A38] rounded-lg border border-emerald-100 hover:bg-emerald-100 transition-all flex items-center space-x-1"
+                       title="Download Nota"
+                     >
+                       <FileText size={12} />
+                       <span className="text-[8px] font-black uppercase">e-Nota</span>
+                     </button>
+                   )}
+                </div>
+              </div>
             </div>
           );
         })}
