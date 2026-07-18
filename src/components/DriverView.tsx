@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { OloluStore, KOORDINAT_LUMAJANG } from '../services/store';
 import { ololuRealtime } from '../services/supabaseClient';
 import { GOOGLE_MAPS_KEY } from './SplashMapKey';
