@@ -1466,8 +1466,8 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                   <div>
                     <h4 className="font-bold text-gray-500 text-[10px] uppercase">Tujuan</h4>
                     <p className="text-gray-800 line-clamp-2">
-                      {realtimeOrderAlert.daftarTujuan[0]?.alamat}
-                      {realtimeOrderAlert.daftarTujuan.length > 1 && ` (+${realtimeOrderAlert.daftarTujuan.length - 1} stop)`}
+                      {realtimeOrderAlert?.daftarTujuan?.[0]?.alamat || 'Alamat tujuan...'}
+                      {realtimeOrderAlert?.daftarTujuan && realtimeOrderAlert.daftarTujuan.length > 1 && ` (+${realtimeOrderAlert.daftarTujuan.length - 1} stop)`}
                     </p>
                   </div>
                 </div>

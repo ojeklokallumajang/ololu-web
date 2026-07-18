@@ -440,8 +440,11 @@ export const OloluStore = {
 
     const { data: finalOrder } = await supabase.from('orders').select('*, order_stops(*)').eq('id', newOrder.id).single();
     if (finalOrder) {
-      ololuRealtime.broadcastNewOrder(finalOrder);
-      return mapOrder(finalOrder);
+      const mapped = mapOrder(finalOrder);
+      if (mapped) {
+        ololuRealtime.broadcastNewOrder(mapped);
+      }
+      return mapped;
     }
     return null;
   },

@@ -133,7 +133,7 @@ function LiveDriversMap() {
     const unsubscribe = ololuRealtime.subscribeToDriversOnline((state) => {
       const active: any[] = [];
       Object.keys(state).forEach(id => {
-        const p = state[id][0];
+        const p = state[id]?.[0];
         if (p?.lat && p?.lng) active.push({ id, nama: p.nama, lat: p.lat, lng: p.lng, jenisMotor: p.jenisMotor });
       });
       setDrivers(active);
