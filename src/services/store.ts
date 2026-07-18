@@ -143,6 +143,12 @@ const mapOrder = (db: any): Pesanan | null => {
     asalLat: safeParseFloat(db.asal_lat, KOORDINAT_LUMAJANG.lat),
     asalLng: safeParseFloat(db.asal_lng, KOORDINAT_LUMAJANG.lng),
     jarakKm: Math.ceil(safeParseFloat(db.jarak_km, 1)),
+    itemsAwal: (db.items_awal || []).map((i: any) => ({
+      id: i.id,
+      namaBarang: i.nama_barang,
+      jumlah: i.jumlah,
+      perkiraanHarga: i.perkiraan_harga
+    })),
     tarifDasar: safeParseFloat(db.tarif_dasar, 0),
     tarifPerKm: safeParseFloat(db.tarif_per_km, 0),
     tarifMinimum: safeParseFloat(db.tarif_minimum, 0),
@@ -417,6 +423,7 @@ export const OloluStore = {
       asal_alamat: orderData.asalAlamat,
       asal_lat: orderData.asalLat,
       asal_lng: orderData.asalLng,
+      items_awal: orderData.itemsAwal || [],
       jarak_km: orderData.jarakKm,
       tarif_perjalanan_murni: orderData.tarifPerjalananMurni || orderData.totalBayarAkhir,
       total_bayar_akhir: orderData.totalBayarAkhir,

@@ -900,6 +900,19 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
               
               {/* STATUS UTAMA DAN TOMBOL UPDATE */}
               <div className="bg-[#FAFBF9] p-3 rounded-xl border border-gray-100 space-y-2">
+                {/* Rincian Belanja di Awal jika ada */}
+                {activeOrder.itemsAwal && activeOrder.itemsAwal.length > 0 && (
+                  <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-100 mb-2">
+                    <span className="text-[10px] font-bold text-[#046A38] uppercase block mb-1">🛒 BELANJA DI LOKASI JEMPUT:</span>
+                    {activeOrder.itemsAwal.map(it => (
+                      <div key={it.id} className="text-[11px] text-emerald-800 flex justify-between font-bold">
+                        <span>• {it.namaBarang}</span>
+                        <span>x{it.jumlah}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className="flex justify-between items-baseline text-xs">
                   <span className="font-semibold text-gray-500">TAHAPAN PESANAN:</span>
                   <span className="font-bold text-[#046A38] uppercase">{activeOrder.status}</span>
@@ -1459,6 +1472,15 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                   <div>
                     <h4 className="font-bold text-gray-500 text-[10px] uppercase">Penjemputan</h4>
                     <p className="text-gray-800 line-clamp-2">{realtimeOrderAlert.asalAlamat}</p>
+                    {realtimeOrderAlert.itemsAwal && realtimeOrderAlert.itemsAwal.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {realtimeOrderAlert.itemsAwal.map((it: any) => (
+                          <span key={it.id} className="bg-emerald-50 text-emerald-700 text-[8px] px-1.5 py-0.5 rounded font-bold border border-emerald-100">
+                            {it.jumlah}x {it.namaBarang}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 

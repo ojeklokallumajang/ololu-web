@@ -94,6 +94,7 @@ export interface Pesanan {
   asalAlamat: string;
   asalLat: number;
   asalLng: number;
+  itemsAwal?: ItemBelanja[]; // Daftar belanja di lokasi awal (Toko/Resto)
   daftarTujuan: TujuanStop[]; // Maksimal 5 stop untuk makanan/belanja
   
   // Biaya & Tarif

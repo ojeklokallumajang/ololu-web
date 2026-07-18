@@ -74,6 +74,7 @@ CREATE TABLE public.orders (
     asal_alamat TEXT NOT NULL,
     asal_lat NUMERIC NOT NULL,
     asal_lng NUMERIC NOT NULL,
+    items_awal JSONB DEFAULT '[]'::jsonb,
     jarak_km NUMERIC NOT NULL,
     tarif_perjalanan_murni NUMERIC NOT NULL,
     biaya_parkir_total NUMERIC DEFAULT 0,

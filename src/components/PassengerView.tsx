@@ -218,6 +218,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   const [newItemName, setNewItemName] = useState('');
   const [newItemQty, setNewItemQty] = useState('1');
   const [activeItemStopId, setActiveItemStopId] = useState<string | null>(null);
+  const [itemsAwal, setItemsAwal] = useState<any[]>([]);
 
   const mapsLib = useMapsLibrary('routes');
 
@@ -291,6 +292,22 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     else if (sub === 'kirim') setSelectedLayanan('paket');
     else if (sub === 'wisata') setSelectedLayanan('barang_besar');
     else setSelectedLayanan('makanan');
+
+    // Auto-fill delivery address with current location if Food/Shopping/Market
+    if (sub === 'makanan' || sub === 'belanja' || sub === 'market') {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        const { latitude, longitude } = pos.coords;
+        setStops([{
+          id: 'stop-1',
+          alamat: `Lokasi Saya (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`,
+          lat: latitude,
+          lng: longitude,
+          items: []
+        }]);
+      });
+    } else {
+       setStops([{ id: 'stop-1', alamat: 'Tentukan tujuan...', lat: -8.1385, lng: 113.2208, items: [] }]);
+    }
   };
 
   const toggleKendaraan = (v: 'motor' | 'mobil') => {
@@ -354,31 +371,40 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     }
   };
 
-  const handleAddItem = (stopId: string) => {
+  const handleAddItem = (stopId: string | 'asal') => {
     if (!newItemName.trim()) return;
-    setStops(prev => prev.map(s => {
-      if (s.id === stopId) {
-        const newItems = [...(s.items || []), {
-          id: `item-${Date.now()}`,
-          namaBarang: newItemName.trim(),
-          jumlah: parseInt(newItemQty) || 1,
-          perkiraanHarga: 0
-        }];
-        return { ...s, items: newItems };
-      }
-      return s;
-    }));
+    const newItem = {
+      id: `item-${Date.now()}`,
+      namaBarang: newItemName.trim(),
+      jumlah: parseInt(newItemQty) || 1,
+      perkiraanHarga: 0
+    };
+
+    if (stopId === 'asal') {
+      setItemsAwal(prev => [...prev, newItem]);
+    } else {
+      setStops(prev => prev.map(s => {
+        if (s.id === stopId) {
+          return { ...s, items: [...(s.items || []), newItem] };
+        }
+        return s;
+      }));
+    }
     setNewItemName('');
     setNewItemQty('1');
   };
 
-  const handleRemoveItem = (stopId: string, itemId: string) => {
-    setStops(prev => prev.map(s => {
-      if (s.id === stopId) {
-        return { ...s, items: (s.items || []).filter((it: any) => it.id !== itemId) };
-      }
-      return s;
-    }));
+  const handleRemoveItem = (stopId: string | 'asal', itemId: string) => {
+    if (stopId === 'asal') {
+      setItemsAwal(prev => prev.filter(it => it.id !== itemId));
+    } else {
+      setStops(prev => prev.map(s => {
+        if (s.id === stopId) {
+          return { ...s, items: (s.items || []).filter((it: any) => it.id !== itemId) };
+        }
+        return s;
+      }));
+    }
   };
 
   const handleOpenMapPicker = (target: 'asal' | string) => {
@@ -451,6 +477,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
         idPenumpang: profile.id,
         asalAlamat, asalLat, asalLng,
         jarakKm: jBulat,
+        itemsAwal: itemsAwal,
         totalBayarAkhir: h,
         pembayaranTunai,
         tarifPerjalananMurni: h
@@ -597,6 +624,8 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     </div>
   );
 
+  const isFoodLike = subLayanan === 'makanan' || subLayanan === 'belanja' || subLayanan === 'market';
+
   return (
     <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20">
       <div className="bg-[#046A38] text-white p-4 rounded-b-3xl border-b-2 border-[#D4AF37] relative flex flex-col items-start text-left shadow-md">
@@ -637,20 +666,72 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
         </div>
 
         <div className="bg-white p-4 rounded-2xl border shadow-sm space-y-4">
-          <div><label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Lokasi Penjemputan</label>
-          <div className="relative"><input readOnly onClick={() => handleOpenMapPicker('asal')} value={asalAlamat} className="w-full p-2.5 bg-gray-50 border rounded-xl text-xs font-bold cursor-pointer" /><MapPin size={14} className="absolute right-3 top-2.5 text-[#046A38]" /></div></div>
+          <div className="space-y-2">
+            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">
+              {isFoodLike ? 'Pilih Restoran / Toko' : 'Lokasi Penjemputan'}
+            </label>
+            <div className="relative">
+              <input readOnly onClick={() => handleOpenMapPicker('asal')} value={asalAlamat} className="w-full p-2.5 bg-gray-50 border rounded-xl text-xs font-bold cursor-pointer" />
+              <MapPin size={14} className="absolute right-3 top-2.5 text-[#046A38]" />
+            </div>
+
+            {/* Input Menu di Atas (Khusus Makanan/Belanja/Market) */}
+            {isFoodLike && (
+              <div className="pl-4 border-l-2 border-emerald-100 space-y-2 mt-2">
+                <div className="flex space-x-1.5">
+                  <input
+                    type="text"
+                    placeholder="Nama Menu / Barang..."
+                    value={activeItemStopId === 'asal' ? newItemName : ''}
+                    onChange={(e) => { setActiveItemStopId('asal'); setNewItemName(e.target.value); }}
+                    className="flex-1 p-2 bg-white border rounded-lg text-[10px]"
+                  />
+                  <input
+                    type="number"
+                    min="1"
+                    value={activeItemStopId === 'asal' ? newItemQty : '1'}
+                    onChange={(e) => { setActiveItemStopId('asal'); setNewItemQty(e.target.value); }}
+                    className="w-12 p-2 bg-white border rounded-lg text-[10px] text-center"
+                  />
+                  <button
+                    onClick={() => handleAddItem('asal')}
+                    className="p-2 bg-[#046A38] text-white rounded-lg shadow-sm"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+
+                {itemsAwal.length > 0 && (
+                  <div className="space-y-1">
+                    {itemsAwal.map((it: any) => (
+                      <div key={it.id} className="bg-emerald-50/50 p-1.5 px-2.5 rounded-lg flex justify-between items-center border border-emerald-100/50">
+                        <span className="text-[10px] font-bold text-emerald-800">{it.jumlah}x {it.namaBarang}</span>
+                        <button onClick={() => handleRemoveItem('asal', it.id)} className="text-red-400 p-1"><X size={10} /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           
           <div className="space-y-2 border-t pt-3">
-            <div className="flex justify-between items-center"><label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Tujuan / Destinasi</label> <button onClick={handleAddStop} className="text-[#046A38] text-[9px] font-black uppercase bg-emerald-50 px-2 py-0.5 rounded-full">+ Tambah Stop</button></div>
+            <div className="flex justify-between items-center">
+              <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                {isFoodLike ? 'Alamat Pengantaran (Rumah Anda)' : 'Tujuan / Destinasi'}
+              </label>
+              {!isFoodLike && <button onClick={handleAddStop} className="text-[#046A38] text-[9px] font-black uppercase bg-emerald-50 px-2 py-0.5 rounded-full">+ Tambah Stop</button>}
+            </div>
+
             {stops.map((s, idx) => (
               <div key={s.id} className="space-y-2">
                 <div className="flex space-x-2 items-center">
                   <div className="relative flex-1"><input readOnly onClick={() => handleOpenMapPicker(s.id)} value={s.alamat} className="w-full p-2.5 bg-gray-50 border rounded-xl text-xs cursor-pointer" /><MapPin size={12} className="absolute right-3 top-2.5 text-[#D4AF37]" /></div>
-                  {stops.length > 1 && <button onClick={() => handleRemoveStop(s.id)} className="p-2 text-red-500 bg-red-50 rounded-lg"><Trash2 size={14} /></button>}
+                  {stops.length > 1 && !isFoodLike && <button onClick={() => handleRemoveStop(s.id)} className="p-2 text-red-500 bg-red-50 rounded-lg"><Trash2 size={14} /></button>}
                 </div>
 
-                {/* Kolom Input Item (Hanya untuk Makanan/Belanja/Market) */}
-                {(subLayanan === 'makanan' || subLayanan === 'belanja' || subLayanan === 'market') && (
+                {/* Kolom Input Item (Hanya untuk Belanja/Market Non-Food jika butuh banyak stop) */}
+                {(!isFoodLike && (subLayanan === 'belanja' || subLayanan === 'market')) && (
                   <div className="ml-2 pl-4 border-l-2 border-gray-100 space-y-2">
                     <div className="flex space-x-1.5">
                       <input
