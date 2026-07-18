@@ -79,7 +79,10 @@ export const DEFAULT_PENGATURAN_TARIF: PengaturanTarif = {
   rushHourAktif: false,
   rushHourMulai: "16:00",
   rushHourSelesai: "18:00",
-  rushHourPersenKenaikan: 15
+  rushHourPersenKenaikan: 15,
+  mapProvider: 'google',
+  googleApiLimit: 25000, // Amannya 25rb load per bulan (limit gratis 28rb)
+  googleApiUsageCount: 0
 };
 
 let pengaturans = { ...DEFAULT_PENGATURAN_TARIF };
@@ -546,6 +549,30 @@ export const OloluStore = {
   async savePengaturan(newCfg: PengaturanTarif, adminId: string, adminNama: string) {
     await getSupabase()!.from('system_settings').upsert({ key: 'global_config', value: newCfg });
     pengaturans = { ...newCfg };
+  },
+
+  async trackGoogleUsage() {
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    // 1. Get current config
+    const { data } = await supabase.from('system_settings').select('value').eq('key', 'global_config').single();
+    if (!data?.value) return;
+
+    const currentCfg = data.value as PengaturanTarif;
+    const newCount = (currentCfg.googleApiUsageCount || 0) + 1;
+
+    // 2. Determine if we should switch to OSM automatically
+    let newProvider = currentCfg.mapProvider;
+    if (newCount >= currentCfg.googleApiLimit && currentCfg.mapProvider === 'google') {
+      newProvider = 'osm';
+      console.warn("⚠️ GOOGLE API LIMIT REACHED! Switching to OpenStreetMap.");
+    }
+
+    // 3. Update DB
+    const updatedCfg = { ...currentCfg, googleApiUsageCount: newCount, mapProvider: newProvider };
+    await supabase.from('system_settings').update({ value: updatedCfg }).eq('key', 'global_config');
+    pengaturans = updatedCfg;
   },
 
   async getChatMessages(pesananId: string): Promise<ChatMessage[]> {

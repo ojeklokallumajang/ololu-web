@@ -252,6 +252,11 @@ export interface PengaturanTarif {
   rushHourSelesai: string; // "18:00"
   rushHourPersenKenaikan: number; // contoh: 15%
   rushHourSchedules?: JadwalRushHour[];
+
+  // Map Hybrid & API Monitoring
+  mapProvider: 'google' | 'osm';
+  googleApiLimit: number;
+  googleApiUsageCount: number;
 }
 
 export interface JadwalRushHour {

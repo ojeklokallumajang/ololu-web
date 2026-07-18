@@ -102,7 +102,47 @@ function MapPickerSearch({
   }, [query]);
 
   const handleSearch = () => {
-    if (!query.trim() || query.length < 3) {
+    if (!query.trim()) return;
+
+    // 1. Detect if input is a Google Maps Link (Long or Short)
+    // Pattern for long link with coordinates: @-8.12977,113.22095
+    const coordRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+    const match = query.match(coordRegex);
+
+    if (match) {
+      const lat = parseFloat(match[1]);
+      const lng = parseFloat(match[2]);
+
+      onSelectSuggestion({
+        name: "Lokasi dari Link Google Maps",
+        description: `Koordinat: ${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+        lat,
+        lng
+      });
+      setQuery('');
+      setSuggestions([]);
+      return;
+    }
+
+    // Pattern for search API link: query=-8.1331,113.2240
+    const queryRegex = /query=(-?\d+\.\d+),(-?\d+\.\d+)/;
+    const qMatch = query.match(queryRegex);
+    if (qMatch) {
+       const lat = parseFloat(qMatch[1]);
+       const lng = parseFloat(qMatch[2]);
+       onSelectSuggestion({
+         name: "Lokasi dari Share Link",
+         description: `Koordinat: ${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+         lat,
+         lng
+       });
+       setQuery('');
+       setSuggestions([]);
+       return;
+    }
+
+    // 2. Regular Search if not a link
+    if (query.length < 3) {
       setSuggestions([]);
       return;
     }
@@ -199,6 +239,9 @@ function LiveDriversMap() {
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
+    // Track usage for monitoring dashboard
+    OloluStore.trackGoogleUsage();
+
     // 1. Subscribe Driver Online
     const unsubscribe = ololuRealtime.subscribeToDriversOnline((state) => {
       const active: any[] = [];
@@ -231,31 +274,48 @@ function LiveDriversMap() {
         <div className="bg-[#E6F4EC] px-2.5 py-1 rounded-full text-[#034F2A] text-[10px] font-black">🛵 {drivers.length} Online</div>
       </div>
       <div className="h-64 rounded-2xl overflow-hidden border relative bg-gray-50">
-        <APIProvider apiKey={GOOGLE_MAPS_KEY || ''}>
-          <Map
-            defaultCenter={KOORDINAT_LUMAJANG}
-            center={userLoc || KOORDINAT_LUMAJANG}
-            defaultZoom={14}
-            mapId="LIVE_MAP"
-            disableDefaultUI
-            gestureHandling="cooperative"
-          >
-            {userLoc && (
-              <>
-                <MapRecenterController lat={userLoc.lat} lng={userLoc.lng} />
-                <AdvancedMarker position={userLoc}>
-                  <Pin background="#046A38" scale={0.8} borderColor="white" />
-                </AdvancedMarker>
-              </>
-            )}
+        {config?.mapProvider === 'google' ? (
+          <APIProvider apiKey={GOOGLE_MAPS_KEY || ''}>
+            <Map
+              defaultCenter={KOORDINAT_LUMAJANG}
+              center={userLoc || KOORDINAT_LUMAJANG}
+              defaultZoom={14}
+              mapId="LIVE_MAP"
+              disableDefaultUI
+              gestureHandling="cooperative"
+            >
+              {userLoc && (
+                <>
+                  <MapRecenterController lat={userLoc.lat} lng={userLoc.lng} />
+                  <AdvancedMarker position={userLoc}>
+                    <Pin background="#046A38" scale={0.8} borderColor="white" />
+                  </AdvancedMarker>
+                </>
+              )}
 
-            {drivers.map(d => (
-              <AdvancedMarker key={d.id} position={{ lat: d.lat || KOORDINAT_LUMAJANG.lat, lng: d.lng || KOORDINAT_LUMAJANG.lng }}>
-                <div className="bg-white text-[14px] p-1 rounded-full shadow border-2 border-[#0A8A4E] w-7 h-7 flex items-center justify-center">🛵</div>
-              </AdvancedMarker>
-            ))}
-          </Map>
-        </APIProvider>
+              {drivers.map(d => (
+                <AdvancedMarker key={d.id} position={{ lat: d.lat || KOORDINAT_LUMAJANG.lat, lng: d.lng || KOORDINAT_LUMAJANG.lng }}>
+                  <div className="bg-white text-[14px] p-1 rounded-full shadow border-2 border-[#0A8A4E] w-7 h-7 flex items-center justify-center">🛵</div>
+                </AdvancedMarker>
+              ))}
+            </Map>
+          </APIProvider>
+        ) : (
+          <div className="w-full h-full relative">
+            <iframe
+              width="100%"
+              height="100%"
+              frameBorder="0"
+              scrolling="no"
+              marginHeight={0}
+              marginWidth={0}
+              src={`https://www.openstreetmap.org/export/embed.html?bbox=${(userLoc?.lng || KOORDINAT_LUMAJANG.lng) - 0.01}%2C${(userLoc?.lat || KOORDINAT_LUMAJANG.lat) - 0.01}%2C${(userLoc?.lng || KOORDINAT_LUMAJANG.lng) + 0.01}%2C${(userLoc?.lat || KOORDINAT_LUMAJANG.lat) + 0.01}&layer=mapnik`}
+            ></iframe>
+            <div className="absolute top-2 left-2 bg-red-600 text-white text-[8px] font-bold px-2 py-1 rounded shadow-lg uppercase">
+              Mode Hemat: OpenStreetMap Active
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -898,6 +898,40 @@ export default function AdminView() {
                {activeTarifCat === 'sys' && (
                  <div className="space-y-4">
                     <h3 className="text-[10px] font-black text-gray-700 uppercase tracking-widest border-b pb-2 flex items-center space-x-2">
+                       <Settings size={14} /> <span>Monitoring API & Peta Hybrid</span>
+                    </h3>
+                    <div className="bg-slate-900 text-white p-4 rounded-2xl space-y-3">
+                       <div className="flex justify-between items-center">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase">Google API Meteran</span>
+                          <span className="text-[9px] font-black bg-emerald-600 px-2 py-0.5 rounded text-white">LIVE</span>
+                       </div>
+                       <div className="flex justify-between items-end">
+                          <div className="text-2xl font-black">{config.googleApiUsageCount?.toLocaleString() || 0}</div>
+                          <div className="text-[10px] text-slate-400 font-bold mb-1">/ {config.googleApiLimit?.toLocaleString() || 28000} Load</div>
+                       </div>
+                       <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-500 ${ (config.googleApiUsageCount / config.googleApiLimit) > 0.9 ? 'bg-red-500' : 'bg-[#D4AF37]' }`}
+                            style={{ width: `${Math.min(100, (config.googleApiUsageCount / config.googleApiLimit) * 100)}%` }}
+                          ></div>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Limit API Google</label>
+                          <input type="number" value={tempConfig.googleApiLimit} onChange={(e)=>setTempConfig({...tempConfig, googleApiLimit: parseInt(e.target.value)})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black" />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-gray-400 uppercase">Penyedia Peta Aktif</label>
+                          <select value={tempConfig.mapProvider} onChange={(e)=>setTempConfig({...tempConfig, mapProvider: e.target.value as any})} className="w-full p-2.5 bg-gray-50 border rounded-xl outline-none text-xs font-black">
+                             <option value="google">Google Maps (Akurat)</option>
+                             <option value="osm">OpenStreetMap (Gratis)</option>
+                          </select>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 pt-2">
                        <Settings size={14} /> <span>Kontrol Pendaftaran & Sistem</span>
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
