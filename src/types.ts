@@ -167,6 +167,7 @@ export interface ChatMessage {
   senderRole: 'penumpang' | 'sopir';
   message: string;
   voiceData?: string; // Base64 audio data
+  photoData?: string; // Base64 image data
   timestamp: string;
 }
 

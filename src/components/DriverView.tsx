@@ -532,12 +532,15 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
 
     await OloluStore.selesaikanPesanan(activeOrder.id, activeOrder);
 
+    // Force clear locally immediately
+    OloluStore.setLocalOrderLock(null);
+    setActiveOrder(null);
+
     // Refresh history
     const orders = await OloluStore.getAllPesanan();
     if (profile) setHistoryOrders(orders.filter(o => o.idSopir === profile.id));
 
     alert("🎉 PESANAN SELESAI!\nData telah diarsipkan ke database.");
-    setActiveOrder(null);
   };
 
   const handleBatalOrder = () => {

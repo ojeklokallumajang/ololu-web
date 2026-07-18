@@ -550,20 +550,22 @@ export const OloluStore = {
       senderRole: m.sender_role,
       message: m.message,
       voiceData: m.voice_data,
+      photoData: m.photo_data,
       timestamp: m.created_at
     }));
   },
 
-  async sendChatMessage(pesananId: string, senderId: string, senderName: string, senderRole: string, message: string, voiceData?: string) {
+  async sendChatMessage(pesananId: string, senderId: string, senderName: string, senderRole: string, message: string, voiceData?: string, photoData?: string) {
     await getSupabase()!.from('chat_messages').insert({
       id_pesanan: pesananId,
       sender_id: senderId,
       sender_name: senderName,
       sender_role: senderRole,
       message,
-      voice_data: voiceData
+      voice_data: voiceData,
+      photo_data: photoData
     });
-    ololuRealtime.broadcastChatMessage(pesananId, { senderId, senderName, senderRole, message, voiceData, timestamp: new Date().toISOString() });
+    ololuRealtime.broadcastChatMessage(pesananId, { senderId, senderName, senderRole, message, voiceData, photoData, timestamp: new Date().toISOString() });
   },
 
   async simpanNotaToko(pesananId: string, stopId: string, namaToko: string, rincian: string, total: number, fotoBase64: string) {
@@ -579,21 +581,27 @@ export const OloluStore = {
   },
 
   async selesaikanPesanan(pesananId: string, finalOrderData: Pesanan) {
-    const { error } = await getSupabase()!.from('orders').update({
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    const { error } = await supabase.from('orders').update({
       status: 'selesai',
       waktu_selesai: new Date().toISOString(),
       biaya_parkir_total: finalOrderData.biayaParkirTotal,
       biaya_nota_total: finalOrderData.biayaNotaTotal,
       total_bayar_akhir: finalOrderData.totalBayarAkhir
     }).eq('id', pesananId);
+
     if (!error) {
       ololuRealtime.broadcastTripUpdate(pesananId, { type: 'status_update', status: 'selesai' });
+      this.setLocalOrderLock(null);
     }
   },
 
   async batalPesanan(pesananId: string, peran: string, alasan: string) {
     await getSupabase()!.from('orders').update({ status: 'dibatalkan', waktu_dibatalkan: new Date().toISOString(), alasan_batal: alasan }).eq('id', pesananId);
     ololuRealtime.broadcastTripUpdate(pesananId, { type: 'status_update', status: 'dibatalkan' });
+    this.setLocalOrderLock(null);
   },
 
   async getSopirLogin(): Promise<DetailSopir | null> {

@@ -160,6 +160,7 @@ CREATE TABLE public.chat_messages (
     sender_role TEXT CHECK (sender_role IN ('penumpang', 'sopir')),
     message TEXT,
     voice_data TEXT, -- Base64 Audio
+    photo_data TEXT, -- Base64 Image
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

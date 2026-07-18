@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { OloluStore } from '../services/store';
 import { ChatMessage, Pesanan } from '../types';
-import { Send, X, Shield, Clock, Phone, Mic, Square, Play, Pause, Volume2 } from 'lucide-react';
+import { Send, X, Shield, Clock, Phone, Mic, Square, Play, Pause, Volume2, Camera, Image as ImageIcon } from 'lucide-react';
 import { ololuRealtime } from '../services/supabaseClient';
 
 interface ChatRoomProps {
@@ -17,6 +17,7 @@ export default function ChatRoom({ pesananId, senderId, senderName, senderRole, 
   const [pesanan, setPesanan] = useState<Pesanan | null>(null);
   const [inputText, setInputText] = useState('');
   const messageEndRef = useRef<HTMLDivElement>(null);
+  const [isSendingPhoto, setIsSendingPhoto] = useState(false);
 
   // Voice Recording States
   const [isRecording, setIsRecording] = useState(false);
@@ -139,6 +140,30 @@ export default function ChatRoom({ pesananId, senderId, senderName, senderRole, 
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handlePickPhoto = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      input.setAttribute('capture', 'environment');
+    }
+    input.onchange = async (e: any) => {
+      const file = e.target.files[0];
+      if (file) {
+        setIsSendingPhoto(true);
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64 = reader.result as string;
+          await OloluStore.sendChatMessage(pesananId, senderId, senderName, senderRole, "[Foto]", undefined, base64);
+          setIsSendingPhoto(false);
+          playPopSound();
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
+  };
+
   return (
     <div className="absolute inset-0 bg-[#FAFBF9] z-[200] flex flex-col h-full animate-in slide-in-from-bottom duration-250">
       
@@ -228,7 +253,16 @@ export default function ChatRoom({ pesananId, senderId, senderName, senderRole, 
                     : 'bg-white text-gray-800 rounded-tl-none border border-gray-150'
                 }`}
               >
-                {msg.voiceData ? (
+                {msg.photoData ? (
+                  <div className="space-y-2">
+                    <img
+                      src={msg.photoData}
+                      className="rounded-lg max-h-48 w-full object-cover cursor-pointer hover:opacity-90"
+                      onClick={() => window.open(msg.photoData, '_blank')}
+                      alt="Gambar Chat"
+                    />
+                  </div>
+                ) : msg.voiceData ? (
                   <div className="flex flex-col space-y-2">
                     <div className="flex items-center space-x-3 min-w-[180px]">
                       <button
@@ -286,6 +320,14 @@ export default function ChatRoom({ pesananId, senderId, senderName, senderRole, 
           </div>
         ) : (
           <>
+            <button
+              onClick={handlePickPhoto}
+              disabled={isSendingPhoto}
+              className="p-2.5 bg-gray-50 text-gray-500 hover:bg-[#E6F4EC] hover:text-[#046A38] rounded-xl border border-gray-200 transition-all disabled:opacity-50"
+              title="Kirim foto"
+            >
+              {isSendingPhoto ? <div className="w-4 h-4 border-2 border-t-[#046A38] rounded-full animate-spin"></div> : <Camera size={18} />}
+            </button>
             <button
               onClick={startRecording}
               className="p-2.5 bg-gray-50 text-gray-500 hover:bg-[#E6F4EC] hover:text-[#046A38] rounded-xl border border-gray-200 transition-all"
