@@ -214,6 +214,11 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   const [ratingsSubmitted, setRatingsSubmitted] = useState(false);
   const [routeDistance, setRouteDistance] = useState<number | null>(null);
 
+  // Item Input State
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemQty, setNewItemQty] = useState('1');
+  const [activeItemStopId, setActiveItemStopId] = useState<string | null>(null);
+
   const mapsLib = useMapsLibrary('routes');
 
   useEffect(() => {
@@ -347,6 +352,33 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     if (stops.length > 1) {
       setStops(stops.filter(s => s.id !== id));
     }
+  };
+
+  const handleAddItem = (stopId: string) => {
+    if (!newItemName.trim()) return;
+    setStops(prev => prev.map(s => {
+      if (s.id === stopId) {
+        const newItems = [...(s.items || []), {
+          id: `item-${Date.now()}`,
+          namaBarang: newItemName.trim(),
+          jumlah: parseInt(newItemQty) || 1,
+          perkiraanHarga: 0
+        }];
+        return { ...s, items: newItems };
+      }
+      return s;
+    }));
+    setNewItemName('');
+    setNewItemQty('1');
+  };
+
+  const handleRemoveItem = (stopId: string, itemId: string) => {
+    setStops(prev => prev.map(s => {
+      if (s.id === stopId) {
+        return { ...s, items: (s.items || []).filter((it: any) => it.id !== itemId) };
+      }
+      return s;
+    }));
   };
 
   const handleOpenMapPicker = (target: 'asal' | string) => {
@@ -611,9 +643,51 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
           <div className="space-y-2 border-t pt-3">
             <div className="flex justify-between items-center"><label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Tujuan / Destinasi</label> <button onClick={handleAddStop} className="text-[#046A38] text-[9px] font-black uppercase bg-emerald-50 px-2 py-0.5 rounded-full">+ Tambah Stop</button></div>
             {stops.map((s, idx) => (
-              <div key={s.id} className="flex space-x-2 items-center">
-                <div className="relative flex-1"><input readOnly onClick={() => handleOpenMapPicker(s.id)} value={s.alamat} className="w-full p-2.5 bg-gray-50 border rounded-xl text-xs cursor-pointer" /><MapPin size={12} className="absolute right-3 top-2.5 text-[#D4AF37]" /></div>
-                {stops.length > 1 && <button onClick={() => handleRemoveStop(s.id)} className="p-2 text-red-500 bg-red-50 rounded-lg"><Trash2 size={14} /></button>}
+              <div key={s.id} className="space-y-2">
+                <div className="flex space-x-2 items-center">
+                  <div className="relative flex-1"><input readOnly onClick={() => handleOpenMapPicker(s.id)} value={s.alamat} className="w-full p-2.5 bg-gray-50 border rounded-xl text-xs cursor-pointer" /><MapPin size={12} className="absolute right-3 top-2.5 text-[#D4AF37]" /></div>
+                  {stops.length > 1 && <button onClick={() => handleRemoveStop(s.id)} className="p-2 text-red-500 bg-red-50 rounded-lg"><Trash2 size={14} /></button>}
+                </div>
+
+                {/* Kolom Input Item (Hanya untuk Makanan/Belanja/Market) */}
+                {(subLayanan === 'makanan' || subLayanan === 'belanja' || subLayanan === 'market') && (
+                  <div className="ml-2 pl-4 border-l-2 border-gray-100 space-y-2">
+                    <div className="flex space-x-1.5">
+                      <input
+                        type="text"
+                        placeholder="Nama Menu / Barang..."
+                        value={activeItemStopId === s.id ? newItemName : ''}
+                        onChange={(e) => { setActiveItemStopId(s.id); setNewItemName(e.target.value); }}
+                        className="flex-1 p-2 bg-white border rounded-lg text-[10px]"
+                      />
+                      <input
+                        type="number"
+                        min="1"
+                        value={activeItemStopId === s.id ? newItemQty : '1'}
+                        onChange={(e) => { setActiveItemStopId(s.id); setNewItemQty(e.target.value); }}
+                        className="w-12 p-2 bg-white border rounded-lg text-[10px] text-center"
+                      />
+                      <button
+                        onClick={() => handleAddItem(s.id)}
+                        className="p-2 bg-[#046A38] text-white rounded-lg shadow-sm"
+                      >
+                        <Plus size={14} />
+                      </button>
+                    </div>
+
+                    {/* List Item yang sudah ditambah */}
+                    {s.items && s.items.length > 0 && (
+                      <div className="space-y-1">
+                        {s.items.map((it: any) => (
+                          <div key={it.id} className="bg-emerald-50/50 p-1.5 px-2.5 rounded-lg flex justify-between items-center border border-emerald-100/50 animate-in fade-in slide-in-from-left-2">
+                            <span className="text-[10px] font-bold text-emerald-800">{it.jumlah}x {it.namaBarang}</span>
+                            <button onClick={() => handleRemoveItem(s.id, it.id)} className="text-red-400 p-1"><X size={10} /></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
