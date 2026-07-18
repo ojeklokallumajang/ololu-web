@@ -126,7 +126,10 @@ function MapPickerSearch({
 
 function LiveDriversMap() {
   const [drivers, setDrivers] = useState<any[]>([]);
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
+
   useEffect(() => {
+    // 1. Subscribe Driver Online
     const unsubscribe = ololuRealtime.subscribeToDriversOnline((state) => {
       const active: any[] = [];
       Object.keys(state).forEach(id => {
@@ -135,7 +138,20 @@ function LiveDriversMap() {
       });
       setDrivers(active);
     });
-    return () => unsubscribe();
+
+    // 2. Lacak Lokasi User (Titik Hijau)
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      },
+      (err) => console.warn("Peta radar gagal ambil lokasi:", err),
+      { enableHighAccuracy: true }
+    );
+
+    return () => {
+      unsubscribe();
+      navigator.geolocation.clearWatch(watchId);
+    };
   }, []);
 
   return (
@@ -146,8 +162,23 @@ function LiveDriversMap() {
       </div>
       <div className="h-64 rounded-2xl overflow-hidden border relative bg-gray-50">
         <APIProvider apiKey={GOOGLE_MAPS_KEY || ''}>
-          <Map defaultCenter={KOORDINAT_LUMAJANG} defaultZoom={14} mapId="LIVE_MAP" disableDefaultUI gestureHandling="cooperative">
-            <AdvancedMarker position={KOORDINAT_LUMAJANG}><Pin background="#046A38" scale={0.7} /></AdvancedMarker>
+          <Map
+            defaultCenter={KOORDINAT_LUMAJANG}
+            center={userLoc || KOORDINAT_LUMAJANG}
+            defaultZoom={14}
+            mapId="LIVE_MAP"
+            disableDefaultUI
+            gestureHandling="cooperative"
+          >
+            {userLoc && (
+              <>
+                <MapRecenterController lat={userLoc.lat} lng={userLoc.lng} />
+                <AdvancedMarker position={userLoc}>
+                  <Pin background="#046A38" scale={0.8} borderColor="white" />
+                </AdvancedMarker>
+              </>
+            )}
+
             {drivers.map(d => (
               <AdvancedMarker key={d.id} position={{ lat: d.lat || KOORDINAT_LUMAJANG.lat, lng: d.lng || KOORDINAT_LUMAJANG.lng }}>
                 <div className="bg-white text-[14px] p-1 rounded-full shadow border-2 border-[#0A8A4E] w-7 h-7 flex items-center justify-center">🛵</div>
