@@ -151,7 +151,19 @@ CREATE TABLE public.ratings (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 9. TABEL: PENGATURAN TARIF SISTEM (system_settings / pengaturan_tarif)
+-- 9. TABEL: PESAN INTERNAL (chat_messages)
+CREATE TABLE public.chat_messages (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    id_pesanan UUID REFERENCES public.orders(id) ON DELETE CASCADE,
+    sender_id UUID REFERENCES public.profiles(id),
+    sender_name TEXT,
+    sender_role TEXT CHECK (sender_role IN ('penumpang', 'sopir')),
+    message TEXT,
+    voice_data TEXT, -- Base64 Audio
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 10. TABEL: PENGATURAN TARIF SISTEM (system_settings / pengaturan_tarif)
 CREATE TABLE public.system_settings (
     key TEXT PRIMARY KEY,
     value JSONB NOT NULL

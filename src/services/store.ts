@@ -188,7 +188,9 @@ export const OloluStore = {
   subscribeToStore(listener: () => void) {
     const supabase = getSupabase();
     if (!supabase) return () => {};
-    const channel = supabase.channel('schema-db-changes').on('postgres_changes', { event: '*', schema: 'public' }, () => { listener(); }).subscribe();
+    // Gunakan nama channel unik agar tidak bertabrakan (Fix crash "cannot add callbacks")
+    const channelId = `schema-sync-${Math.random().toString(36).substring(7)}`;
+    const channel = supabase.channel(channelId).on('postgres_changes', { event: '*', schema: 'public' }, () => { listener(); }).subscribe();
     return () => { supabase.removeChannel(channel); };
   },
 

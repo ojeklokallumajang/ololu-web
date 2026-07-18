@@ -330,7 +330,6 @@ export default function App() {
               <a href="https://tiktok.com/@ololuojeklokallumajang" target="_blank" rel="noreferrer" className="text-[10px] font-black text-[#046A38] uppercase flex items-center space-x-1.5 hover:text-emerald-700 transition-colors">📸 <span>TikTok</span></a>
               <a href="https://instagram.com/ololu_ojeklokallumajang" target="_blank" rel="noreferrer" className="text-[10px] font-black text-[#046A38] uppercase flex items-center space-x-1.5 hover:text-emerald-700 transition-colors">📸 <span>Instagram</span></a>
             </div>
-            <p className="text-[8px] text-gray-400 uppercase font-black tracking-[0.5em]">PT Ololu Pengantaran Nusantara Lumajang</p>
           </footer>
         </div>
       )}
