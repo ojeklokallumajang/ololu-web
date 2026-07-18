@@ -65,14 +65,7 @@ interface PassengerViewProps {
   lockedOrderId?: string;
 }
 
-const LUMAJANG_HOTSPOTS = [
-  { name: "Alun-Alun Lumajang", description: "Jl. Alun-Alun Barat, Lumajang", lat: -8.1331, lng: 113.2240 },
-  { name: "Mie Gacoan Lumajang", description: "Jl. Kyai Muksin, Lumajang", lat: -8.1312, lng: 113.2215 },
-  { name: "Pasar Baru Lumajang", description: "Jl. Kyai Muksin, Lumajang", lat: -8.1385, lng: 113.2208 },
-  { name: "Stasiun Klakah Lumajang", description: "Klakah, Lumajang", lat: -8.0125, lng: 113.2512 },
-  { name: "Terminal Minak Koncar Lumajang", description: "Wonorejo, Kedungjajang, Lumajang", lat: -8.1065, lng: 113.2389 },
-  { name: "Kawasan Wonorejo Terpadu", description: "Wonorejo, Lumajang", lat: -8.1141, lng: 113.2452 }
-];
+const LUMAJANG_HOTSPOTS: any[] = [];
 
 function MapRecenterController({ lat, lng }: { lat: number; lng: number }) {
   const map = useMap();
@@ -99,9 +92,9 @@ function MapPickerSearch({
           setIsSearching(false);
           if (places && places.length > 0) {
             setSuggestions(places.map(p => ({ name: p.displayName || '', description: p.formattedAddress || '', lat: p.location?.lat() || 0, lng: p.location?.lng() || 0 })));
-          } else setSuggestions(LUMAJANG_HOTSPOTS);
-        }).catch(() => { setIsSearching(false); setSuggestions(LUMAJANG_HOTSPOTS); });
-    } else { setIsSearching(false); setSuggestions(LUMAJANG_HOTSPOTS); }
+          } else setSuggestions([]);
+        }).catch(() => { setIsSearching(false); setSuggestions([]); });
+    } else { setIsSearching(false); setSuggestions([]); }
   };
 
   return (

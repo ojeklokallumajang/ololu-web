@@ -76,97 +76,12 @@ export default function DesktopDashboard() {
     } : { active: false, count: 0, pelapor: '', peran: '' };
   };
 
-  // 1-Click Simulation triggers
-  const triggerRandomOrderSim = () => {
-    const randomDestinations = [
-      { nama: 'Pasar Baru Lumajang', alamat: 'Jl. Kyai Muksin, Lumajang', catatan: 'Belakang kios buah' },
-      { nama: 'Terminal Minak Koncar', alamat: 'Jl. Raya Wonorejo, Lumajang', catatan: 'Dekat pintu keluar' },
-      { nama: 'RSUD dr. Haryoto Lumajang', alamat: 'Jl. Basuki Rahmat No.5, Lumajang', catatan: 'Lobi IGD utama' },
-      { nama: 'Stasiun Kereta Klakah', alamat: 'Klakah, Lumajang', catatan: 'Area parkir stasiun' },
-      { nama: 'Pasar Senduro', alamat: 'Senduro, Lumajang', catatan: 'Samping pos polisi' },
-    ];
-
-    const randomOrigins = [
-      { nama: 'Alun-Alun Lumajang', alamat: 'Jl. Alun-Alun Utara, Lumajang', lat: -8.1331, lng: 113.2240 },
-      { nama: 'Kawasan Wonorejo', alamat: 'Wonorejo, Lumajang', lat: -8.1021, lng: 113.2514 },
-      { nama: 'Taman Kota Lumajang', alamat: 'Jl. Gajah Mada, Lumajang', lat: -8.1402, lng: 113.2210 }
-    ];
-
-    const randomLayanan: ('ojek' | 'makanan' | 'paket' | 'barang_besar')[] = ['ojek', 'makanan', 'paket', 'barang_besar'];
-    const chosenLayanan = randomLayanan[Math.floor(Math.random() * randomLayanan.length)];
-    
-    const origin = randomOrigins[Math.floor(Math.random() * randomOrigins.length)];
-    const destination = randomDestinations[Math.floor(Math.random() * randomDestinations.length)];
-    
-    // Random jarak antara 2 s/d 12 KM
-    const jarak = parseFloat((Math.random() * 10 + 2).toFixed(1));
-
-    // Gunakan detail dummy penumpang
-    const dummyNames = ['Farhan Kurniawan', 'Rizky Pratama', 'Siti Rahma', 'Dewi Lestari', 'Hendra Wijaya'];
-    const chosenName = dummyNames[Math.floor(Math.random() * dummyNames.length)];
-    const idPenumpang = `penumpang-sim-${Math.floor(Math.random() * 9000)}`;
-
-    const destinationsWithDetails = [{
-      id: `stop-${Math.random().toString(36).substr(2, 9)}`,
-      alamat: destination.alamat,
-      lat: origin.lat + 0.012,
-      lng: origin.lng + 0.012,
-      urutan: 1,
-      daftarItem: chosenLayanan === 'makanan' ? [
-        { id: 'item-1', namaBarang: 'Sego Tempong Lumajangan', jumlah: 2, perkiraanHarga: 15000 },
-        { id: 'item-2', namaBarang: 'Es Teh Manis Selasih', jumlah: 2, perkiraanHarga: 4000 }
-      ] : chosenLayanan === 'paket' ? [
-        { id: 'item-1', namaBarang: 'Dokumen Penting Segel', jumlah: 1, perkiraanHarga: 0 }
-      ] : chosenLayanan === 'barang_besar' ? [
-        { id: 'item-1', namaBarang: 'Kardus Sembako Jumbo', jumlah: 1, perkiraanHarga: 50000 }
-      ] : []
-    }];
-
-    try {
-      OloluStore.buatPesanan(
-        {
-          jenisLayanan: chosenLayanan,
-          idPenumpang: idPenumpang,
-          asalAlamat: origin.alamat,
-          asalLat: origin.lat,
-          asalLng: origin.lng,
-          jarakKm: jarak,
-          totalBayarAkhir: 25000,
-          pembayaranTunai: true
-        },
-        destinationsWithDetails as any
-      );
-    } catch (e) {
-      console.error("Gagal simulasikan order:", e);
-    }
-  };
-
-  const toggleDriverStatus = async (driverId: string) => {
-    // Note: This logic is legacy and might need full Supabase update
-    // For now, let's just make it not crash
-    await OloluStore.toggleOnlineSopir(driverId);
-  };
-
-  const triggerPanicSimulation = async () => {
-    const onlineDrivers = drivers.filter(d => d.statusOnline);
-    const reporterName = onlineDrivers.length > 0 ? 'Driver' : 'Penumpang';
-
-    await OloluStore.tambahEmergency(
-      'sim-panic',
-      onlineDrivers.length > 0 ? 'Pak Joko' : 'Mbak Rahma',
-      '6281234567890',
-      onlineDrivers.length > 0 ? 'sopir' : 'penumpang',
-      -8.1331,
-      113.2240
-    );
-  };
-
   // Kelola hitung-hitungan statistics
   const activeOrdersCount = activeOrders.filter(p => p.status !== 'selesai' && p.status !== 'dibatalkan').length;
   const completedOrdersCount = activeOrders.filter(p => p.status === 'selesai').length;
   const totalOmset = activeOrders
     .filter(p => p.status === 'selesai')
-    .reduce((acc, curr) => acc + (curr.biayaPerjalananTotal || 0), 0);
+    .reduce((acc, curr) => acc + (curr.totalBayarAkhir || 0), 0);
 
   const emergency = getEmergencyStatus();
 
@@ -218,105 +133,17 @@ export default function DesktopDashboard() {
               {drivers.filter(d => d.statusOnline).length} <span className="text-[10px] text-slate-500 font-normal">/ {drivers.length}</span>
             </p>
           </div>
+
+      {/* EMERGENCY TICKER */}
+      {emergency.active && (
+        <div className="bg-red-950/60 border border-red-900/80 p-3 rounded-2xl flex items-center justify-between text-[10px] animate-pulse relative z-10">
+          <span className="flex items-center space-x-2 text-red-200 font-bold">
+            <span className="h-2 w-2 rounded-full bg-red-500 animate-ping"></span>
+            <span>🚨 DARURAT AKTIF: Dipicu oleh {emergency.pelapor} ({emergency.peran.toUpperCase()})</span>
+          </span>
+          <span className="text-[9px] bg-red-600 text-white font-extrabold px-2 py-0.5 rounded-full uppercase">Periksa Radar Admin!</span>
         </div>
-
-        <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800/80 flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
-            <Activity size={20} className="animate-pulse" />
-          </div>
-          <div>
-            <p className="text-[9px] text-slate-400 font-bold uppercase">Pesanan Aktif</p>
-            <p className="text-lg font-bold text-white font-mono leading-tight">{activeOrdersCount}</p>
-          </div>
-        </div>
-
-        <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800/80 flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
-            <CheckCircle size={20} />
-          </div>
-          <div>
-            <p className="text-[9px] text-slate-400 font-bold uppercase">Selesai Hari Ini</p>
-            <p className="text-lg font-bold text-white font-mono leading-tight">{completedOrdersCount}</p>
-          </div>
-        </div>
-
-        <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800/80 flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-400 shrink-0">
-            <Coins size={20} />
-          </div>
-          <div className="overflow-hidden">
-            <p className="text-[9px] text-slate-400 font-bold uppercase">Omset Sukses</p>
-            <p className="text-sm font-bold text-[#D4AF37] font-mono leading-tight truncate" title={`Rp ${totalOmset.toLocaleString('id-ID')}`}>
-              Rp {totalOmset.toLocaleString('id-ID')}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* QUICK SIMULATION CONTROL BAR */}
-      <div className="bg-slate-950/90 border border-slate-800 p-4 rounded-2xl space-y-3 relative z-10">
-        <div className="flex items-center justify-between">
-          <p className="text-[10px] text-yellow-400 font-black uppercase tracking-widest flex items-center space-x-1">
-            <Sparkles size={12} className="text-[#D4AF37]" />
-            <span>Pusat Simulasi Sistem (Instan 1-Klik)</span>
-          </p>
-          <span className="text-[8px] bg-slate-800 text-slate-300 font-bold p-1 px-2 rounded-md">Pemicu State</span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-          <button
-            onClick={triggerRandomOrderSim}
-            className="flex items-center justify-center space-x-1.5 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold rounded-xl text-xs transition-all shadow-md active:scale-95"
-            title="Kirim Pesanan Dummy ke Sistem"
-          >
-            <Plus size={14} />
-            <span>Simulasikan Order Masuk</span>
-          </button>
-
-          <button
-            onClick={() => {
-              // Toggle online sopir joko & budi sekaligus
-              const onlineJoko = drivers.find(d => d.id === 'sopir-joko')?.statusOnline;
-              toggleDriverStatus('sopir-joko');
-              if (drivers.find(d => d.id === 'sopir-budi')?.statusOnline === onlineJoko) {
-                toggleDriverStatus('sopir-budi');
-              }
-            }}
-            className="flex items-center justify-center space-x-1.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold rounded-xl text-xs transition-all active:scale-95"
-            title="Ubah status driver online/offline untuk menguji bidding"
-          >
-            <Power size={14} className="text-emerald-400" />
-            <span>Alihkan Online Sopir</span>
-          </button>
-
-          <button
-            onClick={triggerPanicSimulation}
-            className={`flex items-center justify-center space-x-1.5 py-2.5 text-white font-bold rounded-xl text-xs transition-all active:scale-95 border ${
-              emergency.active 
-                ? 'bg-red-600/20 hover:bg-red-600/30 border-red-500 text-red-300 animate-pulse'
-                : 'bg-red-950/40 hover:bg-red-900/30 border-red-900/50 text-red-200'
-            }`}
-          >
-            <AlertTriangle size={14} className="text-red-400 shrink-0" />
-            <span>Picu Sinyal Darurat (Panic)</span>
-          </button>
-        </div>
-
-        {/* ALERTS TICKER BAR */}
-        {emergency.active ? (
-          <div className="bg-red-950/60 border border-red-900/80 p-2.5 px-3 rounded-xl flex items-center justify-between text-[10px] animate-pulse">
-            <span className="flex items-center space-x-2 text-red-200 font-bold">
-              <span className="h-2 w-2 rounded-full bg-red-500 animate-ping"></span>
-              <span>🚨 DARURAT AKTIF: Dipicu oleh {emergency.pelapor} ({emergency.peran.toUpperCase()})</span>
-            </span>
-            <span className="text-[9px] bg-red-600 text-white font-extrabold px-2 py-0.5 rounded-full uppercase">Periksa Radar Admin!</span>
-          </div>
-        ) : (
-          <p className="text-[9px] text-slate-500 font-medium italic text-center">
-            Tips: Gunakan "Simulasikan Order Masuk" lalu beralih ke menu **Sopir** di simulator HP sebelah kiri untuk menguji sistem autobid instan.
-          </p>
-        )}
-      </div>
+      )}
 
       {/* MID PANEL SECTION (TARIFF & ACTIVE DRIVERS) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
@@ -384,22 +211,22 @@ export default function DesktopDashboard() {
                 <div className="flex items-center space-x-2.5">
                   <div className="relative">
                     <div className="w-8 h-8 rounded-full bg-[#E6F4EC] text-[#046A38] font-bold flex items-center justify-center border border-emerald-900 text-[10px]">
-                      {drv.id === 'sopir-joko' ? 'JK' : 'BD'}
+                      {(drv as any).nama?.charAt(0) || 'M'}
                     </div>
                     <span className={`absolute -bottom-0.5 -right-0.5 block h-2.5 w-2.5 rounded-full border border-slate-900 ${
                       drv.statusOnline ? 'bg-emerald-500' : 'bg-slate-500'
                     }`}></span>
                   </div>
                   <div>
-                    <p className="font-bold text-slate-200">{drv.id === 'sopir-joko' ? 'Joko Susilo' : 'Budi Setiawan'}</p>
+                    <p className="font-bold text-slate-200">{(drv as any).nama || 'Mitra Ololu'}</p>
                     <p className="text-[9px] text-slate-400 font-mono">{drv.platNomor} • {drv.jenisMotor}</p>
                   </div>
                 </div>
 
                 <div className="text-right font-mono text-[10px] space-y-0.5">
-                  <p className="text-[#D4AF37] font-bold">Rp {drv.saldoDompet.toLocaleString('id-ID')}</p>
-                  <p className="text-[9px] text-slate-400" title="Koordinat Mock GPS">
-                    GPS: {drv.lokasiSaatIni.lat.toFixed(4)}, {drv.lokasiSaatIni.lng.toFixed(4)}
+                  <p className="text-[#D4AF37] font-bold">Rp {(drv.saldoDompet || 0).toLocaleString('id-ID')}</p>
+                  <p className="text-[9px] text-slate-400" title="Koordinat GPS Terakhir">
+                    GPS: {drv.lokasiSaatIni?.lat.toFixed(4) || '0'}, {drv.lokasiSaatIni?.lng.toFixed(4) || '0'}
                   </p>
                 </div>
               </div>
@@ -424,7 +251,7 @@ export default function DesktopDashboard() {
             <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-1">
               <p className="text-xs text-slate-500 font-bold">Tidak ada log aktivitas pesanan aktif.</p>
               <p className="text-[10px] text-slate-500 max-w-sm">
-                Silahkan simulasikan pesanan baru menggunakan tombol **"Simulasikan Order Masuk"** atau pesan manual via simulator handphone sebelah kiri!
+                Log pesanan akan muncul secara otomatis di sini begitu ada penumpang yang melakukan pemesanan melalui aplikasi.
               </p>
             </div>
           ) : (

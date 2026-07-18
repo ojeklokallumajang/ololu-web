@@ -66,8 +66,12 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
   const [platNomor, setPlatNomor] = useState('');
   const [jenisMotor, setJenisMotor] = useState('');
   const [bisaBarangBesar, setBisaBarangBesar] = useState(false);
-  const [selectedPhotoField, setSelectedPhotoField] = useState<string | null>(null);
   const [isSubmittingDoc, setIsSubmittingDoc] = useState(false);
+
+  const [fotoKtp, setFotoKtp] = useState('');
+  const [fotoSim, setFotoSim] = useState('');
+  const [fotoStnk, setFotoStnk] = useState('');
+  const [fotoKendaraan, setFotoKendaraan] = useState('');
 
   // WALLET FORM STATE
   const [topUpAmount, setTopUpAmount] = useState<number>(50000);
@@ -365,6 +369,30 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
     }, 800);
   };
 
+  const handleDocFilePicker = (field: 'ktp' | 'sim' | 'stnk' | 'kendaraan') => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      input.setAttribute('capture', 'environment');
+    }
+    input.onchange = (e: any) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          if (field === 'ktp') setFotoKtp(base64);
+          if (field === 'sim') setFotoSim(base64);
+          if (field === 'stnk') setFotoStnk(base64);
+          if (field === 'kendaraan') setFotoKendaraan(base64);
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
+  };
+
   // --- SOPIR DOCUMENT ACTIONS ---
   const handleDocUpload = (e: React.FormEvent) => {
     e.preventDefault();
@@ -374,17 +402,19 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
       return;
     }
 
-    // Update berkas dummy (gambar base64 placeholder)
-    const svgBase64 = (title: string) => `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='100' viewBox='0 0 200 100'><rect width='200' height='100' fill='%23046A38'/><text x='50%' y='50%' fill='white' dominant-baseline='middle' text-anchor='middle'>${title}</text></svg>`;
+    if (!fotoKtp || !fotoSim || !fotoStnk || !fotoKendaraan) {
+      alert("Harap unggah semua foto dokumen asli Anda!");
+      return;
+    }
 
     OloluStore.updateSopirDokumen(driverDetail.id, {
       platNomor,
       jenisMotor,
       bisaBarangBesar,
-      fotoKtp: svgBase64("KTP SOPIR " + profile.nama),
-      fotoSim: svgBase64("SIM SOPIR " + profile.nama),
-      fotoStnk: svgBase64("STNK MOTOR " + platNomor),
-      fotoKendaraan: svgBase64("FOTO MOTOR " + jenisMotor)
+      fotoKtp,
+      fotoSim,
+      fotoStnk,
+      fotoKendaraan
     });
 
     alert("🎉 Berkas lamaran pendaftaran sopir Anda berhasil dikirim! Silakan hubungi Admin di panel sebelah untuk menyetujui akun Anda.");
@@ -507,10 +537,10 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
       return;
     }
 
-    // Simulasi gambar nota
-    const dummyNotaImg = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='150' viewBox='0 0 300 150'><rect width='300' height='150' fill='%23FAFBF9' stroke='%23B8941F' stroke-width='4'/><text x='20' y='40' font-family='sans-serif' font-size='16' font-weight='bold' fill='%23046A38'>${notaStoreName.toUpperCase()}</text><text x='20' y='75' font-family='monospace' font-size='12' fill='%231A1A1A'>${notaGoods}</text><text x='20' y='120' font-family='sans-serif' font-size='14' font-weight='bold' fill='%23B8941F'>Total: Rp ${tot.toLocaleString('id-ID')}</text></svg>`;
+    // Harusnya ambil dari foto kamera asli, jika belum ada tampilkan warning
+    alert("Fitur pengambilan foto nota fisik sedang disiapkan. Mengirim data teks nota...");
 
-    OloluStore.simpanNotaToko(activeOrder.id, activeNotaStopId, notaStoreName, notaGoods, tot, dummyNotaImg);
+    OloluStore.simpanNotaToko(activeOrder.id, activeNotaStopId, notaStoreName, notaGoods, tot, "");
     
     // Reset form nota
     setNotaStoreName('');
@@ -688,38 +718,38 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
           <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 pt-2 border-t border-dashed">
             <button
               type="button"
-              onClick={() => setSelectedPhotoField('ktp')}
-              className={`p-3 bg-[#FAFBF9] hover:bg-[#E6F4EC] rounded-lg border border-dashed flex flex-col items-center justify-center space-y-1 transition-all ${driverDetail.fotoKtp ? 'border-[#046A38]' : 'border-gray-300'}`}
+              onClick={() => handleDocFilePicker('ktp')}
+              className={`p-3 bg-[#FAFBF9] hover:bg-[#E6F4EC] rounded-lg border border-dashed flex flex-col items-center justify-center space-y-1 transition-all ${fotoKtp ? 'border-[#046A38]' : 'border-gray-300'}`}
             >
               <Upload size={16} className="text-gray-400" />
-              <span className="text-[9px] font-bold">Foto KTP {driverDetail.fotoKtp && '✅'}</span>
+              <span className="text-[9px] font-bold">Foto KTP {fotoKtp && '✅'}</span>
             </button>
 
             <button
               type="button"
-              onClick={() => setSelectedPhotoField('sim')}
-              className={`p-3 bg-[#FAFBF9] hover:bg-[#E6F4EC] rounded-lg border border-dashed flex flex-col items-center justify-center space-y-1 transition-all ${driverDetail.fotoSim ? 'border-[#046A38]' : 'border-gray-300'}`}
+              onClick={() => handleDocFilePicker('sim')}
+              className={`p-3 bg-[#FAFBF9] hover:bg-[#E6F4EC] rounded-lg border border-dashed flex flex-col items-center justify-center space-y-1 transition-all ${fotoSim ? 'border-[#046A38]' : 'border-gray-300'}`}
             >
               <Upload size={16} className="text-gray-400" />
-              <span className="text-[9px] font-bold">Foto SIM {driverDetail.fotoSim && '✅'}</span>
+              <span className="text-[9px] font-bold">Foto SIM {fotoSim && '✅'}</span>
             </button>
 
             <button
               type="button"
-              onClick={() => setSelectedPhotoField('stnk')}
-              className={`p-3 bg-[#FAFBF9] hover:bg-[#E6F4EC] rounded-lg border border-dashed flex flex-col items-center justify-center space-y-1 transition-all ${driverDetail.fotoStnk ? 'border-[#046A38]' : 'border-gray-300'}`}
+              onClick={() => handleDocFilePicker('stnk')}
+              className={`p-3 bg-[#FAFBF9] hover:bg-[#E6F4EC] rounded-lg border border-dashed flex flex-col items-center justify-center space-y-1 transition-all ${fotoStnk ? 'border-[#046A38]' : 'border-gray-300'}`}
             >
               <Upload size={16} className="text-gray-400" />
-              <span className="text-[9px] font-bold">Foto STNK {driverDetail.fotoStnk && '✅'}</span>
+              <span className="text-[9px] font-bold">Foto STNK {fotoStnk && '✅'}</span>
             </button>
 
             <button
               type="button"
-              onClick={() => setSelectedPhotoField('kendaraan')}
-              className={`p-3 bg-[#FAFBF9] hover:bg-[#E6F4EC] rounded-lg border border-dashed flex flex-col items-center justify-center space-y-1 transition-all ${driverDetail.fotoKendaraan ? 'border-[#046A38]' : 'border-gray-300'}`}
+              onClick={() => handleDocFilePicker('kendaraan')}
+              className={`p-3 bg-[#FAFBF9] hover:bg-[#E6F4EC] rounded-lg border border-dashed flex flex-col items-center justify-center space-y-1 transition-all ${fotoKendaraan ? 'border-[#046A38]' : 'border-gray-300'}`}
             >
               <Upload size={16} className="text-gray-400" />
-              <span className="text-[9px] font-bold">Foto Motor {driverDetail.fotoKendaraan && '✅'}</span>
+              <span className="text-[9px] font-bold">Foto Motor {fotoKendaraan && '✅'}</span>
             </button>
           </div>
 
@@ -730,27 +760,6 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
             Kirim Lamaran Mitra Ololu
           </button>
         </form>
-
-        {selectedPhotoField && (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-            <div className="bg-white p-5 rounded-2xl max-w-xs w-full text-center space-y-4">
-              <Camera size={28} className="mx-auto text-[#046A38]" />
-              <h3 className="font-bold text-sm">Unggah {selectedPhotoField.toUpperCase()} (Simulasi)</h3>
-              <p className="text-xs text-gray-500">
-                Aplikasi web akan mensimulasikan izin akses kamera/galeri untuk mengambil berkas dokumen Anda.
-              </p>
-              <div className="bg-emerald-50 py-3 rounded-lg border border-[#046A38]/30 font-bold text-xs text-[#046A38]">
-                Foto Diambil Otomatis!
-              </div>
-              <button
-                onClick={() => setSelectedPhotoField(null)}
-                className="w-full py-2 bg-[#034F2A] text-white rounded-lg text-xs"
-              >
-                Selesai
-              </button>
-            </div>
-          </div>
-        )}
 
       </div>
     );
