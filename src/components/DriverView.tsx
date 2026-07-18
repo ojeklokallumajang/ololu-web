@@ -788,7 +788,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
               <div className="flex items-center space-x-2">
                 <Radio size={14} className={`text-[#D4AF37] ${isAutobidActive ? 'animate-pulse' : ''}`} />
                 <div>
-                  <span className="font-bold block">Autobid Real-Time WebSocket</span>
+                  <span className="font-bold block">Mode Terima Order Otomatis</span>
                   <span className="text-[9px] text-[#FAFBF9]/80 block">Otomatis terima order terdekat</span>
                 </div>
               </div>
