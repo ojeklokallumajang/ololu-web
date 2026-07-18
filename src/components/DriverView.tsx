@@ -437,7 +437,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
     }
     const res = await OloluStore.ajukanTarikDana(driverDetail.id, amt);
     if (res.success) {
-      setWalletSuccess(`🎉 Pengajuan penarikan dana Rp ${amt.toLocaleString('id-ID')} terkirim! Menunggu approval Admin.`);
+      setWalletSuccess(`🎉 Pengajuan penarikan dana Rp ${(amt || 0).toLocaleString('id-ID')} terkirim! Menunggu approval Admin.`);
       setWithdrawAmount('');
     } else {
       setWalletError(res.error || 'Terjadi kesalahan');
@@ -817,7 +817,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
             <p className="font-bold">⚠️ Syarat Aktif Online Sopir:</p>
             <ul className="list-disc pl-4 space-y-0.5">
               <li>Akun terverifikasi oleh Admin: <span className="font-bold text-[#059669]">Lolos ✅</span></li>
-              <li>Saldo Dompet Ololu ≥ Rp {config.saldoMinimalOnlineSopir.toLocaleString('id-ID')}: <span className={`font-bold ${driverDetail.saldoDompet >= config.saldoMinimalOnlineSopir ? 'text-[#059669]' : 'text-[#DC2626]'}`}>{driverDetail.saldoDompet >= config.saldoMinimalOnlineSopir ? 'Lolos' : 'Kurang'} (Rp {driverDetail.saldoDompet.toLocaleString('id-ID')})</span></li>
+              <li>Saldo Dompet Ololu ≥ Rp {(config.saldoMinimalOnlineSopir || 0).toLocaleString('id-ID')}: <span className={`font-bold ${driverDetail.saldoDompet >= config.saldoMinimalOnlineSopir ? 'text-[#059669]' : 'text-[#DC2626]'}`}>{driverDetail.saldoDompet >= config.saldoMinimalOnlineSopir ? 'Lolos' : 'Kurang'} (Rp {(driverDetail.saldoDompet || 0).toLocaleString('id-ID')})</span></li>
               <li>Tidak sedang membawa order aktif: <span className="font-bold text-[#059669]">Lolos ✅</span></li>
             </ul>
           </div>
@@ -966,7 +966,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                                   : 'bg-[#FAFBF9] border-gray-150 text-gray-500'
                               }`}
                             >
-                              🅿️ BIASA (Rp {config.biayaParkirBiasa.toLocaleString('id-ID')})
+                              🅿️ BIASA (Rp {(config.biayaParkirBiasa || 0).toLocaleString('id-ID')})
                             </button>
                             <button
                               type="button"
@@ -977,7 +977,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                                   : 'bg-[#FAFBF9] border-gray-150 text-gray-500'
                               }`}
                             >
-                              🏪 PASAR (Rp {config.biayaParkirPasar.toLocaleString('id-ID')})
+                              🏪 PASAR (Rp {(config.biayaParkirPasar || 0).toLocaleString('id-ID')})
                             </button>
                           </div>
                         </div>
@@ -990,7 +990,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                             {stop.nota ? (
                               <div className="bg-[#E6F4EC] p-2 rounded-lg border border-[#0A8A4E]/20 text-[11px] text-emerald-800">
                                 <p><strong>Toko:</strong> {stop.nota.namaToko}</p>
-                                <p><strong>Total Nota:</strong> Rp {stop.nota.totalToko.toLocaleString('id-ID')}</p>
+                                <p><strong>Total Nota:</strong> Rp {(stop.nota.totalToko || 0).toLocaleString('id-ID')}</p>
                                 <button
                                   type="button"
                                   onClick={() => setActiveNotaStopId(stop.id)}
@@ -1095,7 +1095,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                 <div>
                   <span className="text-[10px] text-gray-500 block uppercase font-bold">Total Tagihan Penumpang</span>
                   <span className="text-lg font-black text-[#B8941F]">
-                    Rp {activeOrder.totalBayarAkhir.toLocaleString('id-ID')}
+                    Rp {(activeOrder.totalBayarAkhir || 0).toLocaleString('id-ID')}
                   </span>
                 </div>
                 <span className="bg-[#FAFBF9] text-[#046A38] text-[10px] font-bold px-2 py-1 rounded border border-gray-150">
@@ -1183,7 +1183,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                 <div>
                   <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Saldo Dompet Ololu</h4>
                   <span className="text-2xl font-black text-[#B8941F]">
-                    Rp {driverDetail.saldoDompet.toLocaleString('id-ID')}
+                    Rp {(driverDetail.saldoDompet || 0).toLocaleString('id-ID')}
                   </span>
                 </div>
                 <div className="bg-[#FAFBF9] p-2 rounded-xl text-[#B8941F] border">
@@ -1230,7 +1230,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                     disabled={!topUpProof || isSubmittingDeposit}
                     className="w-full py-3 bg-[#034F2A] text-white font-black rounded-xl text-xs uppercase shadow-md disabled:bg-gray-300 disabled:shadow-none transition-all"
                   >
-                    {isSubmittingDeposit ? 'Mengirim...' : `Kirim Deposit Rp ${topUpAmount.toLocaleString('id-ID')}`}
+                    {isSubmittingDeposit ? 'Mengirim...' : `Kirim Deposit Rp ${(topUpAmount || 0).toLocaleString('id-ID')}`}
                   </button>
                 </div>
               </div>
@@ -1254,7 +1254,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                   </button>
                 </div>
                 <p className="text-[9px] text-gray-400 italic">
-                  *Tarik dana dikenakan biaya admin Rp {config.biayaAdminTarik.toLocaleString('id-ID')} per penarikan.
+                  *Tarik dana dikenakan biaya admin Rp {(config.biayaAdminTarik || 0).toLocaleString('id-ID')} per penarikan.
                 </p>
               </form>
 
@@ -1279,14 +1279,14 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                         <span className="text-[10px] text-gray-400 block">{new Date(tx.timestamp).toLocaleDateString('id-ID')} {new Date(tx.timestamp).toLocaleTimeString('id-ID')}</span>
                         <p className="font-semibold text-gray-800 leading-tight mt-0.5">{tx.deskripsi}</p>
                         <span className="text-[9px] text-gray-400 font-semibold uppercase">
-                          {tx.statusTarik === 'menunggu' ? 'Status: Menunggu Verifikasi' : `Saldo Akhir: Rp ${tx.saldoAkhir.toLocaleString('id-ID')}`}
+                          {tx.statusTarik === 'menunggu' ? 'Status: Menunggu Verifikasi' : `Saldo Akhir: Rp ${(tx.saldoAkhir || 0).toLocaleString('id-ID')}`}
                         </span>
                       </div>
                       <div className="text-right">
                         <span className={`font-black font-mono ${
                           tx.jenis === 'pendapatan' || tx.jenis === 'topup' ? 'text-green-600' : 'text-red-500'
                         }`}>
-                          {tx.jenis === 'pendapatan' || tx.jenis === 'topup' ? '+' : '-'} Rp {tx.jumlah.toLocaleString('id-ID')}
+                          {tx.jenis === 'pendapatan' || tx.jenis === 'topup' ? '+' : '-'} Rp {(tx.jumlah || 0).toLocaleString('id-ID')}
                         </span>
                         {tx.statusTarik && (
                           <span className={`block text-[8px] font-bold mt-1 ${
@@ -1389,7 +1389,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                           <div className="text-right">
                             <span className="text-[9px] text-gray-400 block font-bold uppercase leading-none">Pendapatan Bersih</span>
                             <span className="font-bold text-emerald-600">
-                              + Rp {p.totalBayarAkhir.toLocaleString('id-ID')}
+                              + Rp {(p.totalBayarAkhir || 0).toLocaleString('id-ID')}
                             </span>
                           </div>
                         </div>
@@ -1441,7 +1441,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                 <div className="text-right">
                   <span className="text-[10px] text-gray-400 block font-bold uppercase">Tarif Bersih</span>
                   <span className="text-base font-black text-[#B8941F]">
-                    Rp {realtimeOrderAlert.totalBayarAkhir.toLocaleString('id-ID')}
+                    Rp {(realtimeOrderAlert.totalBayarAkhir || 0).toLocaleString('id-ID')}
                   </span>
                 </div>
               </div>
@@ -1475,7 +1475,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
               {/* Total Jarak */}
               <div className="border-t border-dashed pt-3 flex justify-between items-center text-xs text-gray-500 font-semibold">
                 <span>Estimasi Jarak Tempuh:</span>
-                <span className="font-mono text-gray-800">{realtimeOrderAlert.totalJarakKm.toFixed(1)} KM</span>
+                <span className="font-mono text-gray-800">{(realtimeOrderAlert.jarakKm || 0)} KM</span>
               </div>
 
               {/* Countdown Circular Progress / Indicator */}

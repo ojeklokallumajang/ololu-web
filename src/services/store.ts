@@ -141,7 +141,7 @@ const mapOrder = (db: any): Pesanan | null => {
     asalAlamat: db.asal_alamat || '',
     asalLat: safeParseFloat(db.asal_lat, KOORDINAT_LUMAJANG.lat),
     asalLng: safeParseFloat(db.asal_lng, KOORDINAT_LUMAJANG.lng),
-    jarakKm: safeParseFloat(db.jarak_km, 1),
+    jarakKm: Math.ceil(safeParseFloat(db.jarak_km, 1)),
     tarifDasar: safeParseFloat(db.tarif_dasar, 0),
     tarifPerKm: safeParseFloat(db.tarif_per_km, 0),
     tarifMinimum: safeParseFloat(db.tarif_minimum, 0),

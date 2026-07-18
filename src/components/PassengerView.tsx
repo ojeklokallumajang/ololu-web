@@ -203,7 +203,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
         result.routes[0].legs.forEach(leg => {
           total += leg.distance?.value || 0;
         });
-        setRouteDistance(Math.ceil(total / 1000));
+        setRouteDistance(total / 1000);
       }
     });
   }, [mapsLib, asalLat, asalLng, stops]);
@@ -268,21 +268,41 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     if (routeDistance !== null) return routeDistance;
     let total = 0, prevLat = asalLat, prevLng = asalLng;
     stops.forEach(st => { total += (Math.abs(st.lat - prevLat) + Math.abs(st.lng - prevLng)) * 111 * 0.75; prevLat = st.lat; prevLng = st.lng; });
-    return Math.max(1, Math.ceil(total));
+    return total;
   };
 
   const hitungHarga = () => {
     if (!config) return 0;
-    let d = 0, k = 0, m = 0, b = 3, s = config.biayaPerStopTambahan;
-
-    if (selectedLayanan === 'ojek') { d = config.ojekTarifDasar; k = config.ojekTarifPerKm; m = config.ojekTarifMinimum; b = config.ojekBatasKmTarifDasar; s = config.ojekBiayaPerStop; }
-    else if (selectedLayanan === 'mobil') { d = config.mobilTarifDasar; k = config.mobilTarifPerKm; m = config.mobilTarifMinimum; b = config.mobilBatasKmTarifDasar; s = config.mobilBiayaPerStop; }
-    else if (selectedLayanan === 'makanan') { d = config.makananTarifDasar; k = config.makananTarifPerKm; m = config.makananTarifMinimum; b = config.makananBatasKmTarifDasar; s = config.makananBiayaPerStop; }
-    else if (selectedLayanan === 'paket') { d = config.paketTarifDasar; k = config.paketTarifPerKm; m = config.paketTarifMinimum; b = config.paketBatasKmTarifDasar; s = config.paketBiayaPerStop; }
-    else { d = config.barangBesarTarifDasar; k = config.barangBesarTarifPerKm; m = config.barangBesarTarifMinimum; b = config.barangBesarBatasKmTarifDasar; s = config.barangBesarBiayaPerStop; }
-
     const j = hitungTotalJarak();
-    let h = d + (j > b ? (j - b) * k : 0);
+    const jarakBulat = Math.max(1, Math.ceil(j));
+    let h = 0, s = config.biayaPerStopTambahan, m = 0;
+
+    if (selectedLayanan === 'ojek') {
+      h = jarakBulat <= config.ojekBatasKmTarifDasar ? config.ojekTarifDasar : (jarakBulat * config.ojekTarifPerKm);
+      s = config.ojekBiayaPerStop;
+      m = config.ojekTarifMinimum;
+    }
+    else if (selectedLayanan === 'mobil') {
+      h = jarakBulat <= config.mobilBatasKmTarifDasar ? config.mobilTarifDasar : (jarakBulat * config.mobilTarifPerKm);
+      s = config.mobilBiayaPerStop;
+      m = config.mobilTarifMinimum;
+    }
+    else if (selectedLayanan === 'makanan') {
+      h = jarakBulat <= config.makananBatasKmTarifDasar ? config.makananTarifDasar : (jarakBulat * config.makananTarifPerKm);
+      s = config.makananBiayaPerStop;
+      m = config.makananTarifMinimum;
+    }
+    else if (selectedLayanan === 'paket') {
+      h = jarakBulat <= config.paketBatasKmTarifDasar ? config.paketTarifDasar : (jarakBulat * config.paketTarifPerKm);
+      s = config.paketBiayaPerStop;
+      m = config.paketTarifMinimum;
+    }
+    else {
+      h = jarakBulat <= config.barangBesarBatasKmTarifDasar ? config.barangBesarTarifDasar : (jarakBulat * config.barangBesarTarifPerKm);
+      s = config.barangBesarBiayaPerStop;
+      m = config.barangBesarTarifMinimum;
+    }
+
     return Math.max(h, m) + (stops.length > 1 ? (stops.length - 1) * s : 0);
   };
 
@@ -358,14 +378,16 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     if (!profile) return;
     setIsBooking(true);
     try {
-      const j = hitungTotalJarak(), h = hitungHarga();
-      console.log("Memulai proses pemesanan...", { selectedLayanan, h, j });
+      const jRaw = hitungTotalJarak();
+      const jBulat = Math.max(1, Math.ceil(jRaw));
+      const h = hitungHarga();
+      console.log("Memulai proses pemesanan...", { selectedLayanan, h, jBulat });
 
       const order = await OloluStore.buatPesanan({
         jenisLayanan: selectedLayanan,
         idPenumpang: profile.id,
         asalAlamat, asalLat, asalLng,
-        jarakKm: j,
+        jarakKm: jBulat,
         totalBayarAkhir: h,
         pembayaranTunai,
         tarifPerjalananMurni: h
@@ -567,7 +589,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
           <div className="flex justify-between items-center pt-3 border-t border-dashed">
             <div className="flex flex-col">
               <span className="text-xs font-bold text-gray-600">Estimasi Biaya Perjalanan:</span>
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Total Jarak: {hitungTotalJarak()} KM</span>
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Total Jarak: {Math.ceil(hitungTotalJarak())} KM</span>
             </div>
             <span className="text-lg font-black text-[#B8941F]">Rp {hitungHarga().toLocaleString('id-ID')}</span>
           </div>
