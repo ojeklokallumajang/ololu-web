@@ -69,6 +69,7 @@ export const DEFAULT_PENGATURAN_TARIF: PengaturanTarif = {
   biayaAdminPerjalanan: 1000,
   pengaliTarifPrioritas: 1.2,
   layananOjekAktif: true,
+  layananMobilAktif: true,
   layananMakananAktif: true,
   layananPaketAktif: true,
   layananBarangBesarAktif: true,

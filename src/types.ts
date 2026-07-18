@@ -236,6 +236,7 @@ export interface PengaturanTarif {
 
   // Saklar Layanan (Aktif/Nonaktif)
   layananOjekAktif: boolean;
+  layananMobilAktif: boolean;
   layananMakananAktif: boolean;
   layananPaketAktif: boolean;
   layananBarangBesarAktif: boolean;

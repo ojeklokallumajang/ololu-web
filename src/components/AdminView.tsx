@@ -743,7 +743,10 @@ export default function AdminView() {
                           <input type="number" value={tempConfig.mobilPersenJasa} onChange={(e)=>setTempConfig({...tempConfig, mobilPersenJasa: parseInt(e.target.value)})} className="w-full p-2.5 bg-blue-50 border border-blue-200 rounded-xl outline-none text-xs font-black text-blue-700" />
                        </div>
                     </div>
-                    {/* Reuse existing mobil active toggle if relevant */}
+                    <div className="flex items-center justify-between bg-blue-50 p-3 rounded-xl border border-blue-100 mt-2">
+                       <span className="text-[9px] font-bold text-blue-800 uppercase">Status Layanan Mobil</span>
+                       <input type="checkbox" checked={tempConfig.layananMobilAktif} onChange={(e)=>setTempConfig({...tempConfig, layananMobilAktif: e.target.checked})} className="w-4 h-4 rounded text-blue-600" />
+                    </div>
                  </div>
                )}
 
@@ -778,6 +781,10 @@ export default function AdminView() {
                           <label className="text-[8px] font-bold text-gray-400 uppercase">Potongan Jasa (%)</label>
                           <input type="number" value={tempConfig.makananPersenJasa} onChange={(e)=>setTempConfig({...tempConfig, makananPersenJasa: parseInt(e.target.value)})} className="w-full p-2.5 bg-amber-50 border border-amber-200 rounded-xl outline-none text-xs font-black text-amber-700" />
                        </div>
+                    </div>
+                    <div className="flex items-center justify-between bg-amber-50 p-3 rounded-xl border border-amber-100 mt-2">
+                       <span className="text-[9px] font-bold text-amber-800 uppercase">Status Layanan Makan</span>
+                       <input type="checkbox" checked={tempConfig.layananMakananAktif} onChange={(e)=>setTempConfig({...tempConfig, layananMakananAktif: e.target.checked})} className="w-4 h-4 rounded text-amber-600" />
                     </div>
                  </div>
                )}
@@ -814,6 +821,10 @@ export default function AdminView() {
                           <input type="number" value={tempConfig.paketPersenJasa} onChange={(e)=>setTempConfig({...tempConfig, paketPersenJasa: parseInt(e.target.value)})} className="w-full p-2.5 bg-indigo-50 border border-indigo-200 rounded-xl outline-none text-xs font-black text-indigo-700" />
                        </div>
                     </div>
+                    <div className="flex items-center justify-between bg-indigo-50 p-3 rounded-xl border border-indigo-100 mt-2">
+                       <span className="text-[9px] font-bold text-indigo-800 uppercase">Status Layanan Paket</span>
+                       <input type="checkbox" checked={tempConfig.layananPaketAktif} onChange={(e)=>setTempConfig({...tempConfig, layananPaketAktif: e.target.checked})} className="w-4 h-4 rounded text-indigo-600" />
+                    </div>
                  </div>
                )}
 
@@ -848,6 +859,10 @@ export default function AdminView() {
                           <label className="text-[8px] font-bold text-gray-400 uppercase">Potongan Jasa (%)</label>
                           <input type="number" value={tempConfig.barangBesarPersenJasa} onChange={(e)=>setTempConfig({...tempConfig, barangBesarPersenJasa: parseInt(e.target.value)})} className="w-full p-2.5 bg-purple-50 border border-purple-200 rounded-xl outline-none text-xs font-black text-purple-700" />
                        </div>
+                    </div>
+                    <div className="flex items-center justify-between bg-purple-50 p-3 rounded-xl border border-purple-100 mt-2">
+                       <span className="text-[9px] font-bold text-purple-800 uppercase">Status Layanan Logistik</span>
+                       <input type="checkbox" checked={tempConfig.layananBarangBesarAktif} onChange={(e)=>setTempConfig({...tempConfig, layananBarangBesarAktif: e.target.checked})} className="w-4 h-4 rounded text-purple-600" />
                     </div>
                  </div>
                )}

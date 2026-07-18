@@ -582,9 +582,11 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       </div>
       <nav className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t flex items-center px-6 z-50 max-w-[420px] mx-auto shadow-lg">
         <button onClick={() => setViewMode('home')} className="flex-1 flex flex-col items-center text-gray-400"><Home size={18} /><span className="text-[8px] font-bold">Beranda</span></button>
-        <button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="flex-1 flex flex-col items-center text-gray-400"><Bike size={18} /><span className="text-[8px] font-bold">Ojek</span></button>
+        {config.layananOjekAktif && (
+          <button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="flex-1 flex flex-col items-center text-gray-400"><Bike size={18} /><span className="text-[8px] font-bold">Ojek</span></button>
+        )}
         <button onClick={() => setViewMode('history')} className="flex-1 flex flex-col items-center text-gray-400"><History size={18} /><span className="text-[8px] font-bold">Riwayat</span></button>
-        <button className="flex-1 flex flex-col items-center text-[#046A38]"><User size={18} /><span className="text-[8px] font-bold">Profil</span></button>
+        <button onClick={() => setViewMode('profile')} className="flex-1 flex flex-col items-center text-gray-400"><User size={18} /><span className="text-[8px] font-bold">Profil</span></button>
       </nav>
     </div>
   );
@@ -609,7 +611,9 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       </div>
       <nav className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t flex items-center px-6 z-50 max-w-[420px] mx-auto shadow-lg">
         <button onClick={() => setViewMode('home')} className="flex-1 flex flex-col items-center text-gray-400"><Home size={18} /><span className="text-[8px] font-bold">Beranda</span></button>
-        <button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="flex-1 flex flex-col items-center text-gray-400"><Bike size={18} /><span className="text-[8px] font-bold">Ojek</span></button>
+        {config.layananOjekAktif && (
+          <button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="flex-1 flex flex-col items-center text-gray-400"><Bike size={18} /><span className="text-[8px] font-bold">Ojek</span></button>
+        )}
         <button className="flex-1 flex flex-col items-center text-[#046A38]"><History size={18} /><span className="text-[8px] font-bold">Riwayat</span></button>
         <button onClick={() => setViewMode('profile')} className="flex-1 flex flex-col items-center text-gray-400"><User size={18} /><span className="text-[8px] font-bold">Profil</span></button>
       </nav>
@@ -621,14 +625,29 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       <div className="p-5 text-left">
         <div className="bg-white p-6 rounded-[32px] border border-gray-150 shadow-sm space-y-4">
           <div className="flex justify-between items-start"><div><span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full uppercase">Halo 👋</span><h3 className="text-lg font-black mt-2">Sobat {profile?.nama}!</h3><p className="text-xs text-gray-500 leading-relaxed">Mau bepergian atau kirim barang di Lumajang hari ini?</p></div><span className="text-2xl">🛵</span></div>
-          <div className="pt-2 border-t space-y-2"><button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="w-full py-3.5 bg-emerald-600 text-white font-black rounded-2xl shadow-md uppercase text-xs tracking-wider border-b-4 border-emerald-800">Mulai Order Sekarang</button>
+          <div className="pt-2 border-t space-y-2">
+            <button
+              onClick={() => {
+                const firstActive = config.layananOjekAktif ? 'ojek' :
+                                   config.layananMakananAktif ? 'makanan' :
+                                   config.layananPaketAktif ? 'kirim' :
+                                   config.layananBarangBesarAktif ? 'wisata' : 'ojek';
+                selectSubLayanan(firstActive);
+                setViewMode('booking');
+              }}
+              className="w-full py-3.5 bg-emerald-600 text-white font-black rounded-2xl shadow-md uppercase text-xs tracking-wider border-b-4 border-emerald-800"
+            >
+              Mulai Order Sekarang
+            </button>
           {isSuperUser && <button onClick={() => onRoleChange('admin')} className="w-full py-3 bg-amber-500 text-[#046A38] font-black rounded-2xl shadow-md uppercase text-xs">Dashboard Admin</button>}</div>
         </div>
       </div>
       <div className="px-5"><LiveDriversMap /></div>
       <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[420px] bg-white border-t flex items-center justify-around h-16 z-[100] shadow-lg">
         <button onClick={() => setViewMode('home')} className="text-[#046A38] flex flex-col items-center"><Home size={20} /><span className="text-[8px] font-black">Beranda</span></button>
-        <button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="text-gray-400 flex flex-col items-center"><Bike size={20} /><span className="text-[8px] font-bold">Ojek</span></button>
+        {config.layananOjekAktif && (
+          <button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="text-gray-400 flex flex-col items-center"><Bike size={20} /><span className="text-[8px] font-bold">Ojek</span></button>
+        )}
         <button onClick={() => setViewMode('history')} className="text-gray-400 flex flex-col items-center"><History size={20} /><span className="text-[8px] font-bold">Riwayat</span></button>
         <button onClick={() => setViewMode('profile')} className="text-gray-400 flex flex-col items-center"><User size={20} /><span className="text-[8px] font-bold">Profil</span></button>
       </nav>
@@ -650,29 +669,42 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
         {/* PILIHAN KENDARAAN (MOTOR/MOBIL) */}
         {(subLayanan === 'ojek' || subLayanan === 'kirim') && (
            <div className="flex bg-white p-1 rounded-2xl border border-gray-150 shadow-sm gap-1">
-              <button
-                onClick={() => toggleKendaraan('motor')}
-                className={`flex-1 py-3 rounded-xl flex flex-col items-center justify-center transition-all ${pilihanKendaraan === 'motor' ? 'bg-[#E6F4EC] text-[#046A38] border-[#046A38] border shadow-sm' : 'text-gray-400'}`}
-              >
-                <Bike size={20} className={pilihanKendaraan === 'motor' ? 'animate-bounce' : ''} />
-                <span className="text-[9px] font-black uppercase mt-1">Ololu-Ride (Motor)</span>
-              </button>
-              <button
-                onClick={() => toggleKendaraan('mobil')}
-                className={`flex-1 py-3 rounded-xl flex flex-col items-center justify-center transition-all ${pilihanKendaraan === 'mobil' ? 'bg-[#E6F4EC] text-[#046A38] border-[#046A38] border shadow-sm' : 'text-gray-400'}`}
-              >
-                <Car size={20} className={pilihanKendaraan === 'mobil' ? 'animate-bounce' : ''} />
-                <span className="text-[9px] font-black uppercase mt-1">Ololu-Car (Mobil)</span>
-              </button>
+              {config.layananOjekAktif && (
+                <button
+                  onClick={() => toggleKendaraan('motor')}
+                  className={`flex-1 py-3 rounded-xl flex flex-col items-center justify-center transition-all ${pilihanKendaraan === 'motor' ? 'bg-[#E6F4EC] text-[#046A38] border-[#046A38] border shadow-sm' : 'text-gray-400'}`}
+                >
+                  <Bike size={20} className={pilihanKendaraan === 'motor' ? 'animate-bounce' : ''} />
+                  <span className="text-[9px] font-black uppercase mt-1">Ololu-Ride (Motor)</span>
+                </button>
+              )}
+              {config.layananMobilAktif && (
+                <button
+                  onClick={() => toggleKendaraan('mobil')}
+                  className={`flex-1 py-3 rounded-xl flex flex-col items-center justify-center transition-all ${pilihanKendaraan === 'mobil' ? 'bg-[#E6F4EC] text-[#046A38] border-[#046A38] border shadow-sm' : 'text-gray-400'}`}
+                >
+                  <Car size={20} className={pilihanKendaraan === 'mobil' ? 'animate-bounce' : ''} />
+                  <span className="text-[9px] font-black uppercase mt-1">Ololu-Car (Mobil)</span>
+                </button>
+              )}
            </div>
         )}
 
         <div className="grid grid-cols-6 gap-1 bg-white p-1 rounded-xl border border-gray-150 shadow-xs">
-          {['ojek', 'kirim', 'belanja', 'makanan', 'wisata', 'market'].map(s => (
-            <button key={s} onClick={() => selectSubLayanan(s as any)} className={`flex flex-col items-center py-2 rounded-lg transition-all ${subLayanan === s ? 'bg-[#E6F4EC] text-[#046A38] font-black' : 'text-gray-400'}`}>
-              <div className="text-[10px] font-bold">{s === 'ojek' ? '🛵' : s === 'kirim' ? '📦' : s === 'belanja' ? '🛒' : s === 'makanan' ? '🍔' : s === 'wisata' ? '🗺️' : '🏪'}</div>
-              <span className="text-[7px] uppercase tracking-tighter mt-1">{s}</span>
-            </button>
+          {[
+            { id: 'ojek', icon: '🛵', label: 'ojek', active: config.layananOjekAktif },
+            { id: 'kirim', icon: '📦', label: 'kirim', active: config.layananPaketAktif },
+            { id: 'belanja', icon: '🛒', label: 'belanja', active: config.layananMakananAktif },
+            { id: 'makanan', icon: '🍔', label: 'makanan', active: config.layananMakananAktif },
+            { id: 'wisata', icon: '🗺️', label: 'wisata', active: config.layananBarangBesarAktif },
+            { id: 'market', icon: '🏪', label: 'market', active: config.layananMakananAktif },
+          ].map(s => (
+            s.active && (
+              <button key={s.id} onClick={() => selectSubLayanan(s.id as any)} className={`flex flex-col items-center py-2 rounded-lg transition-all ${subLayanan === s.id ? 'bg-[#E6F4EC] text-[#046A38] font-black' : 'text-gray-400'}`}>
+                <div className="text-[10px] font-bold">{s.icon}</div>
+                <span className="text-[7px] uppercase tracking-tighter mt-1">{s.label}</span>
+              </button>
+            )
           ))}
         </div>
 
