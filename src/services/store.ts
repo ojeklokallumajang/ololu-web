@@ -12,7 +12,8 @@ import {
   LaporanDarurat,
   TransaksiDompet,
   LogAudit,
-  PengaturanTarif
+  PengaturanTarif,
+  ChatMessage
 } from '../types';
 import { ololuRealtime } from './supabaseClient';
 
@@ -532,6 +533,68 @@ export const OloluStore = {
   async savePengaturan(newCfg: PengaturanTarif, adminId: string, adminNama: string) {
     await getSupabase()!.from('system_settings').upsert({ key: 'global_config', value: newCfg });
     pengaturans = { ...newCfg };
+  },
+
+  async getChatMessages(pesananId: string): Promise<ChatMessage[]> {
+    const { data } = await getSupabase()!.from('chat_messages').select('*').eq('id_pesanan', pesananId).order('created_at', { ascending: true });
+    return (data || []).map(m => ({
+      id: m.id,
+      idPesanan: m.id_pesanan,
+      senderId: m.sender_id,
+      senderName: m.sender_name,
+      senderRole: m.sender_role,
+      message: m.message,
+      voiceData: m.voice_data,
+      timestamp: m.created_at
+    }));
+  },
+
+  async sendChatMessage(pesananId: string, senderId: string, senderName: string, senderRole: string, message: string, voiceData?: string) {
+    await getSupabase()!.from('chat_messages').insert({
+      id_pesanan: pesananId,
+      sender_id: senderId,
+      sender_name: senderName,
+      sender_role: senderRole,
+      message,
+      voice_data: voiceData
+    });
+    ololuRealtime.broadcastChatMessage(pesananId, { senderId, senderName, senderRole, message, voiceData, timestamp: new Date().toISOString() });
+  },
+
+  async simpanNotaToko(pesananId: string, stopId: string, namaToko: string, rincian: string, total: number, fotoBase64: string) {
+    const nota = {
+      nama_toko: namaToko,
+      rincian_barang: rincian,
+      total_toko: total,
+      foto_nota: fotoBase64,
+      waktu_dicatat: new Date().toISOString()
+    };
+    await getSupabase()!.from('order_stops').update({ nota }).eq('id', stopId);
+    ololuRealtime.broadcastTripUpdate(pesananId, { type: 'nota_update', stopId, nota });
+  },
+
+  async selesaikanPesanan(pesananId: string, finalOrderData: Pesanan) {
+    const { error } = await getSupabase()!.from('orders').update({
+      status: 'selesai',
+      waktu_selesai: new Date().toISOString(),
+      biaya_parkir_total: finalOrderData.biayaParkirTotal,
+      biaya_nota_total: finalOrderData.biayaNotaTotal,
+      total_bayar_akhir: finalOrderData.totalBayarAkhir
+    }).eq('id', pesananId);
+    if (!error) {
+      ololuRealtime.broadcastTripUpdate(pesananId, { type: 'status_update', status: 'selesai' });
+    }
+  },
+
+  async batalPesanan(pesananId: string, peran: string, alasan: string) {
+    await getSupabase()!.from('orders').update({ status: 'dibatalkan', waktu_dibatalkan: new Date().toISOString(), alasan_batal: alasan }).eq('id', pesananId);
+    ololuRealtime.broadcastTripUpdate(pesananId, { type: 'status_update', status: 'dibatalkan' });
+  },
+
+  async getSopirLogin(): Promise<DetailSopir | null> {
+    const sesi = await this.getSesi();
+    if (!sesi) return null;
+    return this.getSopir(sesi.userId);
   },
 
   getLocalOrderLock() { const stored = localStorage.getItem(ORDER_LOCK_KEY); return stored ? JSON.parse(stored) : null; },

@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { PeranPengguna } from '../types';
+import React, { useState, useEffect } from 'react';
+import { PeranPengguna, ProfilPengguna, DetailSopir } from '../types';
 import { OloluStore } from '../services/store';
 import { Bike, User, ShieldCheck, HelpCircle } from 'lucide-react';
 import OloluLogo from './OloluLogo';
@@ -15,8 +15,23 @@ interface NavbarProps {
 }
 
 export default function Navbar({ currentRole, onRoleChange }: NavbarProps) {
-  const profile = OloluStore.getProfilLogin();
-  const driver = OloluStore.getSopirLogin();
+  const [profile, setProfile] = useState<ProfilPengguna | null>(null);
+  const [driver, setDriver] = useState<DetailSopir | null>(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      const p = await OloluStore.getProfilLogin();
+      setProfile(p);
+      if (p) {
+        const d = await OloluStore.getSopirLogin();
+        setDriver(d);
+      }
+    };
+    loadData();
+    const unsub = OloluStore.subscribeToStore(loadData);
+    return () => unsub();
+  }, []);
+
   const isSuperUser = profile?.nomorHp === '6285156766317';
 
   return (

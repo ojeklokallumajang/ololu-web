@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { OloluStore, KOORDINAT_LUMAJANG } from '../services/store';
 import { ololuRealtime } from '../services/supabaseClient';
 import { GOOGLE_MAPS_KEY } from './SplashMapKey';
@@ -12,7 +12,8 @@ import {
   DetailSopir,
   Pesanan,
   TujuanStop,
-  TransaksiDompet
+  TransaksiDompet,
+  StatusPesanan
 } from '../types';
 import {
   APIProvider,
@@ -158,7 +159,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
         }
       },
       (err) => console.warn("Geo error:", err),
-      { enableHighAccuracy: true, distanceFilter: 10 }
+      { enableHighAccuracy: true }
     );
 
     return () => navigator.geolocation.clearWatch(watchId);
@@ -308,7 +309,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
     // STRATEGI IRIT: Jangan tulis ke DB sekarang. Cukup broadcast ke penumpang.
     setTimeout(() => {
       // Kunci UI Sopir secara lokal
-      OloluStore.setLocalOrderLock(orderId, 'sopir');
+      OloluStore.setLocalOrderLock({ orderId, role: 'sopir' });
 
       const order = realtimeOrderAlert || activeOrder; // Fallback jika refresh
       if (order) {
@@ -779,37 +780,38 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
         </button>
 
         {driverDetail.statusOnline && (
-          <div className="bg-white/10 p-3 rounded-xl flex items-center justify-between border border-white/10 text-xs transition-all">
-            <div className="flex items-center space-x-2">
-              <Radio size={14} className={`text-[#D4AF37] ${isAutobidActive ? 'animate-pulse' : ''}`} />
-              <div>
-                <span className="font-bold block">Autobid Real-Time WebSocket</span>
-                <span className="text-[9px] text-[#FAFBF9]/80 block">Otomatis terima order terdekat</span>
+          <>
+            <div className="bg-white/10 p-3 rounded-xl flex items-center justify-between border border-white/10 text-xs transition-all">
+              <div className="flex items-center space-x-2">
+                <Radio size={14} className={`text-[#D4AF37] ${isAutobidActive ? 'animate-pulse' : ''}`} />
+                <div>
+                  <span className="font-bold block">Autobid Real-Time WebSocket</span>
+                  <span className="text-[9px] text-[#FAFBF9]/80 block">Otomatis terima order terdekat</span>
+                </div>
               </div>
+              <button
+                onClick={() => setIsAutobidActive(!isAutobidActive)}
+                className={`px-3 py-1.5 rounded-lg font-black tracking-wider transition-all uppercase text-[9px] border ${
+                  isAutobidActive
+                    ? 'bg-[#FAFBF9] text-[#046A38] border-white hover:bg-[#E6F4EC]'
+                    : 'bg-white/10 text-white/80 border-white/20 hover:bg-white/20'
+                }`}
+              >
+                {isAutobidActive ? '⚡ AUTOBID' : '✋ MANUAL'}
+              </button>
             </div>
-            <button
-              onClick={() => setIsAutobidActive(!isAutobidActive)}
-              className={`px-3 py-1.5 rounded-lg font-black tracking-wider transition-all uppercase text-[9px] border ${
-                isAutobidActive 
-                  ? 'bg-[#FAFBF9] text-[#046A38] border-white hover:bg-[#E6F4EC]' 
-                  : 'bg-white/10 text-white/80 border-white/20 hover:bg-white/20'
-              }`}
-            >
-              {isAutobidActive ? '⚡ AUTOBID' : '✋ MANUAL'}
-            </button>
-          </div>
-          <div className="text-center mt-2">
-            <button
-              onClick={() => {
-                const testAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3');
-                testAudio.play().catch(() => alert("Aktifkan suara browser Anda!"));
-              }}
-              className="text-[8px] font-black text-[#F5E6A8] hover:text-white transition-all uppercase tracking-widest opacity-60 hover:opacity-100"
-            >
-              🔊 KLIK UNTUK TES SUARA NOTIFIKASI
-            </button>
-          </div>
-        </>
+            <div className="text-center mt-2">
+              <button
+                onClick={() => {
+                  const testAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3');
+                  testAudio.play().catch(() => alert("Aktifkan suara browser Anda!"));
+                }}
+                className="text-[8px] font-black text-[#F5E6A8] hover:text-white transition-all uppercase tracking-widest opacity-60 hover:opacity-100"
+              >
+                🔊 KLIK UNTUK TES SUARA NOTIFIKASI
+              </button>
+            </div>
+          </>
         )}
 
         {!driverDetail.statusOnline && (
@@ -1400,7 +1402,6 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
             )}
           </div>
         )}
-
       </div>
 
       {/* MODAL NOTIFIKASI PESANAN REAL-TIME */}

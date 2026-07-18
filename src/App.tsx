@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component, ReactNode } from 'react';
 import PassengerView from './components/PassengerView';
 import DriverView from './components/DriverView';
 import AdminView from './components/AdminView';
@@ -11,24 +11,34 @@ import { PeranPengguna } from './types';
 import { OloluStore } from './services/store';
 import { AlertTriangle, ShieldCheck, Camera, Upload, KeyRound } from 'lucide-react';
 
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  name: string;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: any;
+}
+
 // --- ROBUST ERROR BOUNDARY ---
-class SafeErrorBoundary extends React.Component<{children: React.ReactNode, name: string}, {hasError: boolean, error: any}> {
-  constructor(props: any) {
+class SafeErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null };
+    (this as any).state = { hasError: false, error: null };
   }
   static getDerivedStateFromError(error: any) { return { hasError: true, error }; }
   componentDidCatch(error: any, errorInfo: any) {
-    console.error(`[CRASH] ${this.props.name}:`, error, errorInfo);
+    console.error(`[CRASH] ${(this as any).props.name}:`, error, errorInfo);
   }
   render() {
-    if (this.state.hasError) {
+    if ((this as any).state.hasError) {
       return (
         <div className="p-10 text-center space-y-4 bg-white min-h-screen flex flex-col items-center justify-center">
           <AlertTriangle size={48} className="text-red-500 animate-bounce" />
-          <h2 className="font-black text-gray-800">Layar {this.props.name} Bermasalah</h2>
+          <h2 className="font-black text-gray-800">Layar {(this as any).props.name} Bermasalah</h2>
           <p className="text-[10px] text-gray-500 font-mono bg-gray-50 p-3 rounded-lg border max-w-xs break-all">
-            {this.state.error?.toString()}
+            {(this as any).state.error?.toString()}
           </p>
           <button onClick={() => window.location.reload()} className="px-6 py-3 bg-[#046A38] text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg">
             Muat Ulang Aplikasi
@@ -36,7 +46,7 @@ class SafeErrorBoundary extends React.Component<{children: React.ReactNode, name
         </div>
       );
     }
-    return this.props.children;
+    return (this as any).props.children;
   }
 }
 
