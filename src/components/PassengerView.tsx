@@ -299,14 +299,17 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
         const { latitude, longitude } = pos.coords;
         setStops([{
           id: 'stop-1',
-          alamat: `Lokasi Saya (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`,
+          alamat: `Rumah Anda (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`,
           lat: latitude,
           lng: longitude,
           items: []
         }]);
       });
+      setAsalAlamat('Pilih Restoran / Toko...');
+      setItemsAwal([]);
     } else {
        setStops([{ id: 'stop-1', alamat: 'Tentukan tujuan...', lat: -8.1385, lng: 113.2208, items: [] }]);
+       setAsalAlamat('Pilih lokasi penjemputan...');
     }
   };
 
@@ -362,7 +365,15 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   const handleAddStop = () => {
     if (stops.length >= 5) return;
     const newStop = { id: `stop-${Date.now()}`, alamat: 'Tentukan tujuan...', lat: -8.1385, lng: 113.2208, items: [] };
-    setStops([...stops, newStop]);
+
+    if (isFoodLike) {
+      // Insert BEFORE the last stop (which is the Home/Delivery address)
+      const newStops = [...stops];
+      newStops.splice(stops.length - 1, 0, newStop);
+      setStops(newStops);
+    } else {
+      setStops([...stops, newStop]);
+    }
   };
 
   const handleRemoveStop = (id: string) => {
@@ -668,7 +679,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
         <div className="bg-white p-4 rounded-2xl border shadow-sm space-y-4">
           <div className="space-y-2">
             <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">
-              {isFoodLike ? 'Pilih Restoran / Toko' : 'Lokasi Penjemputan'}
+              {isFoodLike ? 'Pilih Restoran / Toko 1' : 'Lokasi Penjemputan'}
             </label>
             <div className="relative">
               <input readOnly onClick={() => handleOpenMapPicker('asal')} value={asalAlamat} className="w-full p-2.5 bg-gray-50 border rounded-xl text-xs font-bold cursor-pointer" />
@@ -681,7 +692,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
                 <div className="flex space-x-1.5">
                   <input
                     type="text"
-                    placeholder="Nama Menu / Barang..."
+                    placeholder="Ketik Menu / Barang..."
                     value={activeItemStopId === 'asal' ? newItemName : ''}
                     onChange={(e) => { setActiveItemStopId('asal'); setNewItemName(e.target.value); }}
                     className="flex-1 p-2 bg-white border rounded-lg text-[10px]"
@@ -718,59 +729,68 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
           <div className="space-y-2 border-t pt-3">
             <div className="flex justify-between items-center">
               <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                {isFoodLike ? 'Alamat Pengantaran (Rumah Anda)' : 'Tujuan / Destinasi'}
+                {isFoodLike ? 'Titik Antar / Resto Lain' : 'Tujuan / Destinasi'}
               </label>
-              {!isFoodLike && <button onClick={handleAddStop} className="text-[#046A38] text-[9px] font-black uppercase bg-emerald-50 px-2 py-0.5 rounded-full">+ Tambah Stop</button>}
+              <button onClick={handleAddStop} className="text-[#046A38] text-[9px] font-black uppercase bg-emerald-50 px-2 py-0.5 rounded-full">+ Tambah Stop</button>
             </div>
 
-            {stops.map((s, idx) => (
-              <div key={s.id} className="space-y-2">
-                <div className="flex space-x-2 items-center">
-                  <div className="relative flex-1"><input readOnly onClick={() => handleOpenMapPicker(s.id)} value={s.alamat} className="w-full p-2.5 bg-gray-50 border rounded-xl text-xs cursor-pointer" /><MapPin size={12} className="absolute right-3 top-2.5 text-[#D4AF37]" /></div>
-                  {stops.length > 1 && !isFoodLike && <button onClick={() => handleRemoveStop(s.id)} className="p-2 text-red-500 bg-red-50 rounded-lg"><Trash2 size={14} /></button>}
-                </div>
+            {stops.map((s, idx) => {
+              const isLastStop = idx === stops.length - 1;
+              const stopLabel = isFoodLike
+                ? (isLastStop ? 'Alamat Pengantaran (Rumah Anda)' : `Pilih Restoran / Toko ${idx + 2}`)
+                : `Tujuan / Destinasi ${idx + 1}`;
+              const showItems = isFoodLike && !isLastStop;
 
-                {/* Kolom Input Item (Hanya untuk Belanja/Market Non-Food jika butuh banyak stop) */}
-                {(!isFoodLike && (subLayanan === 'belanja' || subLayanan === 'market')) && (
-                  <div className="ml-2 pl-4 border-l-2 border-gray-100 space-y-2">
-                    <div className="flex space-x-1.5">
-                      <input
-                        type="text"
-                        placeholder="Nama Menu / Barang..."
-                        value={activeItemStopId === s.id ? newItemName : ''}
-                        onChange={(e) => { setActiveItemStopId(s.id); setNewItemName(e.target.value); }}
-                        className="flex-1 p-2 bg-white border rounded-lg text-[10px]"
-                      />
-                      <input
-                        type="number"
-                        min="1"
-                        value={activeItemStopId === s.id ? newItemQty : '1'}
-                        onChange={(e) => { setActiveItemStopId(s.id); setNewItemQty(e.target.value); }}
-                        className="w-12 p-2 bg-white border rounded-lg text-[10px] text-center"
-                      />
-                      <button
-                        onClick={() => handleAddItem(s.id)}
-                        className="p-2 bg-[#046A38] text-white rounded-lg shadow-sm"
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
-
-                    {/* List Item yang sudah ditambah */}
-                    {s.items && s.items.length > 0 && (
-                      <div className="space-y-1">
-                        {s.items.map((it: any) => (
-                          <div key={it.id} className="bg-emerald-50/50 p-1.5 px-2.5 rounded-lg flex justify-between items-center border border-emerald-100/50 animate-in fade-in slide-in-from-left-2">
-                            <span className="text-[10px] font-bold text-emerald-800">{it.jumlah}x {it.namaBarang}</span>
-                            <button onClick={() => handleRemoveItem(s.id, it.id)} className="text-red-400 p-1"><X size={10} /></button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+              return (
+                <div key={s.id} className="space-y-2">
+                  <label className="text-[8px] font-bold text-gray-300 uppercase block ml-1">{stopLabel}</label>
+                  <div className="flex space-x-2 items-center">
+                    <div className="relative flex-1"><input readOnly onClick={() => handleOpenMapPicker(s.id)} value={s.alamat} className="w-full p-2.5 bg-gray-50 border rounded-xl text-xs cursor-pointer" /><MapPin size={12} className="absolute right-3 top-2.5 text-[#D4AF37]" /></div>
+                    {stops.length > 1 && <button onClick={() => handleRemoveStop(s.id)} className="p-2 text-red-500 bg-red-50 rounded-lg"><Trash2 size={14} /></button>}
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {/* Kolom Input Item (Hanya untuk Restoran tambahan) */}
+                  {showItems && (
+                    <div className="ml-2 pl-4 border-l-2 border-gray-100 space-y-2">
+                      <div className="flex space-x-1.5">
+                        <input
+                          type="text"
+                          placeholder="Nama Menu / Barang..."
+                          value={activeItemStopId === s.id ? newItemName : ''}
+                          onChange={(e) => { setActiveItemStopId(s.id); setNewItemName(e.target.value); }}
+                          className="flex-1 p-2 bg-white border rounded-lg text-[10px]"
+                        />
+                        <input
+                          type="number"
+                          min="1"
+                          value={activeItemStopId === s.id ? newItemQty : '1'}
+                          onChange={(e) => { setActiveItemStopId(s.id); setNewItemQty(e.target.value); }}
+                          className="w-12 p-2 bg-white border rounded-lg text-[10px] text-center"
+                        />
+                        <button
+                          onClick={() => handleAddItem(s.id)}
+                          className="p-2 bg-[#046A38] text-white rounded-lg shadow-sm"
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+
+                      {/* List Item yang sudah ditambah */}
+                      {s.items && s.items.length > 0 && (
+                        <div className="space-y-1">
+                          {s.items.map((it: any) => (
+                            <div key={it.id} className="bg-emerald-50/50 p-1.5 px-2.5 rounded-lg flex justify-between items-center border border-emerald-100/50 animate-in fade-in slide-in-from-left-2">
+                              <span className="text-[10px] font-bold text-emerald-800">{it.jumlah}x {it.namaBarang}</span>
+                              <button onClick={() => handleRemoveItem(s.id, it.id)} className="text-red-400 p-1"><X size={10} /></button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div className="flex justify-between items-center pt-3 border-t border-dashed">

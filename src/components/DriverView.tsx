@@ -97,6 +97,32 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
   const [isTogglingOnline, setIsTogglingOnline] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Income stats computation
+  const incomeStats = useMemo(() => {
+    const now = new Date();
+    const today = now.toLocaleDateString('id-ID');
+
+    // Start of week (Monday)
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const completed = historyOrders.filter(o => o.status === 'selesai');
+
+    const daily = completed.filter(o => new Date(o.waktuSelesai || o.waktuDibuat).toLocaleDateString('id-ID') === today)
+      .reduce((sum, o) => sum + o.totalBayarAkhir, 0);
+
+    const weekly = completed.filter(o => new Date(o.waktuSelesai || o.waktuDibuat) >= startOfWeek)
+      .reduce((sum, o) => sum + o.totalBayarAkhir, 0);
+
+    const monthly = completed.filter(o => new Date(o.waktuSelesai || o.waktuDibuat) >= startOfMonth)
+      .reduce((sum, o) => sum + o.totalBayarAkhir, 0);
+
+    return { daily, weekly, monthly };
+  }, [historyOrders]);
+
   const initDriver = async () => {
     const p = await OloluStore.getProfilLogin();
     setProfile(p);
@@ -1195,6 +1221,22 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
 
         {activeHistoryTab === 'finance' ? (
           <>
+            {/* PANEL PENDAPATAN RINGKAS */}
+            <div className="bg-[#046A38] p-4 rounded-2xl border-b-4 border-emerald-900 shadow-lg grid grid-cols-3 gap-2 text-white">
+              <div className="text-center space-y-1">
+                <span className="text-[8px] font-black uppercase opacity-70 block">Hari Ini</span>
+                <p className="text-xs font-black">Rp {incomeStats.daily.toLocaleString('id-ID')}</p>
+              </div>
+              <div className="text-center space-y-1 border-x border-white/10">
+                <span className="text-[8px] font-black uppercase opacity-70 block">Minggu Ini</span>
+                <p className="text-xs font-black">Rp {incomeStats.weekly.toLocaleString('id-ID')}</p>
+              </div>
+              <div className="text-center space-y-1">
+                <span className="text-[8px] font-black uppercase opacity-70 block">Bulan Ini</span>
+                <p className="text-xs font-black">Rp {incomeStats.monthly.toLocaleString('id-ID')}</p>
+              </div>
+            </div>
+
             {/* DOMPET BOX */}
             <div className="bg-white p-5 rounded-2xl border-t-2 border-[#D4AF37] shadow-xs text-left space-y-4">
               <div className="flex justify-between items-center border-b pb-3">
