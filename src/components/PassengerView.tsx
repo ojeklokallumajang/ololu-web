@@ -68,79 +68,34 @@ interface PassengerViewProps {
   lockedOrderId?: string;
 }
 
-const LUMAJANG_HOTSPOTS: any[] = [];
-
 function MapRecenterController({ lat, lng }: { lat: number; lng: number }) {
   const map = useMap();
-  useEffect(() => {
-    if (map) map.panTo({ lat, lng });
-  }, [map, lat, lng]);
+  useEffect(() => { if (map) map.panTo({ lat, lng }); }, [map, lat, lng]);
   return null;
 }
 
-function MapPickerSearch({
-  query, setQuery, onSelectSuggestion, suggestions, setSuggestions
-}: {
-  query: string; setQuery: (q: string) => void; onSelectSuggestion: (s: any) => void; suggestions: any[]; setSuggestions: (s: any[]) => void;
-}) {
-  const mapsLib = useMapsLibrary('places');
+function MapPickerSearch({ query, setQuery, onSelectSuggestion, suggestions, setSuggestions, config }: any) {
   const [isSearching, setIsSearching] = useState(false);
-  const [sessionToken, setSessionToken] = useState<google.maps.places.AutocompleteSessionToken | null>(null);
-
-  useEffect(() => {
-    if (window.google && window.google.maps && window.google.maps.places) {
-      setSessionToken(new google.maps.places.AutocompleteSessionToken());
-    }
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      handleSearch();
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [query]);
+  const [sessionToken, setSessionToken] = useState<any>(null);
+  useEffect(() => { if (window.google) setSessionToken(new google.maps.places.AutocompleteSessionToken()); }, []);
+  useEffect(() => { const t = setTimeout(handleSearch, 500); return () => clearTimeout(t); }, [query]);
 
   const handleSearch = () => {
-    if (!query.trim()) return;
-    const coordRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
-    const match = query.match(coordRegex);
-    if (match) {
-      const lat = parseFloat(match[1]);
-      const lng = parseFloat(match[2]);
-      onSelectSuggestion({ name: "Lokasi dari Link", description: `Koordinat: ${lat.toFixed(5)}, ${lng.toFixed(5)}`, lat, lng });
-      setQuery(''); setSuggestions([]); return;
-    }
-    const queryRegex = /query=(-?\d+\.\d+),(-?\d+\.\d+)/;
-    const qMatch = query.match(queryRegex);
-    if (qMatch) {
-       const lat = parseFloat(qMatch[1]);
-       const lng = parseFloat(qMatch[2]);
-       onSelectSuggestion({ name: "Lokasi dari Share Link", description: `Koordinat: ${lat.toFixed(5)}, ${lng.toFixed(5)}`, lat, lng });
-       setQuery(''); setSuggestions([]); return;
-    }
-    if (query.length < 3) { setSuggestions([]); return; }
-    if (window.google && window.google.maps && window.google.maps.places) {
+    if (!query.trim() || query.length < 3) { setSuggestions([]); return; }
+    if (window.google) {
       setIsSearching(true);
-      const service = new google.maps.places.AutocompleteService();
-      service.getPlacePredictions({
-        input: query, sessionToken: sessionToken || undefined, componentRestrictions: { country: 'id' },
+      new google.maps.places.AutocompleteService().getPlacePredictions({
+        input: query, sessionToken, componentRestrictions: { country: 'id' },
         locationRestriction: { north: -7.9, south: -8.3, east: 113.4, west: 113.1 }
-      }, (predictions, status) => {
-        setIsSearching(false);
-        if (status === google.maps.places.PlacesServiceStatus.OK && predictions) {
-          setSuggestions(predictions.map(p => ({ id: p.place_id, name: p.structured_formatting.main_text, description: p.description, isPrediction: true })));
-        } else setSuggestions([]);
-      });
+      }, (p, s) => { setIsSearching(false); if (s === 'OK' && p) setSuggestions(p.map(x => ({ id: x.place_id, name: x.structured_formatting.main_text, description: x.description, isPrediction: true }))); });
     }
   };
 
   const handleSelect = (s: any) => {
     if (s.isPrediction && window.google) {
-      const div = document.createElement('div');
-      const service = new google.maps.places.PlacesService(div);
-      service.getDetails({ placeId: s.id, fields: ['geometry', 'formatted_address'], sessionToken: sessionToken || undefined }, (place, status) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
-          onSelectSuggestion({ name: s.name, description: place.formatted_address || s.description, lat: place.geometry.location.lat(), lng: place.geometry.location.lng() });
+      new google.maps.places.PlacesService(document.createElement('div')).getDetails({ placeId: s.id, fields: ['geometry', 'formatted_address'], sessionToken }, (p, st) => {
+        if (st === 'OK' && p?.geometry?.location) {
+          onSelectSuggestion({ name: s.name, description: p.formatted_address, lat: p.geometry.location.lat(), lng: p.geometry.location.lng() });
           setSessionToken(new google.maps.places.AutocompleteSessionToken());
         }
       });
@@ -148,76 +103,29 @@ function MapPickerSearch({
   };
 
   return (
-    <div className="space-y-2">
-      <div className="relative">
-        <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari di Lumajang..." className="w-full p-3 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-2xl text-sm font-bold outline-none" />
-        <div className="absolute right-4 top-3 text-gray-400">{isSearching ? <div className="w-4 h-4 border-2 border-t-[#046A38] rounded-full animate-spin"></div> : <Search size={18} />}</div>
-      </div>
-      {suggestions.length > 0 && (
-        <div className="max-h-60 overflow-y-auto border-2 border-gray-100 rounded-2xl bg-white shadow-xl divide-y">
-          {suggestions.map((s, idx) => (<button key={idx} onClick={() => handleSelect(s)} className="w-full text-left p-3.5 hover:bg-emerald-50 flex items-start space-x-3 transition-colors"><div className="bg-emerald-100 p-2 rounded-xl text-[#046A38]"><MapPin size={16} /></div><div className="flex-1 min-w-0"><span className="font-black text-gray-800 block text-xs truncate">{s.name}</span><span className="text-[10px] text-gray-500 truncate block">{s.description}</span></div></button>))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function LiveDriversMap() {
-  const [drivers, setDrivers] = useState<any[]>([]);
-  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
-  const [config, setConfig] = useState<any>(null);
-
-  useEffect(() => {
-    const unsubscribe = ololuRealtime.subscribeToDriversOnline((state) => {
-      const active: any[] = [];
-      Object.keys(state).forEach(id => {
-        const p = state[id]?.[0];
-        if (p?.lat && p?.lng) active.push({ id, nama: p.nama, lat: p.lat, lng: p.lng });
-      });
-      setDrivers(active);
-    });
-    OloluStore.getPengaturan().then(setConfig);
-    const watchId = navigator.geolocation.watchPosition((pos) => setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude }), null, { enableHighAccuracy: true });
-    return () => { unsubscribe(); navigator.geolocation.clearWatch(watchId); };
-  }, []);
-
-  return (
-    <div className="bg-white p-4 rounded-3xl border border-gray-150 shadow-sm space-y-3">
-      <div className="flex justify-between items-center"><div><h3 className="text-sm font-black">Driver Terdekat</h3></div><div className="bg-[#E6F4EC] px-2.5 py-1 rounded-full text-[#034F2A] text-[10px] font-black">🛵 {drivers.length} Online</div></div>
-      <div className="h-48 rounded-2xl overflow-hidden border bg-gray-50 relative">
-        <APIProvider apiKey={config?.googleMapsKey || GOOGLE_MAPS_KEY}>
-          <Map defaultCenter={KOORDINAT_LUMAJANG} center={userLoc || KOORDINAT_LUMAJANG} defaultZoom={14} mapId="LIVE_MAP" disableDefaultUI>
-            {userLoc && <AdvancedMarker position={userLoc}><Pin background="#046A38" scale={0.8} /></AdvancedMarker>}
-            {drivers.map(d => (<AdvancedMarker key={d.id} position={{ lat: d.lat, lng: d.lng }}><div className="bg-white text-[14px] p-1 rounded-full shadow border-2 border-[#0A8A4E] w-7 h-7 flex items-center justify-center">🛵</div></AdvancedMarker>))}
-          </Map>
-        </APIProvider>
-      </div>
+    <div className="space-y-2 text-left">
+      <div className="relative"><input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari lokasi di Lumajang..." className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-2xl text-sm font-bold outline-none" /><div className="absolute right-4 top-4 text-gray-400">{isSearching ? <div className="w-4 h-4 border-2 border-t-[#046A38] rounded-full animate-spin"></div> : <Search size={20} />}</div></div>
+      {suggestions.length > 0 && (<div className="max-h-60 overflow-y-auto border-2 border-gray-100 rounded-2xl bg-white shadow-2xl divide-y">{suggestions.map((s, i) => (<button key={i} onClick={() => handleSelect(s)} className="w-full text-left p-4 hover:bg-emerald-50 flex items-start space-x-3"><div className="bg-emerald-100 p-2 rounded-xl text-[#046A38]"><MapPin size={18} /></div><div className="flex-1 min-w-0"><span className="font-black text-gray-800 block text-xs truncate">{s.name}</span><span className="text-[10px] text-gray-500 truncate block">{s.description}</span></div></button>))}</div>)}
     </div>
   );
 }
 
 export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChange, lockedOrderId }: PassengerViewProps) {
   const [profile, setProfile] = useState<any>(null);
-  const isSuperUser = profile?.nomorHp === '6285156766317';
   const [config, setConfig] = useState<any>(null);
   const [activeOrder, setActiveOrder] = useState<Pesanan | null>(null);
   const [driverLoc, setDriverLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [historyOrders, setHistoryOrders] = useState<Pesanan[]>([]);
   const [viewMode, setViewMode] = useState<'home' | 'booking' | 'history' | 'profile'>('home');
   const [subLayanan, setSubLayanan] = useState<'ojek' | 'kirim' | 'belanja' | 'makanan' | 'wisata' | 'market'>('ojek');
-  const [pilihanKendaraan, setPilihanKendaraan] = useState<'motor' | 'mobil'>('motor');
   const [selectedLayanan, setSelectedLayanan] = useState<'ojek' | 'makanan' | 'paket' | 'barang_besar' | 'mobil'>('ojek');
   const [asalAlamat, setAsalAlamat] = useState('Pilih lokasi penjemputan...');
   const [asalLat, setAsalLat] = useState(KOORDINAT_LUMAJANG.lat);
   const [asalLng, setAsalLng] = useState(KOORDINAT_LUMAJANG.lng);
-  const [pembayaranTunai, setPembayaranTunai] = useState(true);
   const [stops, setStops] = useState<any[]>([{ id: 'stop-1', alamat: 'Tentukan tujuan...', lat: -8.1385, lng: 113.2208, items: [] }]);
+  const [pembayaranTunai, setPembayaranTunai] = useState(true);
+  const [routeDistance, setRouteDistance] = useState<number>(0);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [routeDistance, setRouteDistance] = useState<number | null>(null);
-  const [newItemName, setNewItemName] = useState('');
-  const [newItemQty, setNewItemQty] = useState('1');
-  const [activeItemStopId, setActiveItemStopId] = useState<string | null>(null);
-  const [itemsAwal, setItemsAwal] = useState<any[]>([]);
   const [mapPickerTarget, setMapPickerTarget] = useState<'asal' | string | null>(null);
   const [tempLat, setTempLat] = useState(KOORDINAT_LUMAJANG.lat);
   const [tempLng, setTempLng] = useState(KOORDINAT_LUMAJANG.lng);
@@ -226,164 +134,102 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   const [suggestions, setSuggestions] = useState<any[]>([]);
 
   const mapsLib = useMapsLibrary('routes');
-
   useEffect(() => {
     if (!mapsLib || !asalLat || stops.length === 0) return;
-    const directionsService = new google.maps.DirectionsService();
-    directionsService.route({
-      origin: { lat: asalLat, lng: asalLng },
-      destination: { lat: stops[stops.length-1].lat, lng: stops[stops.length-1].lng },
-      waypoints: stops.slice(0,-1).map(s => ({ location: { lat: s.lat, lng: s.lng }, stopover: true })),
-      travelMode: google.maps.TravelMode.DRIVING,
-    }, (result, status) => {
-      if (status === google.maps.DirectionsStatus.OK && result?.routes[0]?.legs) {
-        let total = 0; result.routes[0].legs.forEach(leg => total += leg.distance?.value || 0);
-        setRouteDistance(total / 1000);
-      }
+    const ds = new google.maps.DirectionsService();
+    ds.route({ origin: { lat: asalLat, lng: asalLng }, destination: { lat: stops[stops.length-1].lat, lng: stops[stops.length-1].lng }, waypoints: stops.slice(0,-1).map(s=>({location:{lat:s.lat, lng:s.lng}, stopover:true})), travelMode: google.maps.TravelMode.DRIVING }, (res, st) => {
+      if (st === 'OK' && res?.routes[0]?.legs) { let t = 0; res.routes[0].legs.forEach(l => t += l.distance?.value || 0); setRouteDistance(t/1000); }
     });
   }, [mapsLib, asalLat, asalLng, stops]);
 
   useEffect(() => {
     const init = async () => {
-      try {
-        const p = await OloluStore.getProfilLogin(); if (!p) return;
-        setProfile(p);
-        const cfg = await OloluStore.getPengaturan(); setConfig(cfg);
-        const orders = await OloluStore.getAllPesanan(); setHistoryOrders(orders.filter(o => o.idPenumpang === p.id));
-        if (lockedOrderId) { const order = await OloluStore.getPesananById(lockedOrderId); if (order) { setActiveOrder(order); ololuRealtime.requestStateSync(lockedOrderId); } }
-      } catch (err) { console.error(err); }
+      const p = await OloluStore.getProfilLogin(); if (!p) return; setProfile(p);
+      const c = await OloluStore.getPengaturan(); setConfig(c);
+      const orders = await OloluStore.getAllPesanan(); setHistoryOrders(orders.filter(o => o.idPenumpang === p.id));
+      if (lockedOrderId) { const o = await OloluStore.getPesananById(lockedOrderId); if (o) { setActiveOrder(o); ololuRealtime.requestStateSync(lockedOrderId); } }
     };
-    init(); const unsub = OloluStore.subscribeToStore(init); return () => unsub();
+    init(); const u = OloluStore.subscribeToStore(init); return () => u();
   }, [lockedOrderId]);
 
   useEffect(() => {
     if (!activeOrder) return;
-    const unsub = ololuRealtime.subscribeToTrip(activeOrder.id, (data) => {
-      if (data.type === 'location') setDriverLoc(data.coords);
-      else if (data.type === 'accepted') { new Audio('https://assets.mixkit.co/active_storage/sfx/1360/1360-preview.mp3').play().catch(()=>null); setActiveOrder(prev => prev ? ({ ...prev, status: 'sopir_ditemukan', idSopir: data.driver.id, namaSopir: data.driver.nama, platNomorSopir: data.driver.platNomor }) : null); }
-      else if (data.type === 'status_update') { setActiveOrder(prev => prev ? ({ ...prev, status: data.status }) : null); if (data.status === 'selesai') OloluStore.setLocalOrderLock(null); }
-      else if (data.type === 'nota_update') setActiveOrder(prev => prev ? ({ ...prev, daftarTujuan: prev.daftarTujuan.map(s => s.id === data.stopId ? { ...s, nota: data.nota } : s) }) : null);
-      else if (data.type === 'nota_awal_update') setActiveOrder(prev => prev ? ({ ...prev, notaAwal: data.nota }) : null);
+    const u = ololuRealtime.subscribeToTrip(activeOrder.id, (d) => {
+      if (d.type === 'location') setDriverLoc(d.coords);
+      else if (d.type === 'accepted') { new Audio('https://assets.mixkit.co/active_storage/sfx/1360/1360-preview.mp3').play().catch(()=>null); setActiveOrder(prev => prev ? ({ ...prev, status: 'sopir_ditemukan', idSopir: d.driver.id, namaSopir: d.driver.nama, platNomorSopir: d.driver.platNomor }) : null); }
+      else if (d.type === 'status_update') { setActiveOrder(prev => prev ? ({ ...prev, status: d.status }) : null); if (d.status === 'selesai') OloluStore.setLocalOrderLock(null); }
     });
-    return () => unsub();
+    return () => u();
   }, [activeOrder?.id]);
 
-  const hitungTotalJarak = () => routeDistance || 1;
-
   const getTarifBreakdown = () => {
-    if (!config) return { base: 0, perKm: 0, min: 0, multiStop: 0, total: 0, commission: 10 };
-    const j = hitungTotalJarak(); const jarakBulat = Math.max(1, Math.ceil(j));
+    if (!config) return { total: 0, commission: 10 };
+    const j = Math.ceil(routeDistance || 1);
     let h = 0, s = config.biayaPerStopTambahan, m = 0, perKm = 0, base = 0, comm = 10;
-    if (selectedLayanan === 'ojek') { base = config.ojekTarifDasar; perKm = config.ojekTarifPerKm; h = jarakBulat <= config.ojekBatasKmTarifDasar ? base : (jarakBulat * perKm); s = config.ojekBiayaPerStop; m = config.ojekTarifMinimum; comm = config.ojekPersenJasa; }
-    else if (selectedLayanan === 'mobil') { base = config.mobilTarifDasar; perKm = config.mobilTarifPerKm; h = jarakBulat <= config.mobilBatasKmTarifDasar ? base : (jarakBulat * perKm); s = config.mobilBiayaPerStop; m = config.mobilTarifMinimum; comm = config.mobilPersenJasa; }
-    else if (selectedLayanan === 'makanan') { base = config.makananTarifDasar; perKm = config.makananTarifPerKm; h = jarakBulat <= config.makananBatasKmTarifDasar ? base : (jarakBulat * perKm); s = config.makananBiayaPerStop; m = config.makananTarifMinimum; comm = config.makananPersenJasa; }
-    else if (selectedLayanan === 'paket') { base = config.paketTarifDasar; perKm = config.paketTarifPerKm; h = jarakBulat <= config.paketBatasKmTarifDasar ? base : (jarakBulat * perKm); s = config.paketBiayaPerStop; m = config.paketTarifMinimum; comm = config.paketPersenJasa; }
-    else { base = config.barangBesarTarifDasar; perKm = config.barangBesarTarifPerKm; h = jarakBulat <= config.barangBesarBatasKmTarifDasar ? base : (jarakBulat * perKm); s = config.barangBesarBiayaPerStop; m = config.barangBesarTarifMinimum; comm = config.barangBesarPersenJasa; }
-    const multiStop = (stops.length > 1 ? (stops.length - 1) * s : 0); const murni = Math.max(h, m);
-    return { base, perKm, min: m, multiStop, commission: comm, total: murni + multiStop };
+    if (selectedLayanan === 'ojek') { base = config.ojekTarifDasar; perKm = config.ojekTarifPerKm; h = j <= config.ojekBatasKmTarifDasar ? base : (j * perKm); s = config.ojekBiayaPerStop; m = config.ojekTarifMinimum; comm = config.ojekPersenJasa; }
+    else if (selectedLayanan === 'mobil') { base = config.mobilTarifDasar; perKm = config.mobilTarifPerKm; h = j <= config.mobilBatasKmTarifDasar ? base : (j * perKm); s = config.mobilBiayaPerStop; m = config.mobilTarifMinimum; comm = config.mobilPersenJasa; }
+    else if (selectedLayanan === 'makanan') { base = config.makananTarifDasar; perKm = config.makananTarifPerKm; h = j <= config.makananBatasKmTarifDasar ? base : (j * perKm); s = config.makananBiayaPerStop; m = config.makananTarifMinimum; comm = config.makananPersenJasa; }
+    else if (selectedLayanan === 'paket') { base = config.paketTarifDasar; perKm = config.paketTarifPerKm; h = j <= config.paketBatasKmTarifDasar ? base : (j * perKm); s = config.paketBiayaPerStop; m = config.paketTarifMinimum; comm = config.paketPersenJasa; }
+    else { base = config.barangBesarTarifDasar; perKm = config.barangBesarTarifPerKm; h = j <= config.barangBesarBatasKmTarifDasar ? base : (j * perKm); s = config.barangBesarBiayaPerStop; m = config.barangBesarTarifMinimum; comm = config.barangBesarPersenJasa; }
+    const multi = (stops.length > 1 ? (stops.length - 1) * s : 0);
+    return { total: Math.max(h, m) + multi, commission: comm, base, perKm, min: m, multi };
   };
 
-  const liveTotal = useMemo(() => {
-    if (!activeOrder || !config) return 0;
-    const totalParkir = activeOrder.daftarTujuan.reduce((sum, s) => sum + (s.pilihanParkir === 'parkir_biasa' ? config.biayaParkirBiasa : s.pilihanParkir === 'parkir_pasar' ? config.biayaParkirPasar : 0), 0);
-    const totalNota = (activeOrder.notaAwal?.totalToko || 0) + activeOrder.daftarTujuan.reduce((sum, s) => sum + (s.nota?.totalToko || 0), 0);
-    return activeOrder.totalBayarAkhir + totalParkir + totalNota;
-  }, [activeOrder, config]);
-
-  const selectSubLayanan = (sub: any) => {
-    setSubLayanan(sub);
-    if (sub === 'ojek') setSelectedLayanan(pilihanKendaraan === 'mobil' ? 'mobil' : 'ojek');
-    else if (sub === 'kirim') setSelectedLayanan('paket');
-    else if (sub === 'wisata') setSelectedLayanan('barang_besar');
-    else setSelectedLayanan('makanan');
-    if (sub === 'makanan' || sub === 'belanja' || sub === 'market') {
-      navigator.geolocation.getCurrentPosition((pos) => setStops([{ id: 'stop-1', alamat: `Rumah (${pos.coords.latitude.toFixed(5)})`, lat: pos.coords.latitude, lng: pos.coords.longitude, items: [] }]));
-      setAsalAlamat('Pilih Toko...'); setItemsAwal([]);
-    } else { setStops([{ id: 'stop-1', alamat: 'Tentukan tujuan...', lat: -8.1385, lng: 113.2208, items: [] }]); setAsalAlamat('Pilih penjemputan...'); }
-  };
+  const handleAddStop = () => { if (stops.length < 5) setStops([...stops, { id: `stop-${Date.now()}`, alamat: 'Tentukan tujuan...', lat: KOORDINAT_LUMAJANG.lat, lng: KOORDINAT_LUMAJANG.lng, items: [] }]); else alert("Maksimal 5 tujuan!"); };
+  const handleRemoveStop = (id: string) => { if (stops.length > 1) setStops(stops.filter(s => s.id !== id)); };
 
   const handlePesan = async () => {
-    if (!profile) return; const breakdown = getTarifBreakdown();
-    const order = await OloluStore.buatPesanan({
-      jenisLayanan: selectedLayanan, idPenumpang: profile.id, asalAlamat, asalLat, asalLng, jarakKm: Math.ceil(hitungTotalJarak()), itemsAwal,
-      tarifDasar: breakdown.base, tarifPerKm: breakdown.perKm, tarifMinimum: breakdown.min, tambahanTujuan: breakdown.multiStop,
-      biayaLayananPersen: breakdown.commission, totalBayarAkhir: breakdown.total, pembayaranTunai, tarifPerjalananMurni: breakdown.total - breakdown.multiStop
+    if (!profile) return; const b = getTarifBreakdown();
+    const o = await OloluStore.buatPesanan({
+      jenisLayanan: selectedLayanan, idPenumpang: profile.id, asalAlamat, asalLat, asalLng, jarakKm: Math.ceil(routeDistance || 1),
+      tarifDasar: b.base, tarifPerKm: b.perKm, tarifMinimum: b.min, tambahanTujuan: b.multi, biayaLayananPersen: b.commission, totalBayarAkhir: b.total, pembayaranTunai, tarifPerjalananMurni: b.total - b.multi
     }, stops.map((s, i) => ({ ...s, urutan: i + 1 })));
-    if (order) { OloluStore.setLocalOrderLock({ orderId: order.id, role: 'penumpang' }); setActiveOrder(order as any); }
+    if (o) { OloluStore.setLocalOrderLock({ orderId: o.id, role: 'penumpang' }); setActiveOrder(o as any); }
   };
 
   if (activeOrder) return (
     <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen text-left">
-      <div className="bg-[#046A38] text-white p-4 text-center border-b-2 border-[#D4AF37] sticky top-0 z-40">
-        <p className="text-[10px] font-bold text-[#F5E6A8]">{activeOrder.nomorPesanan}</p>
-        <h2 className="text-lg font-bold uppercase">{activeOrder.status?.replace('_',' ')}</h2>
-      </div>
-      <div className="w-full h-72 border-b">
-        <APIProvider apiKey={config?.googleMapsKey || GOOGLE_MAPS_KEY}>
-          <Map defaultCenter={{ lat: activeOrder.asalLat, lng: activeOrder.asalLng }} defaultZoom={13} mapId="ORDER_MAP">
-            <MapDirections origin={{ lat: activeOrder.asalLat, lng: activeOrder.asalLng }} destination={{ lat: stops[stops.length-1].lat, lng: stops[stops.length-1].lng }} waypoints={activeOrder.daftarTujuan.slice(0,-1).map(s=>({ location:{lat:s.lat, lng:s.lng}, stopover:true }))} />
-            <AdvancedMarker position={{ lat: activeOrder.asalLat, lng: activeOrder.asalLng }}><Pin background="#046A38" /></AdvancedMarker>
-            {activeOrder.daftarTujuan.map((st, idx) => (<AdvancedMarker key={st.id} position={{ lat: st.lat, lng: st.lng }}><Pin background="#D4AF37" glyphText={(idx+1).toString()} /></AdvancedMarker>))}
-            {driverLoc && <AdvancedMarker position={driverLoc}><div className="text-2xl">🛵</div></AdvancedMarker>}
-          </Map>
-        </APIProvider>
-      </div>
-      <div className="p-4 space-y-4">
-        <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-[#D4AF37]"><span className="text-[10px] text-gray-400 font-bold uppercase">Tagihan Anda</span><p className="text-2xl font-black text-[#B8941F]">Rp {liveTotal.toLocaleString('id-ID')}</p></div>
-        {activeOrder.namaSopir && <div className="bg-white p-4 rounded-xl border flex justify-between"><div><h4 className="text-xs font-bold text-gray-400 uppercase">Driver</h4><h3 className="text-sm font-bold">{activeOrder.namaSopir}</h3></div><div className="flex space-x-2"><button onClick={() => setIsChatOpen(true)} className="p-2 bg-emerald-50 text-[#046A38] rounded-full"><MessageCircle size={20} /></button><a href={`tel:${activeOrder.nomorHpSopir}`} className="p-2 bg-emerald-50 text-[#046A38] rounded-full"><Phone size={20} /></a></div></div>}
-        <button onClick={() => OloluStore.tambahEmergency(activeOrder.id, profile.nama, profile.nomorHp, 'penumpang', 0, 0)} className="w-full py-3 bg-red-600 text-white font-black rounded-xl text-xs">🚨 SOS</button>
-        {activeOrder.status === 'selesai' && <div className="bg-white p-6 rounded-2xl border shadow-xl text-center space-y-4"><h2>🎉 SELESAI!</h2><button onClick={() => setActiveOrder(null)} className="w-full py-3 bg-[#046A38] text-white rounded-xl font-bold">Tutup</button></div>}
-      </div>
+      <div className="bg-[#046A38] text-white p-5 text-center border-b-2 border-[#D4AF37] sticky top-0 z-40 shadow-lg"><p className="text-[10px] font-black text-[#F5E6A8] tracking-widest">{activeOrder.nomorPesanan}</p><h2 className="text-lg font-black uppercase tracking-tighter">{activeOrder.status?.replace('_',' ')}</h2></div>
+      <div className="h-80 w-full border-b shadow-inner"><APIProvider apiKey={config?.googleMapsKey || GOOGLE_MAPS_KEY}><Map defaultCenter={{ lat: activeOrder.asalLat, lng: activeOrder.asalLng }} defaultZoom={14} mapId="ORDER_MAP_PASSENGER"><MapDirections origin={{ lat: activeOrder.asalLat, lng: activeOrder.asalLng }} destination={{ lat: activeOrder.daftarTujuan[activeOrder.daftarTujuan.length-1].lat, lng: activeOrder.daftarTujuan[activeOrder.daftarTujuan.length-1].lng }} waypoints={activeOrder.daftarTujuan.slice(0,-1).map(s=>({location:{lat:s.lat,lng:s.lng},stopover:true}))} /><AdvancedMarker position={{ lat: activeOrder.asalLat, lng: activeOrder.asalLng }}><Pin background="#046A38" /></AdvancedMarker>{activeOrder.daftarTujuan.map((st, idx) => (<AdvancedMarker key={st.id} position={{ lat: st.lat, lng: st.lng }}><Pin background="#D4AF37" glyphText={(idx+1).toString()} /></AdvancedMarker>))}{driverLoc && <AdvancedMarker position={driverLoc}><div className="text-3xl animate-bounce">🛵</div></AdvancedMarker>}</Map></APIProvider></div>
+      <div className="p-5 space-y-5"><div className="bg-white p-5 rounded-3xl border-l-8 border-[#D4AF37] shadow-xl"><span className="text-[11px] text-gray-400 font-black uppercase tracking-widest">Tagihan Pembayaran</span><p className="text-4xl font-black text-[#B8941F] tracking-tighter mt-1">Rp {activeOrder.totalBayarAkhir?.toLocaleString('id-ID')}</p></div>{activeOrder.namaSopir && <div className="bg-white p-5 rounded-3xl border flex justify-between items-center shadow-md"><div><h4 className="text-[10px] font-black text-gray-400 uppercase">Mitra Driver</h4><h3 className="text-base font-black text-gray-800">{activeOrder.namaSopir}</h3><p className="text-[11px] text-[#046A38] font-bold mt-0.5">{activeOrder.platNomorSopir}</p></div><div className="flex space-x-2"><button onClick={() => setIsChatOpen(true)} className="p-3 bg-emerald-50 text-[#046A38] rounded-2xl shadow-sm"><MessageCircle size={24} /></button><a href={`tel:${activeOrder.nomorHpSopir}`} className="p-3 bg-emerald-50 text-[#046A38] rounded-2xl shadow-sm"><Phone size={24} /></a></div></div>}<button onClick={() => OloluStore.tambahEmergency(activeOrder.id, profile.nama, profile.nomorHp, 'penumpang', 0, 0)} className="w-full py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg uppercase tracking-widest text-xs flex items-center justify-center space-x-2"><AlertTriangle size={18} /><span>SOS DARURAT</span></button>{activeOrder.status === 'selesai' && (<div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6"><div className="bg-white p-8 rounded-[40px] shadow-2xl text-center space-y-6 animate-in zoom-in-95 duration-300"><div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto shadow-inner text-4xl">🎉</div><h2 className="text-2xl font-black text-gray-800 uppercase tracking-tighter leading-none">Pesanan Selesai!</h2><p className="text-sm text-gray-500 font-medium">Terima kasih telah menggunakan Ololu Lumajang.</p><div className="flex flex-col space-y-3"><button onClick={() => generateReceipt(activeOrder)} className="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-lg">Download Nota Digital</button><button onClick={() => setActiveOrder(null)} className="w-full py-4 bg-gray-900 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-lg">Kembali ke Beranda</button></div></div></div>)}</div>
       {isChatOpen && <ChatRoom pesananId={activeOrder.id} senderId={profile.id} senderName={profile.nama} senderRole="penumpang" onClose={() => setIsChatOpen(false)} />}
     </div>
   );
 
   if (viewMode === 'home') return (
-    <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20 pt-2 text-left">
-      <div className="p-5">
-        <div className="bg-white p-6 rounded-[32px] border shadow-sm space-y-4">
-          <h3 className="text-lg font-black">Halo {profile?.nama}!</h3>
-          <button onClick={() => { selectSubLayanan('ojek'); setViewMode('booking'); }} className="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl uppercase text-xs tracking-widest border-b-4 border-emerald-900">Pesan Sekarang</button>
-          {isSuperUser && <button onClick={() => onRoleChange('admin')} className="w-full py-3 bg-amber-500 text-white font-black rounded-2xl uppercase text-xs">Admin Panel</button>}
+    <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-24 text-left">
+      <div className="p-6 space-y-6">
+        <div className="bg-white p-8 rounded-[40px] border border-gray-150 shadow-sm space-y-5 animate-in fade-in slide-in-from-top-4 duration-500">
+           <div className="flex justify-between items-center"><div><h3 className="text-xl font-black tracking-tight leading-none text-gray-800">Halo, {profile?.nama}!</h3><p className="text-[11px] text-gray-400 mt-2 font-bold uppercase tracking-widest opacity-70">Sobat Ololu Lumajang</p></div><div className="w-14 h-14 bg-[#E6F4EC] rounded-2xl flex items-center justify-center text-3xl shadow-inner">👋</div></div>
+           <button onClick={() => { setViewMode('booking'); selectSubLayanan('ojek'); }} className="w-full py-5 bg-[#046A38] text-white font-black rounded-3xl uppercase text-xs tracking-[0.2em] border-b-8 border-emerald-900 shadow-2xl active:scale-95 transition-all">Mulai Pesan Sekarang</button>
+           {isSuperUser && <button onClick={() => onRoleChange('admin')} className="w-full py-3.5 bg-amber-500 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-md">Dashboard Administrator</button>}
         </div>
+        <LiveDriversMap />
       </div>
-      <div className="px-5"><LiveDriversMap /></div>
-      <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[420px] bg-white border-t flex justify-around items-center h-16 z-50">
-        <button onClick={() => setViewMode('home')} className="text-[#046A38]"><Home size={20} /></button>
-        <button onClick={() => setViewMode('history')} className="text-gray-400"><History size={20} /></button>
-        <button onClick={() => setViewMode('profile')} className="text-gray-400"><User size={20} /></button>
+      <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[420px] bg-white border-t border-gray-100 flex justify-around items-center h-20 z-50 shadow-[0_-10px_25px_rgba(0,0,0,0.05)] px-6">
+        <button onClick={() => setViewMode('home')} className="flex flex-col items-center space-y-1 text-[#046A38]"><Home size={24} /><span className="text-[9px] font-black uppercase">Beranda</span></button>
+        <button onClick={() => setViewMode('history')} className="flex flex-col items-center space-y-1 text-gray-300"><History size={24} /><span className="text-[9px] font-black uppercase">Riwayat</span></button>
+        <button onClick={() => setViewMode('profile')} className="flex flex-col items-center space-y-1 text-gray-300"><User size={24} /><span className="text-[9px] font-black uppercase">Profil</span></button>
       </nav>
     </div>
   );
 
   return (
-    <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen text-left pb-20">
-      <div className="bg-[#046A38] text-white p-4 rounded-b-3xl border-b-2 border-[#D4AF37] flex justify-between items-center shadow-md">
-        <h1 className="text-base font-black uppercase">{subLayanan}</h1>
-        <button onClick={() => setViewMode('home')} className="bg-white/10 px-3 py-1 rounded-lg text-[9px] font-bold">← BATAL</button>
-      </div>
-      <div className="p-4 space-y-4">
-        <div className="bg-white p-4 rounded-2xl border shadow-sm space-y-4">
-          <label className="text-[9px] font-black text-gray-400 uppercase">Jemput Di Mana?</label>
-          <input readOnly onClick={() => setMapPickerTarget('asal')} value={asalAlamat} className="w-full p-3 bg-gray-50 border rounded-xl text-xs font-bold" />
-          <div className="pt-2 border-t">
-            <label className="text-[9px] font-black text-gray-400 uppercase">Tujuan Pengantaran</label>
-            {stops.map((s, i) => (<div key={s.id} className="mt-2 flex space-x-2"><input readOnly onClick={() => setMapPickerTarget(s.id)} value={s.alamat} className="flex-1 p-3 bg-gray-50 border rounded-xl text-xs font-bold" /></div>))}
+    <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen text-left pb-24">
+      <div className="bg-[#034F2A] text-white p-5 rounded-b-[40px] border-b-2 border-[#D4AF37] flex justify-between items-center shadow-xl sticky top-0 z-40"><div className="flex items-center space-x-3"><div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-xl shadow-inner">📍</div><h1 className="text-base font-black uppercase tracking-widest">Buat Pesanan</h1></div><button onClick={() => setViewMode('home')} className="bg-white/10 px-4 py-2 rounded-xl text-[10px] font-black tracking-widest hover:bg-red-500 transition-all">BATAL</button></div>
+      <div className="p-5 space-y-5 animate-in fade-in duration-300">
+        <div className="bg-white p-6 rounded-[32px] border border-gray-150 shadow-sm space-y-6">
+          <div className="space-y-1.5"><label className="text-[10px] font-black text-emerald-700 uppercase tracking-widest ml-1">Titik Penjemputan</label><button onClick={() => setMapPickerTarget('asal')} className="w-full p-4 bg-gray-50 border-2 border-transparent hover:border-emerald-500 rounded-2xl text-left flex items-center justify-between transition-all"><div className="flex items-center space-x-3 min-w-0"><MapPin size={20} className="text-emerald-600" /><span className="text-xs font-bold text-gray-800 truncate">{asalAlamat}</span></div><ChevronRight size={18} className="text-gray-300" /></button></div>
+          <div className="space-y-4 pt-2 border-t-2 border-dashed"><div className="flex justify-between items-center ml-1"><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tujuan Pengantaran</label><span className="text-[9px] font-black text-gray-300 uppercase">{stops.length} Lokasi</span></div>
+            {stops.map((s, i) => (<div key={s.id} className="flex space-x-2 animate-in slide-in-from-left-2 duration-300"><button onClick={() => setMapPickerTarget(s.id)} className="flex-1 p-4 bg-gray-50 border-2 border-transparent hover:border-emerald-500 rounded-2xl text-left flex items-center space-x-4 transition-all min-w-0"><div className="bg-amber-100 p-2 rounded-xl text-amber-600 text-[10px] font-black w-8 h-8 flex items-center justify-center shadow-inner">{i + 1}</div><span className="text-xs font-bold text-gray-800 truncate">{s.alamat}</span></button>{stops.length > 1 && (<button onClick={() => handleRemoveStop(s.id)} className="p-4 bg-red-50 text-red-500 rounded-2xl hover:bg-red-100 transition-colors shadow-sm"><Trash2 size={20} /></button>)}</div>))}
+            {stops.length < 5 && (<button onClick={handleAddStop} className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-[10px] font-black text-gray-400 uppercase tracking-widest hover:border-emerald-500 hover:text-emerald-600 transition-all flex items-center justify-center space-x-2 bg-white shadow-xs"><Plus size={16} /><span>Tambah Perhentian</span></button>)}
           </div>
-          <div className="flex justify-between items-center border-t pt-3"><span className="text-xs font-bold text-gray-400">Total Biaya:</span><span className="text-lg font-black text-[#B8941F]">Rp {getTarifBreakdown().total.toLocaleString('id-ID')}</span></div>
+          <div className="pt-4 border-t-2 border-dashed flex justify-between items-end"><div><span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Estimasi Biaya</span><div className="flex items-baseline space-x-2"><span className="text-3xl font-black text-[#B8941F]">Rp {getTarifBreakdown().total.toLocaleString('id-ID')}</span><span className="text-[10px] font-black text-gray-300 uppercase tracking-tighter">({Math.ceil(routeDistance || 1)} KM)</span></div></div><div className="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100 flex items-center space-x-2"><span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">{pembayaranTunai ? '💵 TUNAI' : '📱 DOMPET'}</span></div></div>
         </div>
-        <button onClick={handlePesan} className="w-full py-4 bg-[#034F2A] text-white font-black rounded-2xl text-xs uppercase tracking-widest border-b-4 border-emerald-900 shadow-xl">Konfirmasi Pesanan</button>
+        <button onClick={handlePesan} className="w-full py-5 bg-[#034F2A] text-white font-black rounded-[32px] text-xs uppercase tracking-[0.3em] border-b-8 border-emerald-900 shadow-2xl active:scale-95 transition-all flex items-center justify-center space-x-4"><Zap size={20} className="fill-current" /><span>KONFIRMASI PESANAN</span></button>
       </div>
-
       {mapPickerTarget && (
-        <div className="fixed inset-0 z-[500] bg-white flex flex-col">
-          <div className="bg-[#034F2A] text-white p-4 flex justify-between items-center"><h3>PILIH LOKASI</h3><button onClick={() => setMapPickerTarget(null)}><X size={24} /></button></div>
-          <div className="p-3"><MapPickerSearch query={mapSearchQuery} setQuery={setMapSearchQuery} suggestions={suggestions} setSuggestions={setSuggestions} onSelectSuggestion={(s) => { setTempLat(s.lat); setTempLng(s.lng); setTempAlamat(s.name); setMapSearchQuery(s.name); setSuggestions([]); }} /></div>
-          <div className="flex-1 relative bg-gray-50">
-            <APIProvider apiKey={config?.googleMapsKey || GOOGLE_MAPS_KEY}><Map center={{ lat: tempLat, lng: tempLng }} defaultZoom={14} mapId="PICKER_MAP"><AdvancedMarker position={{ lat: tempLat, lng: tempLng }} draggable onDragEnd={(e) => { if(e.latLng) { setTempLat(e.latLng.lat()); setTempLng(e.latLng.lng()); fetchAddress(e.latLng.lat(), e.latLng.lng()); } }}><Pin scale={1.2} /></AdvancedMarker></Map></APIProvider>
-          </div>
-          <div className="p-4 bg-white border-t"><button onClick={() => { if (mapPickerTarget === 'asal') { setAsalLat(tempLat); setAsalLng(tempLng); setAsalAlamat(tempAlamat); } else { setStops(stops.map(s => s.id === mapPickerTarget ? { ...s, lat: tempLat, lng: tempLng, alamat: tempAlamat } : s)); } setMapPickerTarget(null); }} className="w-full py-4 bg-[#034F2A] text-white font-black rounded-2xl uppercase text-xs">PILIH LOKASI INI</button></div>
-        </div>
+        <div className="fixed inset-0 z-[500] bg-white flex flex-col text-left"><div className="bg-[#034F2A] text-white p-5 flex justify-between items-center shadow-lg"><h3 className="font-black uppercase tracking-[0.2em]">Pilih Lokasi Peta</h3><button onClick={() => setMapPickerTarget(null)} className="p-1 bg-white/10 rounded-full"><X size={32} /></button></div><div className="p-5 border-b shadow-sm"><MapPickerSearch query={mapSearchQuery} setQuery={setMapSearchQuery} suggestions={suggestions} setSuggestions={setSuggestions} config={config} onSelectSuggestion={(s) => { setTempLat(s.lat); setTempLng(s.lng); setTempAlamat(s.name); setMapSearchQuery(s.name); setSuggestions([]); }} /></div><div className="flex-1 relative bg-gray-100 shadow-inner"><APIProvider apiKey={config?.googleMapsKey || GOOGLE_MAPS_KEY}><Map center={{ lat: tempLat, lng: tempLng }} defaultZoom={14} mapId="PICKER_MAP_PRO"><AdvancedMarker position={{ lat: tempLat, lng: tempLng }} draggable onDragEnd={(e) => { if(e.latLng) { setTempLat(e.latLng.lat()); setTempLng(e.latLng.lng()); } }}><Pin scale={1.3} /></AdvancedMarker></Map></APIProvider></div><div className="p-6 bg-white border-t shadow-[0_-10px_25px_rgba(0,0,0,0.05)]"><button onClick={() => { if (mapPickerTarget === 'asal') { setAsalLat(tempLat); setAsalLng(tempLng); setAsalAlamat(tempAlamat); } else { setStops(stops.map(s => s.id === mapPickerTarget ? { ...s, lat: tempLat, lng: tempLng, alamat: tempAlamat } : s)); } setMapPickerTarget(null); setMapSearchQuery(''); }} className="w-full py-5 bg-[#034F2A] text-white font-black rounded-3xl uppercase text-xs tracking-widest shadow-2xl border-b-4 border-emerald-900 active:scale-95">GUNAKAN ALAMAT INI</button></div></div>
       )}
     </div>
   );
