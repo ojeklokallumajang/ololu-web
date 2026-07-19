@@ -59,6 +59,7 @@ import {
 import OloluLogo from './OloluLogo';
 import { ololuRealtime } from '../services/supabaseClient';
 import { generateReceipt } from '../utils/receiptGenerator';
+import MapDirections from './MapDirections';
 
 interface PassengerViewProps {
   onNotifyAdminPanic: (pelapor: string, tipe: string) => void;
@@ -626,6 +627,18 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
 
   const [isBooking, setIsBooking] = useState(false);
 
+  const fetchAddress = (lat: number, lng: number) => {
+    if (!window.google) return;
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+      if (status === "OK" && results?.[0]) {
+        setTempAlamat(results[0].formatted_address);
+      } else {
+        setTempAlamat(`Titik Terpilih (${lat.toFixed(5)}, ${lng.toFixed(5)})`);
+      }
+    });
+  };
+
   const handlePesan = async () => {
     if (!profile) return;
     setIsBooking(true);
@@ -676,12 +689,24 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
             defaultZoom={13}
             mapId="ORDER_MAP"
           >
+            <MapDirections
+              origin={{ lat: activeOrder.asalLat, lng: activeOrder.asalLng }}
+              destination={{ lat: activeOrder.daftarTujuan[activeOrder.daftarTujuan.length - 1].lat, lng: activeOrder.daftarTujuan[activeOrder.daftarTujuan.length - 1].lng }}
+              waypoints={activeOrder.daftarTujuan.slice(0, -1).map(s => ({ location: { lat: s.lat, lng: s.lng }, stopover: true }))}
+            />
             <AdvancedMarker position={{ lat: activeOrder.asalLat || 0, lng: activeOrder.asalLng || 0 }}>
               <Pin background="#046A38" scale={0.8} />
             </AdvancedMarker>
+
+            {activeOrder.daftarTujuan.map((st, idx) => (
+              <AdvancedMarker key={st.id} position={{ lat: st.lat, lng: st.lng }}>
+                <Pin background="#D4AF37" scale={0.7} glyphText={(idx + 1).toString()} />
+              </AdvancedMarker>
+            ))}
+
             {(driverLoc || activeOrder.idSopir) && (
               <AdvancedMarker position={driverLoc || { lat: activeOrder.asalLat || KOORDINAT_LUMAJANG.lat, lng: activeOrder.asalLng || KOORDINAT_LUMAJANG.lng }}>
-                <div className="text-2xl drop-shadow-md">🛵</div>
+                <div className="text-2xl drop-shadow-md transition-all duration-1000">🛵</div>
               </AdvancedMarker>
             )}
           </Map>
@@ -1055,9 +1080,36 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
           <div className="p-3 shadow-sm bg-white"><MapPickerSearch query={mapSearchQuery} setQuery={setMapSearchQuery} suggestions={suggestions} setSuggestions={setSuggestions} onSelectSuggestion={(s) => { setTempLat(s.lat); setTempLng(s.lng); setTempAlamat(s.name); setMapSearchQuery(s.name); setSuggestions([]); }} /></div>
           <div className="flex-1 relative bg-gray-50">
             <APIProvider apiKey={GOOGLE_MAPS_KEY}>
-              <Map center={{ lat: tempLat, lng: tempLng }} defaultZoom={14} mapId="PICKER_MAP" onClick={(e) => { if(e.detail.latLng) { setTempLat(e.detail.latLng.lat); setTempLng(e.detail.latLng.lng); setTempAlamat(`Titik Terpilih (${e.detail.latLng.lat.toFixed(5)}, ${e.detail.latLng.lng.toFixed(5)})`); } }}>
+              <Map
+                center={{ lat: tempLat, lng: tempLng }}
+                defaultZoom={14}
+                mapId="PICKER_MAP"
+                onClick={(e) => {
+                  if(e.detail.latLng) {
+                    const lat = e.detail.latLng.lat;
+                    const lng = e.detail.latLng.lng;
+                    setTempLat(lat);
+                    setTempLng(lng);
+                    fetchAddress(lat, lng);
+                  }
+                }}
+              >
                 <MapRecenterController lat={tempLat} lng={tempLng} />
-                <AdvancedMarker position={{ lat: tempLat, lng: tempLng }} draggable onDragEnd={(e) => { if(e.latLng) { setTempLat(e.latLng.lat()); setTempLng(e.latLng.lng()); setTempAlamat(`Titik Terpilih (${e.latLng.lat().toFixed(5)}, ${e.latLng.lng().toFixed(5)})`); } }}><Pin scale={1.2} background={mapPickerTarget === 'asal' ? '#046A38' : '#D4AF37'} /></AdvancedMarker>
+                <AdvancedMarker
+                  position={{ lat: tempLat, lng: tempLng }}
+                  draggable
+                  onDragEnd={(e) => {
+                    if(e.latLng) {
+                      const lat = e.latLng.lat();
+                      const lng = e.latLng.lng();
+                      setTempLat(lat);
+                      setTempLng(lng);
+                      fetchAddress(lat, lng);
+                    }
+                  }}
+                >
+                  <Pin scale={1.2} background={mapPickerTarget === 'asal' ? '#046A38' : '#D4AF37'} />
+                </AdvancedMarker>
               </Map>
             </APIProvider>
 

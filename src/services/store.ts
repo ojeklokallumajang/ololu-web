@@ -486,7 +486,17 @@ export const OloluStore = {
 
     if (fetchError) {
       console.error("❌ GAGAL FETCH FINAL ORDER:", fetchError.message);
-      return mapOrder({ ...newOrder, order_stops: [] });
+      // Fallback: use the newOrder directly with provided stops
+      const fallbackOrder = {
+        ...newOrder,
+        order_stops: stops.map(s => ({
+          ...s,
+          order_id: newOrder.id,
+          daftar_item: s.items || []
+        })),
+        profiles: { nama: 'Pelanggan', nomor_hp: '' }
+      };
+      return mapOrder(fallbackOrder);
     }
 
     const mapped = mapOrder(finalOrder);

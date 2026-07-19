@@ -8,6 +8,7 @@ import { OloluStore, KOORDINAT_LUMAJANG } from '../services/store';
 import { ololuRealtime } from '../services/supabaseClient';
 import { GOOGLE_MAPS_KEY } from './SplashMapKey';
 import ChatRoom from './ChatRoom';
+import MapDirections from './MapDirections';
 import {
   DetailSopir,
   Pesanan,
@@ -990,6 +991,11 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                   mapId="OLOLU_DRIVER_MINI_MAP"
                   style={{ width: '100%', height: '100%' }}
                 >
+                  <MapDirections
+                    origin={{ lat: activeOrder.asalLat, lng: activeOrder.asalLng }}
+                    destination={{ lat: activeOrder.daftarTujuan[activeOrder.daftarTujuan.length - 1].lat, lng: activeOrder.daftarTujuan[activeOrder.daftarTujuan.length - 1].lng }}
+                    waypoints={activeOrder.daftarTujuan.slice(0, -1).map(s => ({ location: { lat: s.lat, lng: s.lng }, stopover: true }))}
+                  />
                   <AdvancedMarker position={{ lat: activeOrder.asalLat || KOORDINAT_LUMAJANG.lat, lng: activeOrder.asalLng || KOORDINAT_LUMAJANG.lng }} title="Jemput">
                     <Pin background="#046A38" glyphColor="#fff" scale={0.7} />
                   </AdvancedMarker>
