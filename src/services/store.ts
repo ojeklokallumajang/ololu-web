@@ -159,9 +159,9 @@ const mapOrder = (db: any): Pesanan | null => {
     jarakKm: Math.ceil(safeParseFloat(db.jarak_km, 1)),
     itemsAwal: (db.items_awal || []).map((i: any) => ({
       id: i.id,
-      namaBarang: i.namaBarang || i.nama_barang,
-      jumlah: i.jumlah,
-      perkiraanHarga: i.perkiraanHarga || i.perkiraan_harga
+      namaBarang: i.namaBarang || i.nama_barang || 'Barang',
+      jumlah: i.jumlah || 1,
+      perkiraanHarga: i.perkiraanHarga || i.perkiraan_harga || 0
     })),
     notaAwal: db.nota_awal_nama_toko ? {
       namaToko: db.nota_awal_nama_toko,
@@ -193,9 +193,9 @@ const mapOrder = (db: any): Pesanan | null => {
       status: s.status || 'pending',
       daftarItem: (s.daftar_item || []).map((i: any) => ({
         id: i.id,
-        namaBarang: i.namaBarang || i.nama_barang,
-        jumlah: i.jumlah,
-        perkiraanHarga: i.perkiraanHarga || i.perkiraan_harga
+        namaBarang: i.namaBarang || i.nama_barang || 'Barang',
+        jumlah: i.jumlah || 1,
+        perkiraanHarga: i.perkiraanHarga || i.perkiraan_harga || 0
       })),
       pilihanParkir: s.pilihan_parkir || 'tidak_ada',
       nota: s.nota_nama_toko ? {
@@ -693,7 +693,10 @@ export const OloluStore = {
     .eq('status', 'mencari_sopir')
     .select();
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      console.error("❌ ERROR TERIMA PESANAN:", error.message);
+      return { success: false, error: error.message };
+    }
     if (!data || data.length === 0) return { success: false, error: "PESANAN_SUDAH_DIAMBIL" };
 
     return { success: true };
