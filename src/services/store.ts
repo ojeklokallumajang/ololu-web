@@ -615,7 +615,10 @@ export const OloluStore = {
   },
 
   async getAllSopir(): Promise<DetailSopir[]> {
-    const { data, error } = await getSupabase()!.from('driver_details').select('*, profiles(nama, nomor_hp)');
+    // Explicitly select all columns from driver_details and join profiles
+    const { data, error } = await getSupabase()!.from('driver_details')
+      .select('id, plat_nomor, jenis_motor, jenis_kendaraan, warna_kendaraan, bisa_barang_besar, disetujui_admin, ditolak_admin, alasan_ditolak, status_online, saldo_dompet, rating_rata_rata, jumlah_pesanan_selesai, lat_sekarang, lng_sekarang, foto_ktp, foto_sim, foto_stnk, foto_kendaraan, updated_at, profiles(nama, nomor_hp)');
+
     if (error) {
       console.error("❌ ERROR FETCH ALL SOPIR:", error.message);
       return [];
