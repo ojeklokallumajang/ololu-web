@@ -130,6 +130,39 @@ export default function AdminView() {
   const sirenIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const syncData = async () => {
+    setLoading(true);
+    try {
+      const results = await Promise.allSettled([
+        OloluStore.getAllPesanan(),
+        OloluStore.getAllSopir(),
+        OloluStore.getAllUsers(),
+        OloluStore.getPengaturan(),
+        OloluStore.getAllAuditLogs(),
+        OloluStore.getAllAdmins(),
+        OloluStore.getAllEmergency(),
+        OloluStore.getAllTransactions()
+      ]);
+
+      if (results[0].status === 'fulfilled') setPesananList(results[0].value);
+      if (results[1].status === 'fulfilled') setSopirList(results[1].value);
+      if (results[2].status === 'fulfilled') setProfilList(results[2].value);
+      if (results[3].status === 'fulfilled') {
+        setConfig(results[3].value);
+        setTempConfig(results[3].value);
+      }
+      if (results[4].status === 'fulfilled') setAuditLogs(results[4].value);
+      if (results[5].status === 'fulfilled') setAdminList(results[5].value);
+      if (results[6].status === 'fulfilled') setEmergencyList(results[6].value);
+      if (results[7].status === 'fulfilled') setTransaksiList(results[7].value);
+
+    } catch (err) {
+      console.error("Unexpected Dashboard Sync Failure:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     async function initAdmin() {
       const p = await OloluStore.getProfilLogin();
@@ -137,38 +170,6 @@ export default function AdminView() {
       setIsSuperUser(p?.nomorHp === '6285156766317');
     }
     initAdmin();
-
-    const syncData = async () => {
-      try {
-        const results = await Promise.allSettled([
-          OloluStore.getAllPesanan(),
-          OloluStore.getAllSopir(),
-          OloluStore.getAllUsers(),
-          OloluStore.getPengaturan(),
-          OloluStore.getAllAuditLogs(),
-          OloluStore.getAllAdmins(),
-          OloluStore.getAllEmergency(),
-          OloluStore.getAllTransactions()
-        ]);
-
-        if (results[0].status === 'fulfilled') setPesananList(results[0].value);
-        if (results[1].status === 'fulfilled') setSopirList(results[1].value);
-        if (results[2].status === 'fulfilled') setProfilList(results[2].value);
-        if (results[3].status === 'fulfilled') {
-          setConfig(results[3].value);
-          setTempConfig(results[3].value);
-        }
-        if (results[4].status === 'fulfilled') setAuditLogs(results[4].value);
-        if (results[5].status === 'fulfilled') setAdminList(results[5].value);
-        if (results[6].status === 'fulfilled') setEmergencyList(results[6].value);
-        if (results[7].status === 'fulfilled') setTransaksiList(results[7].value);
-
-      } catch (err) {
-        console.error("Unexpected Dashboard Sync Failure:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
 
     syncData();
     const unsubscribeStore = OloluStore.subscribeToStore(syncData);
@@ -441,17 +442,22 @@ export default function AdminView() {
              </div>
 
              <div className="space-y-2">
-                <h3 className="text-[10px] font-black text-amber-600 uppercase tracking-widest px-1">⏳ Menunggu Verifikasi</h3>
-                {sopirList.filter(s => !s.disetujuiAdmin && !s.ditolakAdmin).length === 0 ? (
-                  <p className="text-[10px] italic text-gray-400 bg-white p-4 rounded-xl border border-dashed text-center">Tidak ada antrian pendaftaran baru.</p>
+                <div className="flex justify-between items-center px-1">
+                  <h3 className="text-[10px] font-black text-amber-600 uppercase tracking-widest">⏳ Menunggu Verifikasi</h3>
+                  <button onClick={syncData} className="p-1 text-gray-400 hover:text-amber-600 transition-all" title="Refresh Data">
+                    <Radio size={12} className={loading ? 'animate-spin' : ''} />
+                  </button>
+                </div>
+                {sopirList.filter(s => !s.disetujuiAdmin && !s.ditolakAdmin && s.platNomor).length === 0 ? (
+                  <p className="text-[10px] italic text-gray-400 bg-white p-4 rounded-xl border border-dashed text-center">Tidak ada antrian pendaftaran lengkap.</p>
                 ) : (
-                  sopirList.filter(s => !s.disetujuiAdmin && !s.ditolakAdmin).map(s => (
+                  sopirList.filter(s => !s.disetujuiAdmin && !s.ditolakAdmin && s.platNomor).map(s => (
                     <button key={s.id} onClick={() => { setSelectedSopir(s); setShowSopirModal(true); }} className="w-full bg-white p-3 rounded-xl border-2 border-amber-100 flex items-center justify-between shadow-sm hover:border-amber-400 transition-all text-left">
                        <div className="flex items-center space-x-3">
                           <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center text-amber-600 border border-amber-100"><User size={20} /></div>
                           <div>
                              <p className="text-xs font-black text-gray-800 uppercase">{(s as any).nama || 'RIDER BARU'}</p>
-                             <p className="text-[9px] text-amber-600 font-bold">Klik untuk Review Berkas</p>
+                             <p className="text-[9px] text-amber-600 font-bold">Review Berkas {s.platNomor}</p>
                           </div>
                        </div>
                        <ChevronRight size={16} className="text-amber-300" />

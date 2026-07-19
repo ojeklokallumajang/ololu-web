@@ -347,13 +347,29 @@ export const OloluStore = {
 
   async updateSopirDokumen(id: string, docs: any) {
     const supabase = getSupabase();
-    if (!supabase) return;
-    await supabase.from('driver_details').upsert({
-      id, foto_ktp: docs.fotoKtp, foto_sim: docs.fotoSim, foto_stnk: docs.fotoStnk, foto_kendaraan: docs.fotoKendaraan,
-      plat_nomor: docs.platNomor, jenis_motor: docs.jenisMotor, jenis_kendaraan: docs.jenisKendaraan || 'motor',
-      warna_kendaraan: docs.warnaKendaraan || '', bisa_barang_besar: !!docs.bisaBarangBesar,
-      disetujui_admin: false, ditolak_admin: false
+    if (!supabase) return { success: false, error: "Database offline" };
+
+    const { error } = await supabase.from('driver_details').upsert({
+      id,
+      foto_ktp: docs.fotoKtp,
+      foto_sim: docs.fotoSim,
+      foto_stnk: docs.fotoStnk,
+      foto_kendaraan: docs.fotoKendaraan,
+      plat_nomor: docs.platNomor,
+      jenis_motor: docs.jenisMotor,
+      jenis_kendaraan: docs.jenisKendaraan || 'motor',
+      warna_kendaraan: docs.warnaKendaraan || '',
+      bisa_barang_besar: !!docs.bisaBarangBesar,
+      disetujui_admin: false,
+      ditolak_admin: false,
+      updated_at: new Date().toISOString()
     });
+
+    if (error) {
+      console.error("❌ GAGAL UPDATE DOKUMEN SOPIR:", error.message);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
   },
 
   async toggleOnlineSopir(id: string): Promise<{ success: boolean; error?: string }> {

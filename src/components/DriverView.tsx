@@ -448,7 +448,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
   };
 
   // --- SOPIR DOCUMENT ACTIONS ---
-  const handleDocUpload = (e: React.FormEvent) => {
+  const handleDocUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile || !driverDetail) return;
     if (!platNomor || !jenisMotor) {
@@ -461,7 +461,8 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
       return;
     }
 
-    OloluStore.updateSopirDokumen(driverDetail.id, {
+    setIsSubmittingDoc(true);
+    const res = await OloluStore.updateSopirDokumen(driverDetail.id, {
       platNomor,
       jenisMotor,
       bisaBarangBesar,
@@ -471,7 +472,13 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
       fotoKendaraan
     });
 
-    alert("🎉 Berkas lamaran pendaftaran sopir Anda berhasil dikirim! Silakan hubungi Admin di panel sebelah untuk menyetujui akun Anda.");
+    if (res.success) {
+      alert("🎉 Berkas lamaran pendaftaran sopir Anda berhasil dikirim! Silakan hubungi Admin di panel sebelah untuk menyetujui akun Anda.");
+      await initDriver(); // Refresh local state
+    } else {
+      alert("❌ Gagal mengirim berkas: " + res.error);
+    }
+    setIsSubmittingDoc(false);
   };
 
   // --- ONLINE / OFFLINE TOGGLE ENGINE ---
@@ -851,9 +858,10 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
 
           <button
             type="submit"
-            className="w-full py-3 bg-[#034F2A] hover:bg-[#046A38] text-white font-bold rounded-xl text-xs border border-[#D4AF37] shadow-sm transition-all"
+            disabled={isSubmittingDoc}
+            className="w-full py-3 bg-[#034F2A] hover:bg-[#046A38] text-white font-bold rounded-xl text-xs border border-[#D4AF37] shadow-sm transition-all disabled:opacity-50"
           >
-            Kirim Lamaran Mitra Ololu
+            {isSubmittingDoc ? 'Sedang Mengirim...' : 'Kirim Lamaran Mitra Ololu'}
           </button>
         </form>
 
