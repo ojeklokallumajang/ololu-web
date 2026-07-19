@@ -56,7 +56,20 @@ ALTER TABLE public.order_stops ADD COLUMN IF NOT EXISTS nota_waktu_dicatat TIMES
 ALTER TABLE public.wallet_transactions ADD COLUMN IF NOT EXISTS bukti_transfer TEXT;
 ALTER TABLE public.wallet_transactions ADD COLUMN IF NOT EXISTS alasan_penolakan TEXT;
 
--- 5. Buat Tabel Penyimpanan OTP (Anti-Refresh)
+-- 5. Buat Tabel AUDIT_LOGS
+CREATE TABLE IF NOT EXISTS public.audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_admin UUID REFERENCES public.profiles(id),
+    nama_admin TEXT,
+    aksi TEXT NOT NULL,
+    detail TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Akses Publik Audit" ON public.audit_logs;
+CREATE POLICY "Akses Publik Audit" ON public.audit_logs FOR ALL USING (true) WITH CHECK (true);
+
+-- 6. Buat Tabel Penyimpanan OTP (Anti-Refresh)
 CREATE TABLE IF NOT EXISTS public.otps (
     phone_number TEXT PRIMARY KEY,
     otp_code TEXT NOT NULL,
@@ -230,7 +243,17 @@ CREATE TABLE public.otps (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 7. TABEL: SYSTEM SETTINGS
+-- 7. TABEL: AUDIT LOGS
+CREATE TABLE public.audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_admin UUID REFERENCES public.profiles(id),
+    nama_admin TEXT,
+    aksi TEXT NOT NULL,
+    detail TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 8. TABEL: SYSTEM SETTINGS
 CREATE TABLE public.system_settings (
     key TEXT PRIMARY KEY,
     value JSONB NOT NULL
@@ -254,6 +277,8 @@ ALTER TABLE public.wallet_transactions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Akses Publik" ON public.wallet_transactions FOR ALL USING (true) WITH CHECK (true);
 ALTER TABLE public.otps ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Akses Publik" ON public.otps FOR ALL USING (true) WITH CHECK (true);
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Akses Publik" ON public.audit_logs FOR ALL USING (true) WITH CHECK (true);
 ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Akses Publik" ON public.system_settings FOR ALL USING (true) WITH CHECK (true);
 `;

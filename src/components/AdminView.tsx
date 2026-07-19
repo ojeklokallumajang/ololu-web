@@ -199,6 +199,11 @@ export default function AdminView() {
     if (!ok && !alasanTolakSopir) { alert("Masukkan alasan penolakan!"); return; }
     const res = await OloluStore.verifikasiSopir(id, ok, ok ? '' : alasanTolakSopir);
     if (res.success) {
+      if (profile) {
+        const action = ok ? "Setujui Mitra" : "Tolak Mitra";
+        const target = (selectedSopir as any)?.nama || id;
+        await OloluStore.addAuditLog(profile.id, profile.nama, action, `${action}: ${target}${!ok ? ` - Alasan: ${alasanTolakSopir}` : ''}`);
+      }
       alert(ok ? "Mitra BERHASIL DISETUJUI! 🎉" : "Mitra DITOLAK.");
       setShowSopirModal(false); setSelectedSopir(null); setAlasanTolakSopir('');
     }
@@ -207,11 +212,21 @@ export default function AdminView() {
   const handleAddAdmin = async () => {
     if (!newAdminPhone || !newAdminName) { alert("Lengkapi data."); return; }
     const res = await OloluStore.promoteToAdmin(newAdminPhone, newAdminName);
-    if (res.success) { alert("Admin ditambahkan."); setNewAdminPhone(''); setNewAdminName(''); }
+    if (res.success) {
+      if (profile) await OloluStore.addAuditLog(profile.id, profile.nama, "Tambah Admin", `Menambahkan tim admin baru: ${newAdminName} (${newAdminPhone})`);
+      alert("Admin ditambahkan."); setNewAdminPhone(''); setNewAdminName('');
+    }
   };
 
   const handleRemoveAdmin = async (id: string) => {
-    if (confirm("Cabut hak akses?")) await OloluStore.removeAdminStatus(id);
+    if (confirm("Cabut hak akses?")) {
+      const adm = adminList.find(a => a.id === id);
+      const res = await OloluStore.removeAdminStatus(id);
+      if (res.success) {
+        if (profile) await OloluStore.addAuditLog(profile.id, profile.nama, "Cabut Akses Admin", `Menghapus hak akses admin: ${adm?.nama || id}`);
+        alert("Akses dicabut.");
+      }
+    }
   };
 
   const handleToggleSuspend = async (user: ProfilPengguna) => {
@@ -237,14 +252,24 @@ export default function AdminView() {
 
   const handleProsesTx = async (id: string, status: 'disetujui' | 'ditolak') => {
     let alasan = status === 'ditolak' ? (prompt("Alasan penolakan:") || 'Ditolak admin') : '';
+    const tx = transaksiList.find(t => t.id === id);
     await OloluStore.prosesTransaksi(id, status, alasan);
+    if (profile) {
+      const actionLabel = status === 'disetujui' ? "ACC" : "TOLAK";
+      const typeLabel = tx?.jenis === 'topup' ? "Deposit" : "Tarik Dana";
+      await OloluStore.addAuditLog(profile.id, profile.nama, `${actionLabel} ${typeLabel}`, `${actionLabel} ${typeLabel} Rp ${tx?.jumlah?.toLocaleString()} oleh ${(tx as any)?.namaSopir}${alasan ? ` - Alasan: ${alasan}` : ''}`);
+    }
     alert(status === 'disetujui' ? "Berhasil disetujui!" : "Berhasil ditolak.");
   };
 
   const handleAdminTopUp = async () => {
     if (!topUpTargetId || !topUpAmount) return;
+    const target = sopirList.find(s => s.id === topUpTargetId);
     const res = await OloluStore.topUpSopir(topUpTargetId, parseInt(topUpAmount), "Isi saldo oleh Admin");
-    if (res.success) { alert("Saldo diisi!"); setShowTopUpModal(false); setTopUpAmount(''); }
+    if (res.success) {
+      if (profile) await OloluStore.addAuditLog(profile.id, profile.nama, "Manual Top-Up", `Isi saldo manual Rp ${parseInt(topUpAmount).toLocaleString()} ke ${(target as any)?.nama || topUpTargetId}`);
+      alert("Saldo diisi!"); setShowTopUpModal(false); setTopUpAmount('');
+    }
   };
 
   if (loading && pesananList.length === 0) return <div className="flex flex-col items-center justify-center min-h-screen text-left"><div className="w-10 h-10 border-4 border-t-[#046A38] rounded-full animate-spin"></div><p className="text-xs font-bold text-gray-400 mt-4 uppercase text-center tracking-widest">Memuat Panel Kendali...</p></div>;
