@@ -150,9 +150,13 @@ export default function App() {
       }
     }
     setLoading(true);
-    await OloluStore.kirimFonnteOtp(phone);
+    const success = await OloluStore.kirimFonnteOtp(phone);
     setLoading(false);
-    setLoginStep('otp');
+    if (success) {
+      setLoginStep('otp');
+    } else {
+      setError('Gagal mengirim WhatsApp. Pastikan nomor HP benar dan aktif WhatsApp.');
+    }
   };
 
   const handleVerifyOtp = async () => {

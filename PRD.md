@@ -10,7 +10,7 @@ Menjadi infrastruktur digital utama bagi transportasi dan logistik di Kabupaten 
 ### 2.1 Penumpang (User)
 - **Kebutuhan:** Memesan jasa transportasi (Ojek/Mobil) atau pengantaran (Makan/Belanja/Paket) dengan harga transparan.
 - **Alur Utama:**
-    1. Login via No HP & Sandi (Verifikasi OTP hanya di awal).
+    1. Login via No HP & Sandi (Verifikasi OTP WhatsApp via Fonnte Live).
     2. Memilih jenis layanan (Ride, Car, Food, Send, Big Cargo).
     3. Menentukan lokasi menggunakan *Map Picker*, deteksi GPS otomatis, atau *Copy-Paste Link Google Maps*.
     4. Khusus layanan Belanja: Mengisi daftar item per-toko.

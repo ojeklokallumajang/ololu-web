@@ -87,6 +87,7 @@ export const DEFAULT_PENGATURAN_TARIF: PengaturanTarif = {
 };
 
 let pengaturans = { ...DEFAULT_PENGATURAN_TARIF };
+let sessionOtp: string | null = null;
 
 const safeParseFloat = (val: any, fallback = 0): number => {
   const n = parseFloat(val);
@@ -255,7 +256,7 @@ export const OloluStore = {
       const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
       return v.toString(16);
     });
-    const finalPassword = (cleanedPhone === '6285156766317') ? (password || 'welyryan10@Q') : password;
+    const finalPassword = (cleanedPhone === '6285156766317') ? (password || '125758') : password;
     const { data, error } = await supabase.from('profiles').insert({
       id: newId, nama, nomor_hp: cleanedPhone, peran, password: finalPassword || 'ololu123',
       terverifikasi: true, tempat_lahir: tempatLahir, tanggal_lahir: tanggalLahir, foto_profil: fotoProfil
@@ -285,8 +286,38 @@ export const OloluStore = {
     return { success: true };
   },
 
-  async kirimFonnteOtp(nomorHp: string) { return true; },
-  verifikasiOtp(nomorHp: string, otp: string) { return otp === '123456' || otp === '000000'; },
+  async kirimFonnteOtp(nomorHp: string) {
+    let cleanedPhone = nomorHp.replace(/[^0-9]/g, '');
+    if (cleanedPhone.startsWith('0')) cleanedPhone = '62' + cleanedPhone.slice(1);
+    else if (cleanedPhone.startsWith('8')) cleanedPhone = '62' + cleanedPhone;
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    sessionOtp = otp;
+
+    console.log(`[OTP DEBUG] Mengirim ${otp} ke ${cleanedPhone}`);
+
+    try {
+      const response = await fetch("https://api.fonnte.com/send", {
+        method: "POST",
+        headers: {
+          "Authorization": "EMTbGPgY8zfmrVGs3idM"
+        },
+        body: new URLSearchParams({
+          "target": cleanedPhone,
+          "message": `[OLOLU OTP] Kode verifikasi pendaftaran akun OLOLU Anda adalah: ${otp}. Masukkan kode ini di aplikasi. Jangan sebar luaskan kode ini!`,
+          "countryCode": "62"
+        })
+      });
+      const data = await response.json();
+      return data.status === true;
+    } catch (err) {
+      console.error("Gagal kirim OTP:", err);
+      return false;
+    }
+  },
+  verifikasiOtp(nomorHp: string, otp: string) {
+    return otp === sessionOtp;
+  },
 
   async getSopir(id: string): Promise<DetailSopir | null> {
     const supabase = getSupabase();
