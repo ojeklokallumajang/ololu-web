@@ -423,6 +423,36 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
     setRealtimeOrderAlert(null);
   };
 
+  const compressImage = (base64Str: string, maxWidth = 800, maxHeight = 800): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = base64Str;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height *= maxWidth / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width *= maxHeight / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7)); // Compressing to 70% quality JPEG
+      };
+    });
+  };
+
   const handleDocFilePicker = (field: 'ktp' | 'sim' | 'stnk' | 'kendaraan') => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -434,12 +464,15 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
       const file = e.target.files[0];
       if (file) {
         const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64 = reader.result as string;
-          if (field === 'ktp') setFotoKtp(base64);
-          if (field === 'sim') setFotoSim(base64);
-          if (field === 'stnk') setFotoStnk(base64);
-          if (field === 'kendaraan') setFotoKendaraan(base64);
+        reader.onloadend = async () => {
+          const originalBase64 = reader.result as string;
+          // COMPRESS BEFORE SAVING TO STATE
+          const compressed = await compressImage(originalBase64);
+
+          if (field === 'ktp') setFotoKtp(compressed);
+          if (field === 'sim') setFotoSim(compressed);
+          if (field === 'stnk') setFotoStnk(compressed);
+          if (field === 'kendaraan') setFotoKendaraan(compressed);
         };
         reader.readAsDataURL(file);
       }

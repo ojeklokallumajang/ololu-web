@@ -21,7 +21,10 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS tanggal_lahir TEXT;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN DEFAULT FALSE;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_sub_admin BOOLEAN DEFAULT FALSE;
 
--- 2. Lengkapi Tabel ORDERS (Fix error rute & nota & keuangan)
+-- 2. Lengkapi Tabel DRIVER_DETAILS (Fix pendaftaran)
+ALTER TABLE public.driver_details ADD COLUMN IF NOT EXISTS warna_kendaraan TEXT DEFAULT '';
+
+-- 3. Lengkapi Tabel ORDERS (Fix error rute & nota & keuangan)
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS items_awal JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS nota_awal_nama_toko TEXT;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS nota_awal_total_toko NUMERIC DEFAULT 0;
@@ -116,6 +119,7 @@ CREATE TABLE public.driver_details (
     disetujui_admin BOOLEAN DEFAULT FALSE,
     ditolak_admin BOOLEAN DEFAULT FALSE,
     status_online BOOLEAN DEFAULT FALSE,
+    warna_kendaraan TEXT DEFAULT '',
     saldo_dompet NUMERIC DEFAULT 0,
     rating_rata_rata NUMERIC(2,1) DEFAULT 5.0,
     jumlah_pesanan_selesai INTEGER DEFAULT 0,
