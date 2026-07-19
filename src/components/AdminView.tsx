@@ -545,8 +545,40 @@ export default function AdminView() {
                 <div><h3 className="text-base font-black text-gray-800 uppercase leading-none">Laporan Keuangan Excel</h3><p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-widest">Digital Records</p></div>
               </div>
               <div className="space-y-5">
-                <button onClick={() => downloadFinancialReport(`Laporan_Hari_Ini`, pesananList, sopirList, profilList, transaksiList)} className="w-full py-5 bg-emerald-600 text-white rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-transform flex items-center justify-center space-x-3"><Download size={18} /><span>Download Hari Ini</span></button>
-                <button onClick={() => { const now = new Date(); const start = new Date(now.setDate(now.getDate()-7)); downloadFinancialReport(`Laporan_Mingguan`, pesananList, sopirList, profilList, transaksiList, start, new Date()); }} className="w-full py-5 border-2 border-emerald-600 text-emerald-700 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-emerald-50 active:scale-95 transition-all">Minggu Ini (Rekap)</button>
+                <div className="space-y-3">
+                   <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Laporan Cepat</h4>
+                   <div className="grid grid-cols-2 gap-3">
+                      <button onClick={() => downloadFinancialReport(`Laporan_Hari_Ini`, pesananList, sopirList, profilList, transaksiList)} className="flex items-center justify-center space-x-2 py-4 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-wider shadow-lg active:scale-95 transition-all"><Download size={16} /><span>Hari Ini</span></button>
+                      <button onClick={() => { const now = new Date(); const start = new Date(now.setDate(now.getDate()-7)); downloadFinancialReport(`Laporan_Mingguan`, pesananList, sopirList, profilList, transaksiList, start, new Date()); }} className="flex items-center justify-center space-x-2 py-4 border-2 border-emerald-600 text-emerald-700 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-50 active:scale-95 transition-all"><Download size={16} /><span>Mingguan</span></button>
+                   </div>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Arsip Bulanan (3 Bulan)</h4>
+                  <div className="space-y-2">
+                    {[0, 1, 2].map(offset => {
+                      const d = new Date();
+                      d.setMonth(d.getMonth() - offset);
+                      const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                      const start = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0);
+                      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
+                      const fileLabel = `Laporan_Bulanan_${d.getFullYear()}_${d.getMonth()+1}`;
+                      return (
+                        <button
+                          key={offset}
+                          onClick={() => downloadFinancialReport(fileLabel, pesananList, sopirList, profilList, transaksiList, start, end)}
+                          className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-emerald-50 border border-gray-100 rounded-2xl group transition-all"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-white rounded-xl shadow-sm text-[#B8941F] group-hover:text-[#046A38] transition-colors"><Calendar size={18} /></div>
+                            <span className="text-xs font-black text-gray-700 group-hover:text-[#046A38] uppercase transition-colors">{label}</span>
+                          </div>
+                          <Download size={18} className="text-gray-300 group-hover:text-[#046A38] transition-colors" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
