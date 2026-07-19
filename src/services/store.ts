@@ -683,12 +683,20 @@ export const OloluStore = {
   },
 
   async terimaPesanan(orderId: string, driverId: string) {
-    const { error } = await getSupabase()!.from('orders').update({
+    // ATOMIC UPDATE: Only update if status is still 'mencari_sopir'
+    const { data, error } = await getSupabase()!.from('orders').update({
       id_sopir: driverId,
       status: 'sopir_ditemukan',
       waktu_diterima: new Date().toISOString()
-    }).eq('id', orderId);
-    return { success: !error, error: error?.message };
+    })
+    .eq('id', orderId)
+    .eq('status', 'mencari_sopir')
+    .select();
+
+    if (error) return { success: false, error: error.message };
+    if (!data || data.length === 0) return { success: false, error: "PESANAN_SUDAH_DIAMBIL" };
+
+    return { success: true };
   },
 
   async updateStatusPesanan(id: string, status: StatusPesanan) {

@@ -56,6 +56,7 @@ Menjadi infrastruktur digital utama bagi transportasi dan logistik di Kabupaten 
 - **Rumus Harga Baru:**
     - Jika Jarak $\le$ Batas KM Dasar: **Harga = Tarif Dasar**.
     - Jika Jarak $>$ Batas KM Dasar: **Harga = Total KM (Bulat) × Tarif Per KM**.
+- **Double-Accept Protection:** Menggunakan *Atomic Updates* di level database untuk memastikan hanya satu Driver yang bisa menerima satu pesanan aktif.
 
 ### 3.3 Sistem Keuangan & Wallet
 - **Bagi Hasil:** Pemotongan komisi aplikator dilakukan secara otomatis oleh *Postgres Trigger* di database saat status order menjadi 'Selesai'.

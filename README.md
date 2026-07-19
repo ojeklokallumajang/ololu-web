@@ -25,6 +25,7 @@
 - **Dashboard Pendapatan Driver:** Pantau hasil kerja harian, mingguan, dan bulanan secara *real-time*.
 - **Invoice Pro (e-Nota):** Penumpang bisa mengunduh nota belanja digital super detail (breakdown tarif, timeline perjalanan, dan stempel digital).
 - **Financial Reporting Admin:** Ekspor laporan keuangan ke format Excel (XLS) untuk periode Harian, Mingguan, dan 3 bulan terakhir.
+- **Atomic Order Acceptance:** Sistem perlindungan "Siapa Cepat Dia Dapat" yang mencegah satu pesanan diambil oleh dua driver sekaligus (Anti-Race Condition).
 
 ### 💬 Komunikasi Real-time Tingkat Lanjut
 - **Instant Chat:** Kirim pesan teks secepat kilat menggunakan teknologi WebSocket.

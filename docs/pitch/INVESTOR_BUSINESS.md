@@ -19,6 +19,7 @@
 ## Slide 4: Financial Roadmap & Data Integrity
 - **Real-time Auditing:** Every transaction is logged with automated commission triggers (Smart Database Logic).
 - **Audit Logs:** Full accountability for all administrative actions.
+- **Race-Condition Protection:** Built-in safeguards preventing multiple drivers from accepting the same order, ensuring 100% data integrity.
 - **Sustainable Growth:** Low burn rate, high local retention, and ready for expansion to neighboring cities.
 - **Social Impact:** Fair pricing models (Route-based distance) ensure long-term driver loyalty and community trust.
 

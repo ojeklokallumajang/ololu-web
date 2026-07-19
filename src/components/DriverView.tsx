@@ -369,7 +369,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
     if (!driverDetail) return;
     setOrderAcceptingStatus('Mengamankan pesanan...');
     
-    // 1. UPDATE DATABASE (MUST WRITE TO DB TO ASSIGN DRIVER)
+    // 1. UPDATE DATABASE (ATOMIC CHECK: Ensure status is still 'mencari_sopir')
     const res = await OloluStore.terimaPesanan(orderId, driverDetail.id);
 
     if (res.success) {
@@ -399,7 +399,12 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
         });
       }
     } else {
-      alert("Gagal mengambil pesanan: " + res.error);
+      if (res.error === "PESANAN_SUDAH_DIAMBIL") {
+        alert("Waduh, keduluan! 😅\nPesanan ini baru saja diambil oleh driver lain.");
+      } else {
+        alert("Gagal mengambil pesanan: " + res.error);
+      }
+      setRealtimeOrderAlert(null); // Clear alert if it was already taken
     }
 
     setOrderAcceptingStatus(null);
