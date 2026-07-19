@@ -14,56 +14,69 @@ export default function SupabaseGuide() {
 -- SQL PEMBARUAN (MIGRATION) - JALANKAN INI JIKA ADA FITUR BARU
 -- =========================================================================
 
--- 1. Tambah kolom menu di lokasi awal (Resto 1)
+-- 1. Lengkapi Tabel PROFILES (Fix error pendaftaran & detail)
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS foto_profil TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS tempat_lahir TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS tanggal_lahir TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_sub_admin BOOLEAN DEFAULT FALSE;
+
+-- 2. Lengkapi Tabel ORDERS (Fix error rute & nota & keuangan)
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS items_awal JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS nota_awal_nama_toko TEXT;
-ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS nota_awal_rincian_barang TEXT;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS nota_awal_total_toko NUMERIC DEFAULT 0;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS nota_awal_rincian_barang TEXT;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS nota_awal_foto_url TEXT;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS nota_awal_waktu_dicatat TIMESTAMPTZ;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS waktu_diterima TIMESTAMPTZ;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS waktu_mulai_jalan TIMESTAMPTZ;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS waktu_selesai TIMESTAMPTZ;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS biaya_parkir_total NUMERIC DEFAULT 0;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS biaya_nota_total NUMERIC DEFAULT 0;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS tambahan_tujuan NUMERIC DEFAULT 0;
 
--- 2. Tambah kolom rincian belanja di tiap titik antar (Resto 2 dst)
+-- 3. Lengkapi Tabel ORDER_STOPS (Fix detail belanja & parkir)
 ALTER TABLE public.order_stops ADD COLUMN IF NOT EXISTS daftar_item JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.order_stops ADD COLUMN IF NOT EXISTS nota_nama_toko TEXT;
+ALTER TABLE public.order_stops ADD COLUMN IF NOT EXISTS nota_total_toko NUMERIC DEFAULT 0;
+ALTER TABLE public.order_stops ADD COLUMN IF NOT EXISTS nota_rincian_barang TEXT;
+ALTER TABLE public.order_stops ADD COLUMN IF NOT EXISTS nota_foto_url TEXT;
+ALTER TABLE public.order_stops ADD COLUMN IF NOT EXISTS nota_waktu_dicatat TIMESTAMPTZ;
 
--- 3. Tambah kolom status blokir pada profil
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN DEFAULT FALSE;
-
--- 4. Buat tabel penyimpanan OTP (Anti-Refresh)
+-- 4. Buat Tabel Penyimpanan OTP (Anti-Refresh)
 CREATE TABLE IF NOT EXISTS public.otps (
     phone_number TEXT PRIMARY KEY,
     otp_code TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE public.otps ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Akses Publik OTP" ON public.otps;
 CREATE POLICY "Akses Publik OTP" ON public.otps FOR ALL USING (true) WITH CHECK (true);
 
--- 5. Perbarui Trigger Potong Saldo (Versi Presisi)
+-- 5. Perbarui Trigger Potong Saldo (Versi Presisi 10% Flat)
 CREATE OR REPLACE FUNCTION public.process_completed_order()
 RETURNS TRIGGER AS $$
 DECLARE
-  v_commission_rate NUMERIC;
-  v_commission NUMERIC;
-  v_current_saldo NUMERIC;
+  v_comm NUMERIC;
+  v_cur_saldo NUMERIC;
 BEGIN
   IF NEW.status = 'selesai' AND (OLD.status IS NULL OR OLD.status <> 'selesai') THEN
-    v_commission_rate := COALESCE(NEW.biaya_layanan_persen, 10.0) / 100.0;
-    v_commission := ROUND(NEW.tarif_perjalanan_murni * v_commission_rate);
-
+    v_comm := ROUND(NEW.tarif_perjalanan_murni * 0.1);
     UPDATE public.driver_details
-    SET saldo_dompet = COALESCE(saldo_dompet, 0) - v_commission,
+    SET saldo_dompet = COALESCE(saldo_dompet, 0) - v_comm,
         jumlah_pesanan_selesai = COALESCE(jumlah_pesanan_selesai, 0) + 1
     WHERE id = NEW.id_sopir
-    RETURNING saldo_dompet INTO v_current_saldo;
+    RETURNING saldo_dompet INTO v_cur_saldo;
 
     INSERT INTO public.wallet_transactions (id_sopir, jenis, jumlah, saldo_awal, saldo_akhir, deskripsi, status_tarik)
-    VALUES (NEW.id_sopir, 'potongan_jasa', v_commission, v_current_saldo + v_commission, v_current_saldo, 'Bagi hasil Ololu - Order #' || NEW.nomor_pesanan, 'disetujui');
+    VALUES (NEW.id_sopir, 'potongan_jasa', v_comm, v_cur_saldo + v_comm, v_cur_saldo, 'Bagi hasil Order #' || NEW.nomor_pesanan, 'disetujui');
   END IF;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS on_order_completed ON public.orders;
-CREATE TRIGGER on_order_completed AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION public.process_completed_order();`;
+DROP TRIGGER IF EXISTS on_order_finished ON public.orders;
+CREATE TRIGGER on_order_finished AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION public.process_completed_order();`;
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -72,279 +85,144 @@ CREATE TRIGGER on_order_completed AFTER UPDATE ON public.orders FOR EACH ROW EXE
   };
 
   const sqlSchema = `-- =========================================================================
--- SKEMA DATABASE SQL LENGKAP UNTUK SUPABASE - APLIKASI OLOLU LUMAJANG
+-- SKEMA DATABASE SQL LENGKAP (VERSI FRESH START) - APLIKASI OLOLU LUMAJANG
 -- =========================================================================
--- Berkas ini mencakup pembuatan tabel, indeks, keamanan level baris (RLS), 
--- dan Trigger PL/pgSQL otomatis untuk mengotomatisasi semua logika bisnis inti.
 
--- Aktifkan ekstensi UUID jika belum aktif
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 1. TABEL: PROFIL PENGGUNA (users / profiles)
+-- 1. TABEL: PROFIL
 CREATE TABLE public.profiles (
-    id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nama TEXT NOT NULL,
     nomor_hp TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL DEFAULT 'ololu123',
     peran TEXT NOT NULL CHECK (peran IN ('penumpang', 'sopir', 'admin')),
     terverifikasi BOOLEAN DEFAULT FALSE,
-    is_suspended BOOLEAN DEFAULT FALSE, -- Ditambahkan: Untuk blokir akun
+    is_suspended BOOLEAN DEFAULT FALSE,
+    is_sub_admin BOOLEAN DEFAULT FALSE,
+    foto_profil TEXT,
+    tempat_lahir TEXT,
+    tanggal_lahir TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 2. TABEL: DOMPET (wallets)
-CREATE TABLE public.wallets (
-    id UUID REFERENCES public.profiles(id) ON DELETE CASCADE PRIMARY KEY,
-    saldo NUMERIC DEFAULT 0 NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 3. TABEL: DETAIL SOPIR (driver_details)
+-- 2. TABEL: DETAIL SOPIR
 CREATE TABLE public.driver_details (
-    id UUID REFERENCES public.profiles ON DELETE CASCADE PRIMARY KEY,
+    id UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
     plat_nomor TEXT,
     jenis_motor TEXT,
+    jenis_kendaraan TEXT DEFAULT 'motor',
     bisa_barang_besar BOOLEAN DEFAULT FALSE,
     disetujui_admin BOOLEAN DEFAULT FALSE,
     ditolak_admin BOOLEAN DEFAULT FALSE,
-    alasan_ditolak TEXT,
     status_online BOOLEAN DEFAULT FALSE,
-    saldo_dompet NUMERIC DEFAULT 0, -- Kolom kompatibilitas lama
+    saldo_dompet NUMERIC DEFAULT 0,
     rating_rata_rata NUMERIC(2,1) DEFAULT 5.0,
     jumlah_pesanan_selesai INTEGER DEFAULT 0,
     lat_sekarang NUMERIC,
     lng_sekarang NUMERIC,
-    ktp_url TEXT,
-    sim_url TEXT,
-    stnk_url TEXT,
-    kendaraan_url TEXT,
+    foto_ktp TEXT,
+    foto_sim TEXT,
+    foto_stnk TEXT,
+    foto_kendaraan TEXT,
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 4. TABEL: PESANAN UTAMA (orders / pesanan)
+-- 3. TABEL: PESANAN (ORDERS)
 CREATE TABLE public.orders (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nomor_pesanan TEXT UNIQUE NOT NULL,
-    jenis_layanan TEXT NOT NULL CHECK (jenis_layanan IN ('ojek', 'makanan', 'paket', 'barang_besar', 'mobil')),
+    jenis_layanan TEXT NOT NULL,
     id_penumpang UUID REFERENCES public.profiles(id) NOT NULL,
     id_sopir UUID REFERENCES public.driver_details(id),
     asal_alamat TEXT NOT NULL,
     asal_lat NUMERIC NOT NULL,
     asal_lng NUMERIC NOT NULL,
-    items_awal JSONB DEFAULT '[]'::jsonb,
-    nota_awal_nama_toko TEXT,
-    nota_awal_rincian_barang TEXT,
-    nota_awal_total_toko NUMERIC DEFAULT 0,
-    nota_awal_foto_url TEXT,
-    nota_awal_waktu_dicatat TIMESTAMPTZ,
     jarak_km NUMERIC NOT NULL,
     tarif_perjalanan_murni NUMERIC NOT NULL,
     biaya_parkir_total NUMERIC DEFAULT 0,
     biaya_nota_total NUMERIC DEFAULT 0,
     tambahan_tujuan NUMERIC DEFAULT 0,
-    tambahan_item NUMERIC DEFAULT 0,
-    biaya_layanan_persen NUMERIC DEFAULT 10.0 NOT NULL,
     total_bayar_akhir NUMERIC NOT NULL,
     pembayaran_tunai BOOLEAN DEFAULT TRUE,
-    status TEXT DEFAULT 'mencari_sopir' CHECK (status IN ('mencari_sopir', 'sopir_ditemukan', 'dalam_perjalanan', 'selesai', 'dibatalkan')),
+    status TEXT DEFAULT 'mencari_sopir',
     tahap_aktif INTEGER DEFAULT 0,
+    items_awal JSONB DEFAULT '[]'::jsonb,
+    nota_awal_nama_toko TEXT,
+    nota_awal_total_toko NUMERIC DEFAULT 0,
+    nota_awal_rincian_barang TEXT,
+    nota_awal_foto_url TEXT,
+    nota_awal_waktu_dicatat TIMESTAMPTZ,
     waktu_dibuat TIMESTAMPTZ DEFAULT NOW(),
     waktu_diterima TIMESTAMPTZ,
     waktu_mulai_jalan TIMESTAMPTZ,
-    waktu_selesai TIMESTAMPTZ,
-    waktu_dibatalkan TIMESTAMPTZ,
-    alasan_batal TEXT,
-    riwayat_lokasi_sopir JSONB DEFAULT '[]'::jsonb
+    waktu_selesai TIMESTAMPTZ
 );
 
--- 5. TABEL: DETAIL STOP-OVER (order_stops)
+-- 4. TABEL: DETAIL STOP (ORDER_STOPS)
 CREATE TABLE public.order_stops (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID REFERENCES public.orders(id) ON DELETE CASCADE,
     alamat TEXT NOT NULL,
     lat NUMERIC NOT NULL,
     lng NUMERIC NOT NULL,
     urutan INTEGER NOT NULL,
-    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'selesai')),
-    pilihan_parkir TEXT DEFAULT 'tidak_ada' CHECK (pilihan_parkir IN ('tidak_ada', 'parkir_biasa', 'parkir_pasar')),
+    status TEXT DEFAULT 'pending',
+    pilihan_parkir TEXT DEFAULT 'tidak_ada',
     daftar_item JSONB DEFAULT '[]'::jsonb,
     nota_nama_toko TEXT,
-    nota_rincian_barang TEXT,
     nota_total_toko NUMERIC DEFAULT 0,
+    nota_rincian_barang TEXT,
     nota_foto_url TEXT,
     nota_waktu_dicatat TIMESTAMPTZ
 );
 
--- 6. TABEL: RIWAYAT TRANSAKSI DOMPET (wallet_transactions / riwayat_transaksi)
+-- 5. TABEL: TRANSAKSI DOMPET
 CREATE TABLE public.wallet_transactions (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     id_sopir UUID REFERENCES public.driver_details(id) ON DELETE CASCADE,
-    jenis TEXT NOT NULL CHECK (jenis IN ('pendapatan', 'potongan_jasa', 'topup', 'tarik_dana', 'denda')),
+    jenis TEXT NOT NULL,
     jumlah NUMERIC NOT NULL,
     saldo_awal NUMERIC NOT NULL,
     saldo_akhir NUMERIC NOT NULL,
     deskripsi TEXT,
-    bukti_transfer TEXT,
-    alasan_penolakan TEXT,
-    status_tarik TEXT DEFAULT 'menunggu' CHECK (status_tarik IN ('menunggu', 'disetujui', 'ditolak')),
+    status_tarik TEXT DEFAULT 'disetujui',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 7. TABEL: LAPORAN DARURAT (emergency_reports / laporan_darurat)
-CREATE TABLE public.emergency_reports (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    order_id UUID REFERENCES public.orders(id) ON DELETE CASCADE,
-    nama_pelapor TEXT NOT NULL,
-    nomor_hp_pelapor TEXT NOT NULL,
-    peran_pelapor TEXT CHECK (peran_pelapor IN ('penumpang', 'sopir')),
-    lat NUMERIC NOT NULL,
-    lng NUMERIC NOT NULL,
-    status TEXT DEFAULT 'baru' CHECK (status IN ('baru', 'ditangani')),
+-- 6. TABEL: BRANKAS OTP
+CREATE TABLE public.otps (
+    phone_number TEXT PRIMARY KEY,
+    otp_code TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 8. TABEL: RATING DAN ULASAN (ratings / rating_ulasan)
-CREATE TABLE public.ratings (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    order_id UUID REFERENCES public.orders(id) ON DELETE CASCADE,
-    id_sopir UUID REFERENCES public.driver_details(id) ON DELETE CASCADE,
-    nama_penumpang TEXT NOT NULL,
-    bintang INTEGER NOT NULL CHECK (bintang >= 1 AND bintang <= 5),
-    ulasan TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 9. TABEL: PESAN INTERNAL (chat_messages)
-CREATE TABLE public.chat_messages (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    id_pesanan UUID REFERENCES public.orders(id) ON DELETE CASCADE,
-    sender_id UUID REFERENCES public.profiles(id),
-    sender_name TEXT,
-    sender_role TEXT CHECK (sender_role IN ('penumpang', 'sopir')),
-    message TEXT,
-    voice_data TEXT, -- Base64 Audio
-    photo_data TEXT, -- Base64 Image
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 10. TABEL: PENGATURAN TARIF SISTEM (system_settings / pengaturan_tarif)
+-- 7. TABEL: SYSTEM SETTINGS
 CREATE TABLE public.system_settings (
     key TEXT PRIMARY KEY,
     value JSONB NOT NULL
 );
 
--- =========================================================================
--- LOGIKA BISNIS: PL/pgSQL TRIGGER FUNCTIONS
--- =========================================================================
+-- 8. DAFTARKAN ADMIN UTAMA (Ganti ID jika diperlukan)
+INSERT INTO public.profiles (id, nama, nomor_hp, password, peran, terverifikasi)
+VALUES ('00000000-0000-0000-0000-000000000000', 'ADMIN UTAMA', '6285156766317', '125758', 'admin', true)
+ON CONFLICT (nomor_hp) DO NOTHING;
 
--- TRIGGER 1: OTOMATIS INISIALISASI DOMPET SAAT PROFIL BARU DIBUAT
-CREATE OR REPLACE FUNCTION public.handle_new_profile_wallet()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.wallets (id, saldo)
-  VALUES (NEW.id, 0)
-  ON CONFLICT (id) DO NOTHING;
-  
-  IF NEW.peran = 'sopir' THEN
-    INSERT INTO public.driver_details (
-      id, plat_nomor, jenis_motor, saldo_dompet, rating_rata_rata, jumlah_pesanan_selesai
-    )
-    VALUES (NEW.id, '', '', 0, 5.0, 0)
-    ON CONFLICT (id) DO NOTHING;
-  END IF;
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE OR REPLACE TRIGGER on_profile_created
-  AFTER INSERT ON public.profiles
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_profile_wallet();
-
--- TRIGGER 2: POTONG SALDO KOMISI & PENDAPATAN OTOMATIS SAAT PESANAN SELESAI
-CREATE OR REPLACE FUNCTION public.process_completed_order()
-RETURNS TRIGGER AS $$
-DECLARE
-  v_commission_rate NUMERIC;
-  v_commission NUMERIC;
-  v_driver_earnings NUMERIC;
-  v_current_wallet_saldo NUMERIC;
-  v_new_wallet_saldo NUMERIC;
-  v_pembayaran_cash BOOLEAN;
-BEGIN
-  IF NEW.status = 'selesai' AND OLD.status <> 'selesai' THEN
-    IF NEW.id_sopir IS NULL THEN
-      RAISE EXCEPTION 'Tidak dapat menyelesaikan pesanan tanpa sopir yang ditugaskan.';
-    END IF;
-
-    v_commission_rate := COALESCE(NEW.biaya_layanan_persen, 10.0) / 100.0;
-    v_commission := ROUND(NEW.tarif_perjalanan_murni * v_commission_rate);
-    v_pembayaran_cash := COALESCE(NEW.pembayaran_tunai, TRUE);
-
-    SELECT saldo INTO v_current_wallet_saldo FROM public.wallets WHERE id = NEW.id_sopir;
-    IF v_current_wallet_saldo IS NULL THEN
-      INSERT INTO public.wallets (id, saldo) VALUES (NEW.id_sopir, 0) RETURNING saldo INTO v_current_wallet_saldo;
-    END IF;
-
-    IF v_pembayaran_cash THEN
-      v_new_wallet_saldo := v_current_wallet_saldo - v_commission;
-      
-      UPDATE public.wallets SET saldo = v_new_wallet_saldo WHERE id = NEW.id_sopir;
-      
-      UPDATE public.driver_details 
-      SET saldo_dompet = v_new_wallet_saldo, 
-          jumlah_pesanan_selesai = jumlah_pesanan_selesai + 1,
-          updated_at = NOW()
-      WHERE id = NEW.id_sopir;
-
-      INSERT INTO public.wallet_transactions (
-        id_sopir, jenis, jumlah, saldo_awal, saldo_akhir, deskripsi
-      ) VALUES (
-        NEW.id_sopir, 'potongan_jasa', v_commission, v_current_wallet_saldo, v_new_wallet_saldo,
-        'Potongan bagi hasil layanan ' || NEW.biaya_layanan_persen || '% untuk Pesanan #' || NEW.nomor_pesanan
-      );
-    ELSE
-      v_driver_earnings := NEW.total_bayar_akhir - v_commission;
-      v_new_wallet_saldo := v_current_wallet_saldo + v_driver_earnings;
-
-      UPDATE public.wallets SET saldo = v_new_wallet_saldo WHERE id = NEW.id_sopir;
-      
-      UPDATE public.driver_details 
-      SET saldo_dompet = v_new_wallet_saldo, 
-          jumlah_pesanan_selesai = jumlah_pesanan_selesai + 1,
-          updated_at = NOW()
-      WHERE id = NEW.id_sopir;
-
-      INSERT INTO public.wallet_transactions (
-        id_sopir, jenis, jumlah, saldo_awal, saldo_akhir, deskripsi
-      ) VALUES (
-        NEW.id_sopir, 'pendapatan', NEW.total_bayar_akhir, v_current_wallet_saldo, v_current_wallet_saldo + NEW.total_bayar_akhir,
-        'Pendapatan non-tunai masuk untuk Pesanan #' || NEW.nomor_pesanan
-      );
-
-      INSERT INTO public.wallet_transactions (
-        id_sopir, jenis, jumlah, saldo_awal, saldo_akhir, deskripsi
-      ) VALUES (
-        NEW.id_sopir, 'potongan_jasa', v_commission, v_current_wallet_saldo + NEW.total_bayar_akhir, v_new_wallet_saldo,
-        'Potongan bagi hasil layanan ' || NEW.biaya_layanan_persen || '% untuk Pesanan #' || NEW.nomor_pesanan
-      );
-    END IF;
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE OR REPLACE TRIGGER on_order_completed
-  AFTER UPDATE ON public.orders
-  FOR EACH ROW EXECUTE FUNCTION public.process_completed_order();
-
--- TRIGGER 3: REKALKULASI OTOMATIS RATING RATA-RATA SOPIR SAAT ULASAN BARU MASUK
-CREATE OR REPLACE FUNCTION public.recalculate_driver_rating()
-RETURNS TRIGGER AS $$
-DECLARE
-  v_avg_rating NUMERIC;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
--- (Logika lengkap ada di berkas /supabase_schema.sql)
+-- 9. KEAMANAN AKSES (RLS)
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Akses Publik" ON public.profiles FOR ALL USING (true) WITH CHECK (true);
+ALTER TABLE public.driver_details ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Akses Publik" ON public.driver_details FOR ALL USING (true) WITH CHECK (true);
+ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Akses Publik" ON public.orders FOR ALL USING (true) WITH CHECK (true);
+ALTER TABLE public.order_stops ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Akses Publik" ON public.order_stops FOR ALL USING (true) WITH CHECK (true);
+ALTER TABLE public.wallet_transactions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Akses Publik" ON public.wallet_transactions FOR ALL USING (true) WITH CHECK (true);
+ALTER TABLE public.otps ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Akses Publik" ON public.otps FOR ALL USING (true) WITH CHECK (true);
+ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Akses Publik" ON public.system_settings FOR ALL USING (true) WITH CHECK (true);
 `;
 
   const edgeCode = `// =========================================================================
@@ -355,7 +233,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const FONNTE_TOKEN = Deno.env.get("FONNTE_TOKEN") || "EMTbGPgY8zfmrVGs3idM";
-const FONNTE_SENDER = Deno.env.get("FONNTE_SENDER") || "6288212818616";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -363,62 +240,29 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { nomorHp, action, otpInput } = await req.json()
+    const { nomorHp, action } = await req.json()
+    if (!nomorHp) return new Response(JSON.stringify({ error: 'Nomor HP wajib' }), { headers: corsHeaders, status: 400 })
 
-    if (!nomorHp) {
-      return new Response(JSON.stringify({ error: 'Nomor HP wajib diisi' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
-      })
-    }
-
-    // Aksi 1: Kirim OTP Baru
     if (action === "kirim") {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const pesan = \`[OLOLU OTP] Kode verifikasi pendaftaran akun OLOLU Anda adalah: \${otp}. Masukkan kode ini di halaman pendaftaran. Jangan sebar luaskan kode ini!\`;
-
-      // Simpan OTP di database tabel OTP sementara (Atau Redis / Memcached)
-      // Disini kita langsung call API Fonnte untuk mengirim pesan
       const response = await fetch("https://api.fonnte.com/send", {
         method: "POST",
-        headers: {
-          "Authorization": FONNTE_TOKEN
-        },
+        headers: { "Authorization": FONNTE_TOKEN },
         body: new URLSearchParams({
           "target": nomorHp,
-          "message": pesan,
+          "message": \`[OLOLU OTP] Kode verifikasi: \${otp}\`,
           "countryCode": "62"
         })
       });
-
       const resData = await response.json();
-
-      return new Response(JSON.stringify({
-        success: true, 
-        message: 'OTP berhasil dikirim ke nomor WhatsApp Anda!',
-        fonnteResponse: resData
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      })
+      return new Response(JSON.stringify({ success: true, fonnteResponse: resData }), { headers: corsHeaders, status: 200 })
     }
-
-    return new Response(JSON.stringify({ error: 'Aksi tidak dikenal' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400
-    })
-
+    return new Response(JSON.stringify({ error: 'Aksi tidak dikenal' }), { headers: corsHeaders, status: 400 })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500
-    })
+    return new Response(JSON.stringify({ error: error.message }), { headers: corsHeaders, status: 500 })
   }
 })
 `;
@@ -434,63 +278,43 @@ serve(async (req) => {
           </div>
           <div>
             <h1 className="text-xl font-bold text-[#046A38] font-sans">
-              Panduan Produksi & Backend
+              Backend Production
             </h1>
             <p className="text-xs text-[#6B7280]">
-              OLOLU Ojek & Pengantaran - Versi Final 100%
+              OLOLU Ojek & Pengantaran - Versi Fresh Start 1.6
             </p>
           </div>
         </div>
-        <p className="text-xs text-gray-600 leading-relaxed mt-2">
-          Halaman ini berisi semua berkas backend, instruksi, skema SQL dan API WhatsApp Fonnte yang siap Anda pasang di akun Supabase dan Cloudflare Anda agar sistem berjalan nyata dan 100% aman di server produksi.
-        </p>
       </div>
 
       {/* SUB NAV TAB */}
-      <div className="flex border-b border-[#E5E7EB] bg-white sticky top-[68px] z-10">
+      <div className="flex border-b border-[#E5E7EB] bg-white sticky top-0 z-10 shadow-sm">
         <button
           onClick={() => setActiveTab('panduan')}
-          className={`flex-1 py-3 text-xs font-semibold text-center flex items-center justify-center space-x-1.5 border-b-2 transition-all ${
-            activeTab === 'panduan'
-              ? 'border-[#046A38] text-[#046A38]'
-              : 'border-transparent text-[#6B7280] hover:text-[#046A38]'
+          className={`flex-1 py-3 text-[10px] font-black uppercase text-center flex items-center justify-center space-x-1.5 border-b-2 transition-all ${
+            activeTab === 'panduan' ? 'border-[#046A38] text-[#046A38]' : 'border-transparent text-gray-400'
           }`}
         >
-          <Cloud size={14} />
-          <span>1. Panduan Deploy</span>
+          <Cloud size={12} />
+          <span>Panduan</span>
         </button>
         <button
           onClick={() => setActiveTab('sql')}
-          className={`flex-1 py-3 text-xs font-semibold text-center flex items-center justify-center space-x-1.5 border-b-2 transition-all ${
-            activeTab === 'sql'
-              ? 'border-[#046A38] text-[#046A38]'
-              : 'border-transparent text-[#6B7280] hover:text-[#046A38]'
+          className={`flex-1 py-3 text-[10px] font-black uppercase text-center flex items-center justify-center space-x-1.5 border-b-2 transition-all ${
+            activeTab === 'sql' ? 'border-[#046A38] text-[#046A38]' : 'border-transparent text-gray-400'
           }`}
         >
-          <Shield size={14} />
-          <span>2. Skema SQL</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('edge')}
-          className={`flex-1 py-3 text-xs font-semibold text-center flex items-center justify-center space-x-1.5 border-b-2 transition-all ${
-            activeTab === 'edge'
-              ? 'border-[#046A38] text-[#046A38]'
-              : 'border-transparent text-[#6B7280] hover:text-[#046A38]'
-          }`}
-        >
-          <Code size={14} />
-          <span>3. Edge API</span>
+          <Shield size={12} />
+          <span>Skema SQL</span>
         </button>
         <button
           onClick={() => setActiveTab('migrasi')}
-          className={`flex-1 py-3 text-xs font-semibold text-center flex items-center justify-center space-x-1.5 border-b-2 transition-all ${
-            activeTab === 'migrasi'
-              ? 'border-[#B8941F] text-[#B8941F]'
-              : 'border-transparent text-[#6B7280] hover:text-[#B8941F]'
+          className={`flex-1 py-3 text-[10px] font-black uppercase text-center flex items-center justify-center space-x-1.5 border-b-2 transition-all ${
+            activeTab === 'migrasi' ? 'border-[#B8941F] text-[#B8941F]' : 'border-transparent text-gray-400'
           }`}
         >
-          <Plus size={14} />
-          <span>4. SQL Migrasi</span>
+          <Plus size={12} />
+          <span>Migrasi</span>
         </button>
       </div>
 
@@ -499,10 +323,10 @@ serve(async (req) => {
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
              <div className="bg-amber-50 p-4 rounded-2xl border border-amber-200">
                <h3 className="text-xs font-black text-amber-800 uppercase flex items-center space-x-2">
-                 <Shield size={16} /> <span>Pembaruan Database Penting</span>
+                 <Shield size={16} /> <span>Perbaikan Patch SQL</span>
                </h3>
                <p className="text-[10px] text-amber-700 mt-1 leading-relaxed">
-                 Jalankan SQL di bawah ini pada <b>SQL Editor Supabase</b> untuk mengaktifkan fitur: multi-resto detail belanja, sistem blokir akun, dan pembagian komisi yang lebih akurat.
+                 Gunakan kode di bawah ini jika aplikasi mengeluh kolom tidak ditemukan atau butuh update fitur terbaru secara instan.
                </p>
              </div>
 
@@ -516,82 +340,18 @@ serve(async (req) => {
              </div>
           </div>
         )}
+
         {activeTab === 'panduan' && (
           <div className="space-y-4">
-            {/* CARD STEP 1 */}
             <div className="bg-white p-4 rounded-xl shadow-xs border-t-2 border-[#D4AF37]">
-              <span className="bg-[#F5E6A8] text-[#B8941F] font-bold text-[10px] px-2 py-0.5 rounded-full uppercase">
-                Langkah 1
-              </span>
-              <h3 className="font-bold text-sm text-[#1A1A1A] mt-2 mb-1">
-                Pasang Database di Supabase
-              </h3>
-              <p className="text-xs text-[#6B7280] leading-relaxed">
-                Buat proyek baru di dashboard Supabase Anda. Buka menu <strong>SQL Editor</strong>, klik <strong>New Query</strong>, lalu salin seluruh isi tab <strong>2. Skema SQL</strong> dan jalankan (Run). Ini akan otomatis membuat semua tabel, aturan RLS, indeks pencarian, dan sistem pemeliharaan harian (cron job) dalam sekejap.
-              </p>
+              <span className="bg-[#F5E6A8] text-[#B8941F] font-bold text-[10px] px-2 py-0.5 rounded-full uppercase">Langkah 1</span>
+              <h3 className="font-bold text-sm text-[#1A1A1A] mt-2 mb-1">Inisialisasi Database</h3>
+              <p className="text-xs text-[#6B7280] leading-relaxed">Copy kode di tab <strong>Skema SQL</strong> dan Run di SQL Editor Supabase untuk membangun ulang pondasi aplikasi yang bersih.</p>
             </div>
-
-            {/* CARD STEP 2 */}
             <div className="bg-white p-4 rounded-xl shadow-xs border-t-2 border-[#D4AF37]">
-              <span className="bg-[#F5E6A8] text-[#B8941F] font-bold text-[10px] px-2 py-0.5 rounded-full uppercase">
-                Langkah 2
-              </span>
-              <h3 className="font-bold text-sm text-[#1A1A1A] mt-2 mb-1">
-                Deploy Edge Function (Fonnte OTP)
-              </h3>
-              <p className="text-xs text-[#6B7280] leading-relaxed">
-                Supabase Edge Function digunakan untuk mengirim pesan OTP melalui WhatsApp secara aman. Salin kode di tab <strong>3. Edge Function</strong> ke direktori proyek lokal Anda, lalu jalankan perintah deploy via terminal:
-              </p>
-              <div className="bg-gray-100 p-2 rounded-lg font-mono text-[10px] text-gray-800 my-2 overflow-x-auto">
-                supabase functions deploy kirim-otp
-              </div>
-              <p className="text-xs text-[#6B7280]">
-                Di dashboard Supabase, masuk ke <strong>Settings</strong> &rarr; <strong>Edge Functions</strong>, lalu tambahkan variabel lingkungan rahasia berikut:
-              </p>
-              <ul className="list-disc pl-4 text-xs text-gray-700 mt-1 space-y-0.5">
-                <li><code>FONNTE_TOKEN</code> = <code className="bg-gray-100 p-0.5 rounded">EMTbGPgY8zfmrVGs3idM</code></li>
-                <li><code>FONNTE_SENDER</code> = <code className="bg-gray-100 p-0.5 rounded">6288212818616</code></li>
-              </ul>
-            </div>
-
-            {/* CARD STEP 3 */}
-            <div className="bg-white p-4 rounded-xl shadow-xs border-t-2 border-[#D4AF37]">
-              <span className="bg-[#F5E6A8] text-[#B8941F] font-bold text-[10px] px-2 py-0.5 rounded-full uppercase">
-                Langkah 3
-              </span>
-              <h3 className="font-bold text-sm text-[#1A1A1A] mt-2 mb-1">
-                Hosting Web di Cloudflare Pages & Rate Limiting
-              </h3>
-              <p className="text-xs text-[#6B7280] leading-relaxed">
-                Hubungkan repositori GitHub aplikasi web ini ke dashboard Cloudflare Pages. Cloudflare Pages akan menyediakan hosting statis gratis berkecepatan tinggi dengan proteksi SSL otomatis.
-              </p>
-              <p className="text-xs text-[#6B7280] leading-relaxed mt-2 font-semibold">
-                ⚠️ Pasang Rate Limiting untuk perlindungan serangan DDoS:
-              </p>
-              <p className="text-xs text-[#6B7280] leading-relaxed">
-                Di dashboard Cloudflare, buka tab <strong>Security</strong> &rarr; <strong>WAF</strong> &rarr; <strong>Rate Limiting Rules</strong>. Buat 2 aturan pembatasan akses:
-              </p>
-              <ul className="list-decimal pl-4 text-xs text-gray-700 mt-1 space-y-1">
-                <li>
-                  <strong>Akses Umum:</strong> Batasi maksimal <strong>60 permintaan per menit</strong> per IP address. Blokir 5 menit jika melanggar.
-                </li>
-                <li>
-                  <strong>Akses Edge Function / API OTP:</strong> Batasi maksimal <strong>20 permintaan per menit</strong> per IP address khusus pada endpoint kirim OTP. Blokir 5 menit jika melanggar.
-                </li>
-              </ul>
-            </div>
-
-            {/* CARD STEP 4 */}
-            <div className="bg-white p-4 rounded-xl shadow-xs border-t-2 border-[#D4AF37]">
-              <span className="bg-[#F5E6A8] text-[#B8941F] font-bold text-[10px] px-2 py-0.5 rounded-full uppercase">
-                Langkah 4
-              </span>
-              <h3 className="font-bold text-sm text-[#1A1A1A] mt-2 mb-1">
-                Memasang sebagai Aplikasi HP (PWA)
-              </h3>
-              <p className="text-xs text-[#6B7280] leading-relaxed">
-                Aplikasi ini dilengkapi <code>manifest.json</code> sehingga pengguna dan sopir di Lumajang bisa langsung memasang aplikasi di layar utama HP mereka (Add to Home Screen) melalui browser Chrome atau Safari tanpa perlu mendaftar ke Google Play Store atau App Store. Sangat hemat memori, cepat dibuka, dan hemat kuota data!
-              </p>
+              <span className="bg-[#F5E6A8] text-[#B8941F] font-bold text-[10px] px-2 py-0.5 rounded-full uppercase">Langkah 2</span>
+              <h3 className="font-bold text-sm text-[#1A1A1A] mt-2 mb-1">Kredensial Admin</h3>
+              <p className="text-xs text-[#6B7280] leading-relaxed">Setelah SQL sukses, Anda bisa langsung Login Admin dengan: <br/><strong>HP: 6285156766317</strong><br/><strong>Pass: 125758</strong></p>
             </div>
           </div>
         )}
@@ -599,25 +359,13 @@ serve(async (req) => {
         {activeTab === 'sql' && (
           <div className="space-y-3">
             <div className="flex justify-between items-center bg-[#E6F4EC] p-3 rounded-xl border border-[#E5E7EB]">
-              <span className="text-xs font-semibold text-[#046A38]">SKEMA TABEL POSTGRESQL</span>
-              <button
-                onClick={() => handleCopy(sqlSchema, 'sql')}
-                className="flex items-center space-x-1 text-xs bg-[#046A38] text-white px-2.5 py-1 rounded-lg hover:bg-[#034F2A] transition-all font-semibold"
-              >
-                {copied === 'sql' ? (
-                  <>
-                    <Check size={14} />
-                    <span>Disalin!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy size={14} />
-                    <span>Salin Kode</span>
-                  </>
-                )}
+              <span className="text-[10px] font-black text-[#046A38] uppercase">Full Master Schema</span>
+              <button onClick={() => handleCopy(sqlSchema, 'sql')} className="flex items-center space-x-1 text-[10px] bg-[#046A38] text-white px-3 py-1.5 rounded-lg hover:bg-[#034F2A] transition-all font-black uppercase">
+                {copied === 'sql' ? <Check size={14} /> : <Copy size={14} />}
+                <span>{copied === 'sql' ? 'Disalin' : 'Salin SQL'}</span>
               </button>
             </div>
-            <pre className="bg-gray-900 text-green-400 p-3 rounded-xl text-[10px] overflow-x-auto font-mono max-h-96 leading-normal whitespace-pre">
+            <pre className="bg-gray-900 text-emerald-400 p-3 rounded-xl text-[9px] overflow-x-auto font-mono max-h-[400px] leading-normal whitespace-pre">
               {sqlSchema}
             </pre>
           </div>
@@ -625,28 +373,13 @@ serve(async (req) => {
 
         {activeTab === 'edge' && (
           <div className="space-y-3">
-            <div className="flex justify-between items-center bg-[#E6F4EC] p-3 rounded-xl border border-[#E5E7EB]">
-              <span className="text-xs font-semibold text-[#046A38]">CODE TS (DENO RUNTIME)</span>
-              <button
-                onClick={() => handleCopy(edgeCode, 'edge')}
-                className="flex items-center space-x-1 text-xs bg-[#046A38] text-white px-2.5 py-1 rounded-lg hover:bg-[#034F2A] transition-all font-semibold"
-              >
-                {copied === 'edge' ? (
-                  <>
-                    <Check size={14} />
-                    <span>Disalin!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy size={14} />
-                    <span>Salin Kode</span>
-                  </>
-                )}
-              </button>
-            </div>
-            <pre className="bg-gray-900 text-green-400 p-3 rounded-xl text-[10px] overflow-x-auto font-mono max-h-96 leading-normal whitespace-pre">
-              {edgeCode}
-            </pre>
+             <div className="bg-white p-4 rounded-xl shadow-xs border-t-2 border-emerald-500">
+                <h3 className="font-bold text-sm">Edge Function Code</h3>
+                <p className="text-xs text-gray-500 mt-1">Gunakan ini untuk pengiriman OTP WhatsApp yang 100% aman.</p>
+             </div>
+             <pre className="bg-gray-900 text-emerald-400 p-3 rounded-xl text-[9px] overflow-x-auto font-mono max-h-96 whitespace-pre">
+               {edgeCode}
+             </pre>
           </div>
         )}
       </div>
