@@ -1072,7 +1072,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
             {/* Google Map Mini Lacak Perjalanan Sopir */}
             <div className="w-full h-48 rounded-xl border relative overflow-hidden">
               <MapTracker />
-              <APIProvider apiKey={GOOGLE_MAPS_KEY} version="weekly">
+              <APIProvider apiKey={config.googleMapsKey || GOOGLE_MAPS_KEY} version="weekly">
                 <Map
                   defaultCenter={{ lat: activeOrder.asalLat || KOORDINAT_LUMAJANG.lat, lng: activeOrder.asalLng || KOORDINAT_LUMAJANG.lng }}
                   defaultZoom={14}

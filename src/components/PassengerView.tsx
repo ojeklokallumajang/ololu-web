@@ -185,7 +185,7 @@ function LiveDriversMap() {
     <div className="bg-white p-4 rounded-3xl border border-gray-150 shadow-sm space-y-3">
       <div className="flex justify-between items-center"><div><h3 className="text-sm font-black">Driver Terdekat</h3></div><div className="bg-[#E6F4EC] px-2.5 py-1 rounded-full text-[#034F2A] text-[10px] font-black">🛵 {drivers.length} Online</div></div>
       <div className="h-48 rounded-2xl overflow-hidden border bg-gray-50 relative">
-        <APIProvider apiKey={GOOGLE_MAPS_KEY || ''}>
+        <APIProvider apiKey={config?.googleMapsKey || GOOGLE_MAPS_KEY}>
           <Map defaultCenter={KOORDINAT_LUMAJANG} center={userLoc || KOORDINAT_LUMAJANG} defaultZoom={14} mapId="LIVE_MAP" disableDefaultUI>
             {userLoc && <AdvancedMarker position={userLoc}><Pin background="#046A38" scale={0.8} /></AdvancedMarker>}
             {drivers.map(d => (<AdvancedMarker key={d.id} position={{ lat: d.lat, lng: d.lng }}><div className="bg-white text-[14px] p-1 rounded-full shadow border-2 border-[#0A8A4E] w-7 h-7 flex items-center justify-center">🛵</div></AdvancedMarker>))}
@@ -319,7 +319,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
         <h2 className="text-lg font-bold uppercase">{activeOrder.status?.replace('_',' ')}</h2>
       </div>
       <div className="w-full h-72 border-b">
-        <APIProvider apiKey={GOOGLE_MAPS_KEY}>
+        <APIProvider apiKey={config?.googleMapsKey || GOOGLE_MAPS_KEY}>
           <Map defaultCenter={{ lat: activeOrder.asalLat, lng: activeOrder.asalLng }} defaultZoom={13} mapId="ORDER_MAP">
             <MapDirections origin={{ lat: activeOrder.asalLat, lng: activeOrder.asalLng }} destination={{ lat: stops[stops.length-1].lat, lng: stops[stops.length-1].lng }} waypoints={activeOrder.daftarTujuan.slice(0,-1).map(s=>({ location:{lat:s.lat, lng:s.lng}, stopover:true }))} />
             <AdvancedMarker position={{ lat: activeOrder.asalLat, lng: activeOrder.asalLng }}><Pin background="#046A38" /></AdvancedMarker>
@@ -380,7 +380,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
           <div className="bg-[#034F2A] text-white p-4 flex justify-between items-center"><h3>PILIH LOKASI</h3><button onClick={() => setMapPickerTarget(null)}><X size={24} /></button></div>
           <div className="p-3"><MapPickerSearch query={mapSearchQuery} setQuery={setMapSearchQuery} suggestions={suggestions} setSuggestions={setSuggestions} onSelectSuggestion={(s) => { setTempLat(s.lat); setTempLng(s.lng); setTempAlamat(s.name); setMapSearchQuery(s.name); setSuggestions([]); }} /></div>
           <div className="flex-1 relative bg-gray-50">
-            <APIProvider apiKey={GOOGLE_MAPS_KEY}><Map center={{ lat: tempLat, lng: tempLng }} defaultZoom={14} mapId="PICKER_MAP"><AdvancedMarker position={{ lat: tempLat, lng: tempLng }} draggable onDragEnd={(e) => { if(e.latLng) { setTempLat(e.latLng.lat()); setTempLng(e.latLng.lng()); fetchAddress(e.latLng.lat(), e.latLng.lng()); } }}><Pin scale={1.2} /></AdvancedMarker></Map></APIProvider>
+            <APIProvider apiKey={config?.googleMapsKey || GOOGLE_MAPS_KEY}><Map center={{ lat: tempLat, lng: tempLng }} defaultZoom={14} mapId="PICKER_MAP"><AdvancedMarker position={{ lat: tempLat, lng: tempLng }} draggable onDragEnd={(e) => { if(e.latLng) { setTempLat(e.latLng.lat()); setTempLng(e.latLng.lng()); fetchAddress(e.latLng.lat(), e.latLng.lng()); } }}><Pin scale={1.2} /></AdvancedMarker></Map></APIProvider>
           </div>
           <div className="p-4 bg-white border-t"><button onClick={() => { if (mapPickerTarget === 'asal') { setAsalLat(tempLat); setAsalLng(tempLng); setAsalAlamat(tempAlamat); } else { setStops(stops.map(s => s.id === mapPickerTarget ? { ...s, lat: tempLat, lng: tempLng, alamat: tempAlamat } : s)); } setMapPickerTarget(null); }} className="w-full py-4 bg-[#034F2A] text-white font-black rounded-2xl uppercase text-xs">PILIH LOKASI INI</button></div>
         </div>

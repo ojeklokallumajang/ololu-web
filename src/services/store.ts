@@ -83,7 +83,9 @@ export const DEFAULT_PENGATURAN_TARIF: PengaturanTarif = {
   rushHourPersenKenaikan: 15,
   mapProvider: 'google',
   googleApiLimit: 25000, // Amannya 25rb load per bulan (limit gratis 28rb)
-  googleApiUsageCount: 0
+  googleApiUsageCount: 0,
+  googleMapsKey: 'AIzaSyAZS9TLRfaVbEDw4XtpJn7T7ppeUenWYZw',
+  fonnteToken: 'EMTbGPgY8zfmrVGs3idM'
 };
 
 let pengaturans = { ...DEFAULT_PENGATURAN_TARIF };
@@ -307,11 +309,14 @@ export const OloluStore = {
 
     console.log(`[OTP DEBUG] Mengirim ${otp} ke ${cleanedPhone}`);
 
+    // Ambil token fonnte terbaru dari database
+    const config = await this.getPengaturan();
+
     try {
       const response = await fetch("https://api.fonnte.com/send", {
         method: "POST",
         headers: {
-          "Authorization": "EMTbGPgY8zfmrVGs3idM"
+          "Authorization": config.fonnteToken || "EMTbGPgY8zfmrVGs3idM"
         },
         body: new URLSearchParams({
           "target": cleanedPhone,

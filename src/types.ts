@@ -267,6 +267,8 @@ export interface PengaturanTarif {
   mapProvider: 'google' | 'osm';
   googleApiLimit: number;
   googleApiUsageCount: number;
+  googleMapsKey: string;
+  fonnteToken: string;
 }
 
 export interface JadwalRushHour {

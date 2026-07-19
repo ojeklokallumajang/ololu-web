@@ -6,7 +6,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { OloluStore, KOORDINAT_LUMAJANG, DEFAULT_PENGATURAN_TARIF } from '../services/store';
 import { ololuRealtime } from '../services/supabaseClient';
-import { GOOGLE_MAPS_KEY } from './SplashMapKey';
 import {
   Pesanan,
   DetailSopir,
@@ -54,7 +53,8 @@ import {
   Bell,
   Calendar,
   Shield,
-  Info
+  Info,
+  KeyRound
 } from 'lucide-react';
 import { downloadFinancialReport } from '../utils/excelExport';
 import { generateReceipt } from '../utils/receiptGenerator';
@@ -62,7 +62,7 @@ import { generateReceipt } from '../utils/receiptGenerator';
 export default function AdminView() {
   const [profile, setProfile] = useState<ProfilPengguna | null>(null);
   const [isSuperUser, setIsSuperUser] = useState(false);
-  const [activeTab, setActiveTab] = useState<'stats' | 'sopir' | 'penumpang' | 'pesanan' | 'dompet' | 'tarif' | 'darurat' | 'admins' | 'logs' | 'laporan'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'sopir' | 'penumpang' | 'pesanan' | 'dompet' | 'tarif' | 'darurat' | 'rating' | 'admins' | 'logs' | 'laporan'>('stats');
   
   const [pesananList, setPesananList] = useState<Pesanan[]>([]);
   const [sopirList, setSopirList] = useState<DetailSopir[]>([]);
@@ -241,11 +241,11 @@ export default function AdminView() {
     if (res.success) { alert("Saldo diisi!"); setShowTopUpModal(false); setTopUpAmount(''); }
   };
 
-  if (loading && pesananList.length === 0) return <div className="flex flex-col items-center justify-center min-h-screen"><div className="w-10 h-10 border-4 border-t-[#046A38] rounded-full animate-spin"></div></div>;
+  if (loading && pesananList.length === 0) return <div className="flex flex-col items-center justify-center min-h-screen text-left"><div className="w-10 h-10 border-4 border-t-[#046A38] rounded-full animate-spin"></div><p className="text-xs font-bold text-gray-400 mt-4 uppercase">Memuat Admin...</p></div>;
   if (!isSuperUser) return <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center"><ShieldAlert size={64} className="text-red-500 mb-4" /><h2 className="text-2xl font-black">Akses Ditolak</h2></div>;
 
   const totalBiayaJasaMurni = pesananList.filter(p => p.status === 'selesai').reduce((acc, cur) => acc + Math.round((cur.tarifPerjalananMurni) * (cur.biayaLayananPersen || 10) / 100), 0);
-  const pendingVerifList = transaksiList.filter(t => (t.jenis === 'tarik_dana' || t.jenis === 'topup') && t.statusTarik === 'menunggu');
+  const pendingVerifList = transaksiList.filter(t => t.statusTarik === 'menunggu');
 
   return (
     <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-20 relative font-sans">
@@ -320,7 +320,7 @@ export default function AdminView() {
         )}
 
         {activeTab === 'pesanan' && (
-           <div className="space-y-2"><h3 className="text-xs font-black text-gray-700 uppercase mb-3">Audit Order Masuk</h3>
+           <div className="space-y-2"><h3 className="text-xs font-black text-gray-700 uppercase mb-3 px-1">Audit Order Masuk</h3>
              {pesananList.map(p => (
                 <div key={p.id} className="bg-white p-3 rounded-xl border flex items-center justify-between shadow-xs group"><div><div className="flex items-center space-x-1.5"><p className="text-xs font-black text-gray-800">#{p.nomorPesanan}</p><span className={`text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase ${p.status === 'selesai' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{p.status}</span></div><p className="text-[9px] text-gray-500 font-bold mt-0.5">{p.jenisLayanan?.toUpperCase()} • {p.namaPenumpang}</p></div><div className="text-right"><p className="text-[11px] font-black text-[#046A38]">Rp {p.totalBayarAkhir?.toLocaleString('id-ID')}</p><div className="flex flex-col items-end space-y-1 mt-1"><button onClick={() => setSelectedOrder(p)} className="text-[8px] font-black text-blue-600 uppercase hover:underline">Detail</button>{p.status === 'selesai' && <button onClick={() => generateReceipt(p)} className="text-[8px] font-black text-emerald-600 uppercase hover:underline flex items-center space-x-1"><FileText size={10} /><span>Cetak Nota</span></button>}</div></div></div>
              ))}
@@ -340,14 +340,155 @@ export default function AdminView() {
                {/* OTHERS */}
                <div className="bg-white p-6 rounded-3xl border shadow-sm space-y-4"><h3 className="text-xs font-black text-slate-700 uppercase tracking-widest border-b pb-2 flex items-center space-x-2"><DollarSign size={16} /> <span>Biaya Parkir & Tambahan</span></h3><div className="grid grid-cols-2 gap-4"><div className="space-y-1"><label className="text-[9px] font-bold text-gray-400 uppercase">Parkir Biasa</label><input type="number" value={tempConfig.biayaParkirBiasa} onChange={(e)=>setTempConfig({...tempConfig, biayaParkirBiasa: parseInt(e.target.value)})} className="w-full p-3 bg-gray-50 border rounded-2xl outline-none text-sm font-black" /></div><div className="space-y-1"><label className="text-[9px] font-bold text-gray-400 uppercase">Parkir Pasar</label><input type="number" value={tempConfig.biayaParkirPasar} onChange={(e)=>setTempConfig({...tempConfig, biayaParkirPasar: parseInt(e.target.value)})} className="w-full p-3 bg-gray-50 border rounded-2xl outline-none text-sm font-black" /></div><div className="space-y-1"><label className="text-[9px] font-bold text-gray-400 uppercase">Stop Ke-2 dst</label><input type="number" value={tempConfig.biayaPerStopTambahan} onChange={(e)=>setTempConfig({...tempConfig, biayaPerStopTambahan: parseInt(e.target.value)})} className="w-full p-3 bg-gray-50 border rounded-2xl outline-none text-sm font-black" /></div></div></div>
                {/* SYSTEM */}
-               <div className="bg-white p-6 rounded-3xl border shadow-sm space-y-5"><h3 className="text-xs font-black text-gray-700 uppercase tracking-widest border-b pb-2 flex items-center space-x-2"><Settings size={16} /> <span>API & Sistem</span><div className="bg-slate-900 text-white p-4 rounded-3xl space-y-3 mt-2 w-full"><div className="flex justify-between items-center"><span className="text-[8px] font-black text-slate-400 uppercase">Google API Usage</span><span className="text-[8px] font-black bg-emerald-600 px-2 py-0.5 rounded text-white">{config.googleApiUsageCount} / {tempConfig.googleApiLimit}</span></div><div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-emerald-500" style={{ width: `${Math.min(100, (config.googleApiUsageCount / config.googleApiLimit) * 100)}%` }}></div></div></div></h3><div className="grid grid-cols-2 gap-4"><div className="space-y-1"><label className="text-[9px] font-black text-gray-400 uppercase">Limit API</label><input type="number" value={tempConfig.googleApiLimit} onChange={(e)=>setTempConfig({...tempConfig, googleApiLimit: parseInt(e.target.value)})} className="w-full p-3.5 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-2xl outline-none text-sm font-black text-[#046A38]" /></div><div className="space-y-1"><label className="text-[9px] font-black text-gray-400 uppercase">Radius Cari (KM)</label><input type="number" value={tempConfig.radiusPencarianSopirKm} onChange={(e)=>setTempConfig({...tempConfig, radiusPencarianSopirKm: parseInt(e.target.value)})} className="w-full p-3.5 bg-gray-50 border rounded-2xl outline-none text-sm font-black" /></div></div><div className="bg-blue-50 p-4 rounded-3xl border border-blue-100 flex items-start space-x-3"><Info size={20} className="text-blue-600 shrink-0 mt-0.5" /><p className="text-[9px] text-blue-800 leading-relaxed font-medium">Pencarian dikunci untuk <b>Lumajang</b> (Lat: -7.9 s/d -8.3, Lng: 113.1 s/d 113.4).</p></div></div>
+               <div className="bg-white p-6 rounded-3xl border shadow-sm space-y-5">
+                  <h3 className="text-xs font-black text-gray-700 uppercase tracking-widest border-b pb-2 flex items-center space-x-2"><Settings size={16} /> <span>API & Sistem</span></h3>
+                  <div className="bg-slate-900 text-white p-4 rounded-3xl space-y-3 mt-2 w-full"><div className="flex justify-between items-center"><span className="text-[8px] font-black text-slate-400 uppercase">Google API Usage</span><span className="text-[8px] font-black bg-emerald-600 px-2 py-0.5 rounded text-white">{config.googleApiUsageCount} / {tempConfig.googleApiLimit}</span></div><div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-emerald-500" style={{ width: `${Math.min(100, (config.googleApiUsageCount / config.googleApiLimit) * 100)}%` }}></div></div></div>
+                  <div className="grid grid-cols-2 gap-4"><div className="space-y-1"><label className="text-[9px] font-black text-gray-400 uppercase">Limit API</label><input type="number" value={tempConfig.googleApiLimit} onChange={(e)=>setTempConfig({...tempConfig, googleApiLimit: parseInt(e.target.value)})} className="w-full p-3.5 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-2xl outline-none text-sm font-black text-[#046A38]" /></div><div className="space-y-1"><label className="text-[9px] font-black text-gray-400 uppercase">Radius Cari (KM)</label><input type="number" value={tempConfig.radiusPencarianSopirKm} onChange={(e)=>setTempConfig({...tempConfig, radiusPencarianSopirKm: parseInt(e.target.value)})} className="w-full p-3.5 bg-gray-50 border rounded-2xl outline-none text-sm font-black" /></div></div>
+                  <div className="bg-blue-50 p-4 rounded-3xl border border-blue-100 flex items-start space-x-3"><Info size={20} className="text-blue-600 shrink-0 mt-0.5" /><p className="text-[9px] text-blue-800 leading-relaxed font-medium">Pencarian dikunci untuk <b>Lumajang</b>.</p></div>
+
+                  {/* SUPER USER ONLY: API KEYS */}
+                  {isSuperUser && (
+                    <div className="space-y-4 pt-6 border-t-2 border-red-100 mt-4">
+                       <div className="flex items-center space-x-2 text-red-600"><Shield size={16} /><h3 className="text-[10px] font-black uppercase tracking-widest">Kunci API (Sensitif)</h3></div>
+                       <div className="space-y-3">
+                          <div className="space-y-1"><label className="text-[8px] font-black text-gray-400 uppercase ml-1">Fonnte WA Token</label><input type="password" value={tempConfig.fonnteToken} onChange={(e)=>setTempConfig({...tempConfig, fonnteToken: e.target.value})} className="w-full p-3 bg-red-50/30 border-2 border-dashed border-red-100 rounded-2xl outline-none text-xs font-mono" /></div>
+                          <div className="space-y-1"><label className="text-[8px] font-black text-gray-400 uppercase ml-1">Google Maps Key</label><input type="password" value={tempConfig.googleMapsKey} onChange={(e)=>setTempConfig({...tempConfig, googleMapsKey: e.target.value})} className="w-full p-3 bg-red-50/30 border-2 border-dashed border-red-100 rounded-2xl outline-none text-xs font-mono" /></div>
+                       </div>
+                    </div>
+                  )}
+               </div>
                <button onClick={saveConfigWithLog} className="w-full py-5 bg-[#046A38] text-white font-black rounded-[32px] text-[12px] tracking-[0.3em] uppercase shadow-2xl active:scale-95 transition-all sticky bottom-6 z-40 border-b-4 border-emerald-900">💾 SIMPAN SEMUA PERUBAHAN</button>
             </div>
           </div>
         )}
 
         {activeTab === 'admins' && (
-           <div className="space-y-4"><div className="bg-white p-5 rounded-2xl border shadow-sm space-y-4"><h3 className="text-xs font-black text-[#046A38] uppercase">Tambah Tim Admin</h3><div className="space-y-2"><input type="text" placeholder="Nama Lengkap" value={newAdminName} onChange={(e) => setNewAdminName(e.target.value)} className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs font-bold" /><input type="tel" placeholder="WhatsApp" value={newAdminPhone} onChange={(e) => setNewAdminPhone(e.target.value)} className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-xs font-bold" /><button onClick={handleAddAdmin} className="w-full py-3 bg-[#046A38] text-white font-black rounded-xl text-[10px] tracking-widest uppercase shadow-md active:scale-95">TAMBAH</button></div></div></div>
+           <div className="space-y-6">
+              <div className="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
+                <h3 className="text-xs font-black text-[#046A38] uppercase tracking-widest border-b pb-2 flex items-center space-x-2">
+                  <ShieldCheck size={16} /> <span>Tambah Tim Admin Baru</span>
+                </h3>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-bold text-gray-400 uppercase ml-1">Nama Lengkap Tim</label>
+                    <input type="text" placeholder="Masukkan nama..." value={newAdminName} onChange={(e) => setNewAdminName(e.target.value)} className="w-full p-3 bg-gray-50 border rounded-2xl outline-none text-xs font-bold focus:border-[#046A38] transition-all" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-bold text-gray-400 uppercase ml-1">Nomor WhatsApp (628...)</label>
+                    <input type="tel" placeholder="cth: 62851..." value={newAdminPhone} onChange={(e) => setNewAdminPhone(e.target.value)} className="w-full p-3 bg-gray-50 border rounded-2xl outline-none text-xs font-bold focus:border-[#046A38] transition-all" />
+                  </div>
+                  <button onClick={handleAddAdmin} className="w-full py-4 bg-[#046A38] text-white font-black rounded-2xl text-[10px] tracking-widest uppercase shadow-lg shadow-emerald-900/20 active:scale-95 transition-all">AKTIFKAN AKSES ADMIN</button>
+                </div>
+              </div>
+
+              <div className="space-y-3 px-1">
+                <h3 className="text-[10px] font-black text-gray-700 uppercase tracking-widest">Daftar Tim Aktif</h3>
+                {adminList.length === 0 ? (
+                  <div className="p-8 text-center text-gray-400 text-[10px] italic bg-white rounded-3xl border border-dashed">Belum ada admin tambahan.</div>
+                ) : (
+                  adminList.map(adm => (
+                    <div key={adm.id} className="bg-white p-4 rounded-[24px] border border-gray-150 flex items-center justify-between shadow-xs group transition-all hover:border-[#046A38]">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-[#046A38] group-hover:bg-emerald-600 group-hover:text-white transition-all"><ShieldCheck size={20} /></div>
+                        <div>
+                          <p className="text-xs font-black text-gray-800 uppercase tracking-tight">{adm.nama}</p>
+                          <p className="text-[9px] text-gray-500 font-medium">{adm.nomorHp} {adm.nomorHp === '6285156766317' ? <span className="text-amber-600 font-bold ml-1">(SUPERUSER)</span> : <span className="text-emerald-600 font-bold ml-1">(SUB-ADMIN)</span>}</p>
+                        </div>
+                      </div>
+                      {adm.nomorHp !== '6285156766317' && (
+                        <button onClick={() => handleRemoveAdmin(adm.id)} className="p-2.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Hapus Akses">
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+           </div>
+        )}
+
+        {activeTab === 'laporan' && (
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-[32px] border border-gray-150 shadow-sm space-y-5">
+              <div className="flex items-center space-x-3 border-b pb-4">
+                <div className="bg-emerald-50 p-2.5 rounded-2xl text-[#046A38] shadow-inner"><Calendar size={22} /></div>
+                <div>
+                  <h3 className="text-sm font-black text-gray-800 uppercase leading-none">Pusat Laporan Keuangan</h3>
+                  <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-widest">Excel Export Manager</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Laporan Operasional Cepat</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button onClick={() => downloadFinancialReport(`Laporan_Harian_${new Date().toISOString().split('T')[0]}`, pesananList, sopirList, profilList, transaksiList)} className="flex items-center justify-center space-x-2 py-4 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-wider shadow-lg active:scale-95 transition-all"><Download size={14} /><span>Hari Ini</span></button>
+                    <button onClick={() => { const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1); const start = new Date(yesterday.setHours(0,0,0,0)); const end = new Date(yesterday.setHours(23,59,59,999)); downloadFinancialReport(`Laporan_Kemarin_${start.toISOString().split('T')[0]}`, pesananList, sopirList, profilList, transaksiList, start, end); }} className="flex items-center justify-center space-x-2 py-4 bg-slate-800 text-white rounded-2xl text-[10px] font-black uppercase tracking-wider shadow-lg active:scale-95 transition-all"><Download size={14} /><span>Kemarin</span></button>
+                  </div>
+                </div>
+
+                <button onClick={() => { const now = new Date(); const start = new Date(now.setDate(now.getDate() - now.getDay())); start.setHours(0,0,0,0); const end = new Date(); downloadFinancialReport(`Laporan_Mingguan_sd_${end.toISOString().split('T')[0]}`, pesananList, sopirList, profilList, transaksiList, start, end); }} className="w-full flex items-center justify-center space-x-2 py-4 border-2 border-emerald-600 text-emerald-700 rounded-[24px] text-[10px] font-black uppercase tracking-widest hover:bg-emerald-50 active:scale-95 transition-all"><FileSpreadsheet size={18} /><span>Unduh Rekap Minggu Ini</span></button>
+
+                <div className="space-y-3 pt-2">
+                  <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Arsip Bulanan (3 Bulan Terakhir)</h4>
+                  <div className="space-y-2">
+                    {[0, 1, 2].map(offset => {
+                      const d = new Date(); d.setMonth(d.getMonth() - offset);
+                      const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                      const yearMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                      const start = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0);
+                      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
+                      return (
+                        <button key={yearMonth} onClick={() => downloadFinancialReport(`Laporan_Bulanan_${yearMonth}`, pesananList, sopirList, profilList, transaksiList, start, end)} className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-emerald-50 border border-gray-100 rounded-2xl group transition-all">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-white rounded-xl shadow-sm text-[#B8941F] group-hover:text-[#046A38] transition-colors"><Calendar size={18} /></div>
+                            <span className="text-xs font-black text-gray-700 group-hover:text-[#046A38] uppercase transition-colors">{label}</span>
+                          </div>
+                          <Download size={18} className="text-gray-300 group-hover:text-[#046A38] transition-colors" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-amber-50 p-4 rounded-3xl border border-amber-100 flex items-start space-x-3 shadow-sm">
+              <Shield size={22} className="text-[#B8941F] shrink-0 mt-0.5" />
+              <p className="text-[10px] text-amber-800 leading-relaxed font-medium">
+                <strong>Legalitas Data:</strong> Laporan ini adalah dokumen resmi yang ditarik langsung dari database transaksi Ololu. Gunakan data ini untuk pembukuan bulanan PT Ololu Nusantara Lumajang.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'logs' && (
+           <div className="space-y-3">
+             <div className="flex justify-between items-center px-1">
+                <h3 className="text-[10px] font-black text-gray-700 uppercase tracking-[0.2em]">📜 Log Audit Sistem</h3>
+                <button onClick={syncData} className="p-1 text-gray-400 hover:text-[#046A38]"><Radio size={14} className={loading ? 'animate-spin' : ''} /></button>
+             </div>
+             {auditLogs.length === 0 ? (
+               <div className="p-12 text-center bg-white rounded-3xl border border-dashed border-gray-200">
+                  <p className="text-xs italic text-gray-400">Belum ada log tercatat hari ini.</p>
+               </div>
+             ) : (
+               <div className="space-y-2">
+                 {auditLogs.map(l => (
+                   <div key={l.id} className="bg-white p-4 rounded-2xl border border-gray-150 space-y-1.5 shadow-xs hover:border-[#046A38] transition-all">
+                      <div className="flex justify-between items-start">
+                        <span className="text-[9px] font-black text-[#046A38] uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-full">{l.aksi}</span>
+                        <p className="text-[8px] text-gray-400 font-mono">{new Date(l.timestamp).toLocaleString('id-ID')}</p>
+                      </div>
+                      <p className="text-[10px] text-gray-600 leading-relaxed font-medium">{l.detail}</p>
+                      <div className="flex items-center space-x-1 pt-1 opacity-50">
+                        <User size={10} className="text-gray-400" />
+                        <p className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">Oleh: {l.adminNama}</p>
+                      </div>
+                   </div>
+                 ))}
+               </div>
+             )}
+           </div>
         )}
       </div>
 
