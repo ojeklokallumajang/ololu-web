@@ -615,10 +615,18 @@ export const OloluStore = {
   },
 
   async getAllSopir(): Promise<DetailSopir[]> {
-    const { data } = await getSupabase()!.from('driver_details').select('*, profiles:id(nama, nomor_hp)');
+    const { data, error } = await getSupabase()!.from('driver_details').select('*, profiles(nama, nomor_hp)');
+    if (error) {
+      console.error("❌ ERROR FETCH ALL SOPIR:", error.message);
+      return [];
+    }
     return (data || []).map(d => {
       const m = mapDriver(d);
-      if (m) { (m as any).nama = d.profiles?.nama || 'Sopir'; (m as any).nomorHp = d.profiles?.nomor_hp || ''; }
+      const profileData = Array.isArray(d.profiles) ? d.profiles[0] : d.profiles;
+      if (m) {
+        (m as any).nama = profileData?.nama || 'Sopir';
+        (m as any).nomorHp = profileData?.nomor_hp || '';
+      }
       return m;
     }).filter(Boolean) as DetailSopir[];
   },
