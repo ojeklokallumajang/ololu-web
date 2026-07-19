@@ -583,7 +583,7 @@ export const OloluStore = {
 
   async getAllPesanan(): Promise<Pesanan[]> {
     const { data, error } = await getSupabase()!.from('orders')
-      .select('*, order_stops(*), profiles!id_penumpang(nama, nomor_hp), driver_details!id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))')
+      .select('*, order_stops(*), profiles:id_penumpang(nama, nomor_hp), driver_details:id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))')
       .order('waktu_dibuat', { ascending: false });
 
     if (error) {
@@ -595,7 +595,7 @@ export const OloluStore = {
 
   async getPesananById(id: string): Promise<Pesanan | null> {
     const { data, error } = await getSupabase()!.from('orders')
-      .select('*, order_stops(*), profiles!id_penumpang(nama, nomor_hp), driver_details!id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))')
+      .select('*, order_stops(*), profiles:id_penumpang(nama, nomor_hp), driver_details:id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))')
       .eq('id', id).single();
 
     if (error) {

@@ -52,7 +52,11 @@ ALTER TABLE public.order_stops ADD COLUMN IF NOT EXISTS nota_rincian_barang TEXT
 ALTER TABLE public.order_stops ADD COLUMN IF NOT EXISTS nota_foto_url TEXT;
 ALTER TABLE public.order_stops ADD COLUMN IF NOT EXISTS nota_waktu_dicatat TIMESTAMPTZ;
 
--- 4. Buat Tabel Penyimpanan OTP (Anti-Refresh)
+-- 4. Lengkapi Tabel WALLET_TRANSACTIONS (Fix topup & tarik)
+ALTER TABLE public.wallet_transactions ADD COLUMN IF NOT EXISTS bukti_transfer TEXT;
+ALTER TABLE public.wallet_transactions ADD COLUMN IF NOT EXISTS alasan_penolakan TEXT;
+
+-- 5. Buat Tabel Penyimpanan OTP (Anti-Refresh)
 CREATE TABLE IF NOT EXISTS public.otps (
     phone_number TEXT PRIMARY KEY,
     otp_code TEXT NOT NULL,
@@ -208,6 +212,8 @@ CREATE TABLE public.wallet_transactions (
     saldo_awal NUMERIC NOT NULL,
     saldo_akhir NUMERIC NOT NULL,
     deskripsi TEXT,
+    bukti_transfer TEXT, -- Kolom baru untuk bukti pendaftaran/topup
+    alasan_penolakan TEXT, -- Kolom baru untuk penolakan admin
     status_tarik TEXT DEFAULT 'disetujui',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
