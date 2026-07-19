@@ -135,23 +135,24 @@ const mapOrder = (db: any): Pesanan | null => {
   if (!db) return null;
 
   // Extract Passenger Info from joined profile
-  const passenger = db.profiles || {}; // profiles is joined via id_penumpang
+  // Handling both possible join result formats (object or array)
+  const passenger = Array.isArray(db.profiles) ? db.profiles[0] : (db.profiles || {});
 
   // Extract Driver Info from joined driver_details and its profile
-  const driverDetail = db.driver_details || {};
-  const driverProfile = driverDetail.profiles || {};
+  const driverDetail = Array.isArray(db.driver_details) ? db.driver_details[0] : (db.driver_details || {});
+  const driverProfile = Array.isArray(driverDetail.profiles) ? driverDetail.profiles[0] : (driverDetail.profiles || {});
 
   return {
     id: db.id,
     nomorPesanan: db.nomor_pesanan || 'ORD-0000',
     jenisLayanan: db.jenis_layanan,
     idPenumpang: db.id_penumpang,
-    namaPenumpang: passenger.nama || 'Pelanggan',
-    nomorHpPenumpang: passenger.nomor_hp || '',
+    namaPenumpang: passenger.nama || db.nama_penumpang || 'Pelanggan',
+    nomorHpPenumpang: passenger.nomor_hp || db.nomor_hp_penumpang || '',
     idSopir: db.id_sopir || null,
-    namaSopir: driverProfile.nama || '',
-    nomorHpSopir: driverProfile.nomor_hp || '',
-    platNomorSopir: driverDetail.plat_nomor || '',
+    namaSopir: driverProfile.nama || db.nama_sopir || '',
+    nomorHpSopir: driverProfile.nomor_hp || db.nomor_hp_sopir || '',
+    platNomorSopir: driverDetail.plat_nomor || db.plat_nomor_sopir || '',
     asalAlamat: db.asal_alamat || '',
     asalLat: safeParseFloat(db.asal_lat, KOORDINAT_LUMAJANG.lat),
     asalLng: safeParseFloat(db.asal_lng, KOORDINAT_LUMAJANG.lng),
