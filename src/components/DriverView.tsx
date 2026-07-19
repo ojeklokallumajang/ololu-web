@@ -534,25 +534,31 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
   };
 
   // --- ACTIVE ORDER PROCESS ACTIONS ---
-  const handleArrivePickup = () => {
+  const handleArrivePickup = async () => {
     if (!activeOrder) return;
     const nextStatus = 'dalam_perjalanan' as StatusPesanan;
     setActiveOrder({ ...activeOrder, status: nextStatus });
 
-    // Broadcast status ke penumpang (0 Write)
+    // Persist to DB
+    await OloluStore.updateStatusPesanan(activeOrder.id, nextStatus);
+
+    // Broadcast status ke penumpang
     ololuRealtime.broadcastTripUpdate(activeOrder.id, {
       type: 'status_update',
       status: nextStatus
     });
   };
 
-  const handleUpdateParking = (stopId: string, choice: 'tidak_ada' | 'parkir_biasa' | 'parkir_pasar') => {
+  const handleUpdateParking = async (stopId: string, choice: 'tidak_ada' | 'parkir_biasa' | 'parkir_pasar') => {
     if (!activeOrder) return;
     const updatedOrder = { ...activeOrder };
     updatedOrder.daftarTujuan = updatedOrder.daftarTujuan.map(s => s.id === stopId ? { ...s, pilihanParkir: choice } : s);
     setActiveOrder(updatedOrder);
 
-    // Broadcast update parkir (0 Write)
+    // Persist to DB
+    await OloluStore.updateParkirStop(stopId, choice);
+
+    // Broadcast update parkir
     ololuRealtime.broadcastTripUpdate(activeOrder.id, {
       type: 'parking_update',
       stopId,
@@ -606,7 +612,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
     setIsNotaAsal(false);
   };
 
-  const handleCompleteStop = (stopId: string) => {
+  const handleCompleteStop = async (stopId: string) => {
     if (!activeOrder) return;
     const updatedOrder = { ...activeOrder };
     let nextTahap = updatedOrder.tahapAktif;
@@ -622,7 +628,11 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
     const finalOrder = { ...updatedOrder, tahapAktif: nextTahap };
     setActiveOrder(finalOrder);
 
-    // Broadcast ke penumpang (0 Write)
+    // Persist to DB
+    await OloluStore.setStopSelesai(stopId);
+    await OloluStore.updateTahapAktif(activeOrder.id, nextTahap);
+
+    // Broadcast ke penumpang
     ololuRealtime.broadcastTripUpdate(activeOrder.id, {
       type: 'stop_complete',
       stopId,

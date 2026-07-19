@@ -413,9 +413,30 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       else if (data.type === 'parking_update') setActiveOrder(prev => prev ? ({ ...prev, daftarTujuan: prev.daftarTujuan.map(s => s.id === data.stopId ? { ...s, pilihanParkir: data.choice } : s) }) : null);
       else if (data.type === 'stop_complete') setActiveOrder(prev => prev ? ({ ...prev, daftarTujuan: prev.daftarTujuan.map(s => s.id === data.stopId ? { ...s, status: 'selesai' as any } : s), tahapAktif: data.nextTahap }) : null);
       else if (data.type === 'nota_update') setActiveOrder(prev => prev ? ({ ...prev, daftarTujuan: prev.daftarTujuan.map(s => s.id === data.stopId ? { ...s, nota: data.nota } : s) }) : null);
+      else if (data.type === 'nota_awal_update') setActiveOrder(prev => prev ? ({ ...prev, notaAwal: data.nota }) : null);
     });
     return () => unsub();
   }, [activeOrder?.id]);
+
+  // Realtime calculation of current order total for passenger view
+  const liveTotal = useMemo(() => {
+    if (!activeOrder || !config) return 0;
+
+    // 1. Calculate Parking
+    const totalParkir = activeOrder.daftarTujuan.reduce((sum, s) => {
+      if (s.pilihanParkir === 'parkir_biasa') return sum + (config.biayaParkirBiasa || 0);
+      if (s.pilihanParkir === 'parkir_pasar') return sum + (config.biayaParkirPasar || 0);
+      return sum;
+    }, 0);
+
+    // 2. Calculate Nota
+    const notaAsal = activeOrder.notaAwal?.totalToko || 0;
+    const notaStops = activeOrder.daftarTujuan.reduce((sum, s) => sum + (s.nota?.totalToko || 0), 0);
+
+    // 3. Final Total
+    const base = activeOrder.tarifPerjalananMurni + (activeOrder.tambahanTujuan || 0) + (activeOrder.tambahanItem || 0);
+    return base + totalParkir + notaAsal + notaStops;
+  }, [activeOrder, config]);
 
   const selectSubLayanan = (sub: any) => {
     setSubLayanan(sub);
@@ -668,9 +689,45 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       </div>
       <div className="p-4 space-y-4 text-left">
         <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-[#D4AF37]">
-          <span className="text-[10px] text-gray-400 font-bold uppercase">Total Tagihan</span>
-          <p className="text-2xl font-black text-[#B8941F]">Rp {activeOrder.totalBayarAkhir.toLocaleString('id-ID')}</p>
+          <span className="text-[10px] text-gray-400 font-bold uppercase">Total Tagihan (Real-time)</span>
+          <p className="text-2xl font-black text-[#B8941F]">Rp {liveTotal.toLocaleString('id-ID')}</p>
+          <p className="text-[8px] text-gray-400 mt-1 italic">*Total sudah termasuk biaya mampir & belanjaan yang diinput sopir.</p>
         </div>
+
+        {/* Breakdown untuk Penumpang */}
+        <div className="bg-white p-4 rounded-xl border space-y-3">
+           <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b pb-1">Rincian Perjalanan</h4>
+           <div className="space-y-3">
+              <div className="flex items-start space-x-2">
+                 <div className="w-4 h-4 bg-[#046A38] text-white text-[8px] font-black rounded-full flex items-center justify-center shrink-0 mt-0.5">A</div>
+                 <div>
+                    <p className="text-[10px] font-bold text-gray-800">{activeOrder.asalAlamat}</p>
+                    {activeOrder.notaAwal && (
+                       <div className="mt-1 bg-emerald-50 p-1.5 rounded text-[9px] text-emerald-800 font-bold border border-emerald-100">
+                          🛍️ Belanja: Rp {activeOrder.notaAwal.totalToko.toLocaleString('id-ID')}
+                       </div>
+                    )}
+                 </div>
+              </div>
+              {activeOrder.daftarTujuan.map((st, idx) => (
+                <div key={st.id} className="flex items-start space-x-2 border-l-2 border-gray-100 ml-2 pl-2">
+                   <div className="w-4 h-4 bg-[#D4AF37] text-white text-[8px] font-black rounded-full flex items-center justify-center shrink-0 mt-0.5">{idx + 1}</div>
+                   <div>
+                      <p className="text-[10px] font-bold text-gray-800">{st.alamat}</p>
+                      {st.nota && (
+                         <div className="mt-1 bg-amber-50 p-1.5 rounded text-[9px] text-amber-800 font-bold border border-amber-100">
+                            🛍️ Belanja: Rp {st.nota.totalToko.toLocaleString('id-ID')}
+                         </div>
+                      )}
+                      {st.pilihanParkir !== 'tidak_ada' && (
+                         <div className="text-[8px] text-gray-400 font-bold mt-0.5">🅿️ Biaya Parkir Aktif</div>
+                      )}
+                   </div>
+                </div>
+              ))}
+           </div>
+        </div>
+
         {activeOrder.namaSopir && (
           <div className="bg-white p-4 rounded-xl border flex items-center justify-between">
             <div className="flex items-center space-x-3"><div className="bg-[#E6F4EC] p-2 rounded-full text-[#046A38]"><Car size={20} /></div><div><h4 className="text-xs font-bold text-gray-500 uppercase">Sopir Mitra</h4><h3 className="text-sm font-bold">{activeOrder.namaSopir}</h3><p className="text-[10px] font-mono text-emerald-600">{activeOrder.platNomorSopir}</p></div></div>

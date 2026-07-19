@@ -474,19 +474,21 @@ export const OloluStore = {
 
     if (stopsError) {
       console.error("❌ GAGAL SIMPAN STOPS:", stopsError.message);
-      // We don't return null here yet, as the main order exists, but it's risky.
-      // Better to continue and fetch whatever we have.
     }
 
-    // 3. Fetch Final Order with robust join
+    // 3. Fetch Final Order with SAFE LEFT JOINS (No '!' to avoid inner joins)
     const { data: finalOrder, error: fetchError } = await supabase.from('orders')
-      .select('*, order_stops(*), profiles!id_penumpang(nama, nomor_hp)')
+      .select(`
+        *,
+        order_stops(*),
+        profiles:id_penumpang(nama, nomor_hp),
+        driver_details:id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))
+      `)
       .eq('id', newOrder.id).single();
 
     if (fetchError) {
       console.error("❌ GAGAL FETCH FINAL ORDER:", fetchError.message);
-      // Fallback: use the newOrder directly with provided stops
-      return mapOrder({ ...newOrder, order_stops: stops });
+      return mapOrder({ ...newOrder, order_stops: [] });
     }
 
     const mapped = mapOrder(finalOrder);
@@ -498,14 +500,24 @@ export const OloluStore = {
 
   async getAllPesanan(): Promise<Pesanan[]> {
     const { data } = await getSupabase()!.from('orders')
-      .select('*, order_stops(*), profiles!id_penumpang(nama, nomor_hp), driver_details!id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))')
+      .select(`
+        *,
+        order_stops(*),
+        profiles:id_penumpang(nama, nomor_hp),
+        driver_details:id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))
+      `)
       .order('waktu_dibuat', { ascending: false });
     return (data || []).map(o => mapOrder(o)).filter(Boolean) as Pesanan[];
   },
 
   async getPesananById(id: string): Promise<Pesanan | null> {
     const { data } = await getSupabase()!.from('orders')
-      .select('*, order_stops(*), profiles!id_penumpang(nama, nomor_hp), driver_details!id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))')
+      .select(`
+        *,
+        order_stops(*),
+        profiles:id_penumpang(nama, nomor_hp),
+        driver_details:id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))
+      `)
       .eq('id', id).single();
     return mapOrder(data);
   },
@@ -649,6 +661,22 @@ export const OloluStore = {
       photo_data: photoData
     });
     ololuRealtime.broadcastChatMessage(pesananId, { senderId, senderName, senderRole, message, voiceData, photoData, timestamp: new Date().toISOString() });
+  },
+
+  async updateStatusPesanan(id: string, status: StatusPesanan) {
+    await getSupabase()!.from('orders').update({ status }).eq('id', id);
+  },
+
+  async updateTahapAktif(id: string, tahap: number) {
+    await getSupabase()!.from('orders').update({ tahap_aktif: tahap }).eq('id', id);
+  },
+
+  async updateParkirStop(stopId: string, choice: string) {
+    await getSupabase()!.from('order_stops').update({ pilihan_parkir: choice }).eq('id', stopId);
+  },
+
+  async setStopSelesai(stopId: string) {
+    await getSupabase()!.from('order_stops').update({ status: 'selesai' }).eq('id', stopId);
   },
 
   async simpanNotaAwal(pesananId: string, namaToko: string, rincian: string, total: number, fotoBase64: string) {
