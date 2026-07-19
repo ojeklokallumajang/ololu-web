@@ -630,7 +630,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
         OloluStore.setLocalOrderLock({ orderId: order.id, role: 'penumpang' });
         setActiveOrder(order as any);
       } else {
-        alert("Gagal membuat pesanan. Pastikan koneksi internet stabil dan data lokasi sudah benar.");
+        alert("Gagal membuat pesanan.\nKemungkinan besar ada kolom database yang belum sinkron atau koneksi terputus. Silakan hubungi pengembang.");
       }
     } catch (err: any) {
       console.error("Error saat memesan:", err);

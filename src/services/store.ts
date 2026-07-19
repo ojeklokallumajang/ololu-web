@@ -471,14 +471,14 @@ export const OloluStore = {
       // Better to continue and fetch whatever we have.
     }
 
-    // 3. Fetch Final Order with simple join (passenger only, driver is definitely null)
+    // 3. Fetch Final Order with robust join
     const { data: finalOrder, error: fetchError } = await supabase.from('orders')
-      .select('*, order_stops(*), profiles:id_penumpang(nama, nomor_hp)')
+      .select('*, order_stops(*), profiles!id_penumpang(nama, nomor_hp)')
       .eq('id', newOrder.id).single();
 
     if (fetchError) {
       console.error("❌ GAGAL FETCH FINAL ORDER:", fetchError.message);
-      // Fallback: use the newOrder directly (it just won't have the stops and profiles joined)
+      // Fallback: use the newOrder directly with provided stops
       return mapOrder({ ...newOrder, order_stops: stops });
     }
 
