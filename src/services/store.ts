@@ -135,12 +135,12 @@ const mapDriver = (db: any): DetailSopir | null => {
 const mapOrder = (db: any): Pesanan | null => {
   if (!db) return null;
 
-  // Extract Passenger Info from joined profile (LEFT JOIN result)
-  const passenger = db.profiles || {};
+  // Extract Passenger Info (Standard Supabase join format, handling possible array return)
+  const passenger = Array.isArray(db.profiles) ? db.profiles[0] : (db.profiles || {});
 
-  // Extract Driver Info from joined driver_details and its profile
-  const driverDetail = db.driver_details || {};
-  const driverProfile = driverDetail.profiles || {};
+  // Extract Driver Info (Standard Supabase join format, handling possible array return)
+  const driverDetail = Array.isArray(db.driver_details) ? db.driver_details[0] : (db.driver_details || {});
+  const driverProfile = Array.isArray(driverDetail.profiles) ? driverDetail.profiles[0] : (driverDetail.profiles || {});
 
   return {
     id: db.id,
@@ -509,12 +509,7 @@ export const OloluStore = {
 
   async getAllPesanan(): Promise<Pesanan[]> {
     const { data, error } = await getSupabase()!.from('orders')
-      .select(`
-        *,
-        order_stops(*),
-        profiles:id_penumpang(nama, nomor_hp),
-        driver_details:id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))
-      `)
+      .select('*, order_stops(*), profiles!id_penumpang(nama, nomor_hp), driver_details!id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))')
       .order('waktu_dibuat', { ascending: false });
 
     if (error) {
@@ -526,12 +521,7 @@ export const OloluStore = {
 
   async getPesananById(id: string): Promise<Pesanan | null> {
     const { data, error } = await getSupabase()!.from('orders')
-      .select(`
-        *,
-        order_stops(*),
-        profiles:id_penumpang(nama, nomor_hp),
-        driver_details:id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))
-      `)
+      .select('*, order_stops(*), profiles!id_penumpang(nama, nomor_hp), driver_details!id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))')
       .eq('id', id).single();
 
     if (error) {

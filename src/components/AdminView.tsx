@@ -608,19 +608,30 @@ export default function AdminView() {
 
         {activeTab === 'pesanan' && (
            <div className="space-y-2">
-             <h3 className="text-xs font-black text-gray-700 uppercase mb-3">Audit Order Masuk</h3>
-             {pesananList.map(p => (
-                <div key={p.id} className="bg-white p-3 rounded-xl border flex items-center justify-between shadow-xs">
+             <h3 className="text-xs font-black text-gray-700 uppercase mb-3 px-1">Audit Order Masuk</h3>
+             {pesananList.length === 0 ? (
+               <div className="p-12 text-center bg-white rounded-3xl border-2 border-dashed border-gray-100 animate-in fade-in duration-500">
+                  <FileText size={48} className="mx-auto text-gray-200 mb-3" />
+                  <p className="text-xs italic text-gray-400">Belum ada aktivitas pesanan tercatat di database.</p>
+               </div>
+             ) : (
+               pesananList.map(p => (
+                <div key={p.id} className="bg-white p-3 rounded-xl border flex items-center justify-between shadow-xs hover:border-[#046A38] transition-all group">
                   <div>
-                    <p className="text-xs font-black text-gray-800">#{p.nomorPesanan}</p>
-                    <p className="text-[10px] text-gray-500">{p.jenisLayanan?.toUpperCase()}</p>
+                    <div className="flex items-center space-x-1.5">
+                      <p className="text-xs font-black text-gray-800">#{p.nomorPesanan}</p>
+                      <span className={`text-[7px] font-black px-1.5 py-0.5 rounded-full uppercase ${p.status === 'selesai' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{p.status}</span>
+                    </div>
+                    <p className="text-[9px] text-gray-500 font-bold mt-0.5">{p.jenisLayanan?.toUpperCase()} • {p.namaPenumpang}</p>
+                    <p className="text-[8px] text-gray-400">{new Date(p.waktuDibuat).toLocaleString('id-ID')}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] font-black text-[#046A38]">Rp {p.totalBayarAkhir?.toLocaleString()}</p>
-                    <span className="text-[8px] font-bold text-gray-400 uppercase">{p.status}</span>
+                    <p className="text-[11px] font-black text-[#046A38]">Rp {p.totalBayarAkhir?.toLocaleString('id-ID')}</p>
+                    <button onClick={() => setSelectedOrder(p)} className="text-[8px] font-black text-blue-600 uppercase hover:underline">Detail Order</button>
                   </div>
                 </div>
-             ))}
+               ))
+             )}
            </div>
         )}
 

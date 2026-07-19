@@ -1202,7 +1202,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
               )}
 
               {/* NOTA TOKO DIALOG MODAL SIMULATOR */}
-              {activeNotaStopId && (
+              {(activeNotaStopId || isNotaAsal) && (
                 <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
                   <form onSubmit={handleAddNotaToko} className="bg-white p-5 rounded-2xl max-w-sm w-full space-y-4 text-left">
                     <div className="flex justify-between items-center border-b pb-2">
