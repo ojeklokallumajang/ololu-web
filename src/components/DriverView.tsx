@@ -1201,12 +1201,12 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                 </div>
               )}
 
-              {/* NOTA TOKO DIALOG MODAL SIMULATOR */}
+              {/* FORM INPUT NOTA TOKO */}
               {(activeNotaStopId || isNotaAsal) && (
                 <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
                   <form onSubmit={handleAddNotaToko} className="bg-white p-5 rounded-2xl max-w-sm w-full space-y-4 text-left">
                     <div className="flex justify-between items-center border-b pb-2">
-                      <h3 className="font-bold text-sm text-[#1A1A1A]">KAMERA & DATA NOTA SIMULATOR</h3>
+                      <h3 className="font-bold text-sm text-[#1A1A1A]">INPUT NOTA BELANJA</h3>
                       <button type="button" onClick={() => setActiveNotaStopId(null)} className="text-gray-400 hover:text-gray-600 font-bold text-sm">✕</button>
                     </div>
 
@@ -1248,7 +1248,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
 
                     <div className="bg-emerald-50 p-2.5 rounded-lg border border-[#046A38]/30 flex items-center space-x-2 text-[10px] text-[#0A8A4E]">
                       <Camera size={16} />
-                      <span>Simulasi: Foto kamera nota otomatis disisipkan setelah disimpan.</span>
+                      <span>Pastikan foto nota terlihat jelas dan harga sesuai.</span>
                     </div>
 
                     <button

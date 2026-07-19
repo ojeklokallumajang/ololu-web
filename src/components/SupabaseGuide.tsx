@@ -28,7 +28,16 @@ ALTER TABLE public.order_stops ADD COLUMN IF NOT EXISTS daftar_item JSONB DEFAUL
 -- 3. Tambah kolom status blokir pada profil
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN DEFAULT FALSE;
 
--- 4. Perbarui Trigger Potong Saldo (Versi Presisi)
+-- 4. Buat tabel penyimpanan OTP (Anti-Refresh)
+CREATE TABLE IF NOT EXISTS public.otps (
+    phone_number TEXT PRIMARY KEY,
+    otp_code TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.otps ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Akses Publik OTP" ON public.otps FOR ALL USING (true) WITH CHECK (true);
+
+-- 5. Perbarui Trigger Potong Saldo (Versi Presisi)
 CREATE OR REPLACE FUNCTION public.process_completed_order()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -390,12 +399,9 @@ serve(async (req) => {
 
       const resData = await response.json();
 
-      // CATATAN: Kembalikan respon sukses dengan informasi OTP jika dalam environment development/testing
-      // agar user AI Studio / Admin bisa langsung melihat kode OTP di layar browser.
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         success: true, 
         message: 'OTP berhasil dikirim ke nomor WhatsApp Anda!',
-        otpSimulasi: otp, // Membantu mempermudah tes jika WA delay
         fonnteResponse: resData
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

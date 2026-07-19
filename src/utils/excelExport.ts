@@ -6,79 +6,6 @@
 
 import { Pesanan, TransaksiDompet, ProfilPengguna, DetailSopir } from '../types';
 
-/**
- * Generate a list of mock orders for demonstration if the real data is sparse.
- */
-function getMockOrdersForRange(startDate: Date, endDate: Date, realSopirs: DetailSopir[], realProfils: ProfilPengguna[]): Pesanan[] {
-  const orders: Pesanan[] = [];
-  const locations = [
-    { name: "Alun-alun Lumajang", lat: -8.1331, lng: 113.2240 },
-    { name: "Pasar Baru Lumajang", lat: -8.1385, lng: 113.2222 },
-    { name: "Stasiun Klakah", lat: -8.0125, lng: 113.2541 },
-    { name: "KWT Lumajang", lat: -8.1522, lng: 113.2081 },
-    { name: "Terminal Minak Koncar", lat: -8.1022, lng: 113.2355 }
-  ];
-
-  const driverPool = realSopirs.length > 0 ? realSopirs : [{ id: 'sopir-joko', nama: 'Joko' }];
-  const passengerPool = realProfils.filter(p => p.peran === 'penumpang').length > 0
-    ? realProfils.filter(p => p.peran === 'penumpang')
-    : [{ id: 'user-ari', nama: 'Ari Wibowo' }];
-
-  const services: Array<'ojek' | 'makanan' | 'paket'> = ['ojek', 'makanan', 'paket'];
-
-  // Determine number of days in range
-  const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
-  const numOrders = Math.min(100, 5 * diffDays); // Max 100 mock orders
-
-  for (let i = 1; i <= numOrders; i++) {
-    const randomDate = new Date(startDate.getTime() + Math.random() * diffTime);
-    const locAsal = locations[Math.floor(Math.random() * locations.length)];
-    const locTujuan = locations[Math.floor(Math.random() * locations.length)];
-    const service = services[Math.floor(Math.random() * services.length)];
-    const driver = driverPool[Math.floor(Math.random() * driverPool.length)];
-    const passenger = passengerPool[Math.floor(Math.random() * passengerPool.length)];
-
-    const distance = 1.5 + Math.random() * 8.5;
-    const murni = service === 'ojek' ? 8000 : 10000;
-    const total = murni + (Math.random() > 0.5 ? 2000 : 0);
-
-    orders.push({
-      id: `mock-${i}`,
-      nomorPesanan: `OL-${Math.floor(1000 + Math.random() * 9000)}`,
-      jenisLayanan: service,
-      idPenumpang: passenger.id,
-      namaPenumpang: (passenger as any).nama || 'User',
-      nomorHpPenumpang: (passenger as any).nomorHp || '628123',
-      idSopir: (driver as any).id,
-      namaSopir: (driver as any).nama || 'Sopir',
-      platNomorSopir: (driver as any).platNomor || 'N 1234 XX',
-      asalAlamat: locAsal.name,
-      asalLat: locAsal.lat,
-      asalLng: locAsal.lng,
-      daftarTujuan: [{ id: 's1', alamat: locTujuan.name, lat: locTujuan.lat, lng: locTujuan.lng, urutan: 1, daftarItem: [], status: 'selesai', pilihanParkir: 'tidak_ada' }],
-      jarakKm: Number(distance.toFixed(1)),
-      tarifDasar: 5000,
-      tarifPerKm: 2500,
-      tarifMinimum: 8000,
-      tambahanTujuan: 0,
-      tambahanItem: 0,
-      biayaLayananPersen: 10,
-      biayaParkirTotal: 0,
-      biayaNotaTotal: 0,
-      tarifPerjalananMurni: murni,
-      totalBayarAkhir: total,
-      pembayaranTunai: true,
-      waktuDibuat: randomDate.toISOString(),
-      waktuSelesai: randomDate.toISOString(),
-      status: 'selesai',
-      tahapAktif: 0,
-      riwayatLokasiSopir: []
-    });
-  }
-  return orders.sort((a, b) => new Date(a.waktuDibuat).getTime() - new Date(b.waktuDibuat).getTime());
-}
-
 function escapeXml(unsafe: string): string {
   if (!unsafe) return '';
   return unsafe.replace(/[<>&"']/g, (c) => {
@@ -109,11 +36,6 @@ export function downloadFinancialReport(
     const d = new Date(p.waktuDibuat);
     return d >= start && d <= end;
   });
-
-  const isDemo = orders.length === 0;
-  if (isDemo) {
-    orders = getMockOrdersForRange(start, end, realSopirs, realProfils);
-  }
 
   const completed = orders.filter(p => p.status === 'selesai');
   const totalRevenue = completed.reduce((sum, p) => sum + p.totalBayarAkhir, 0);

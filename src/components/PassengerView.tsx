@@ -409,6 +409,12 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     const unsub = ololuRealtime.subscribeToTrip(activeOrder.id, (data) => {
       if (data.type === 'location') setDriverLoc(data.coords);
       else if (data.type === 'accepted' || data.type === 'full-sync') {
+        // Bunyikan suara Ting! saat driver ditemukan
+        if (data.type === 'accepted') {
+          const bell = new Audio('https://assets.mixkit.co/active_storage/sfx/1360/1360-preview.mp3');
+          bell.play().catch(e => console.warn("Notif blocked:", e));
+        }
+
         setActiveOrder(prev => prev ? ({ ...prev, status: data.status || 'sopir_ditemukan', idSopir: data.driver.id, namaSopir: data.driver.nama, platNomorSopir: data.driver.platNomor, tahapAktif: data.tahapAktif ?? prev.tahapAktif }) : null);
       } else if (data.type === 'status_update') {
         setActiveOrder(prev => prev ? ({ ...prev, status: data.status }) : null);

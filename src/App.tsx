@@ -162,7 +162,10 @@ export default function App() {
   const handleVerifyOtp = async () => {
     if (otp.length < 6) { setError('Masukkan 6 digit OTP'); return; }
     setLoading(true);
-    if (OloluStore.verifikasiOtp(phone, otp)) {
+
+    const isValid = await OloluStore.verifikasiOtp(phone, otp);
+
+    if (isValid) {
       let finalRole = selectedRole;
       if (phone === '6285156766317') finalRole = 'admin';
 

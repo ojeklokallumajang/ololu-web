@@ -228,7 +228,7 @@ export default function DesktopDashboard() {
           </div>
           
           <p className="text-[8px] text-slate-500 font-medium italic">
-            *Setiap kali Anda merubah tarif di panel admin simulator HP, tarif pantauan di atas akan otomatis tersinkronisasi.
+            *Setiap kali Anda merubah tarif di panel admin HP, tarif pantauan di atas akan otomatis tersinkronisasi.
           </p>
         </div>
 

@@ -87,7 +87,7 @@ export const DEFAULT_PENGATURAN_TARIF: PengaturanTarif = {
 };
 
 let pengaturans = { ...DEFAULT_PENGATURAN_TARIF };
-let sessionOtp: string | null = null;
+// sessionOtp dihapus karena sekarang pakai Database (otps table)
 
 const safeParseFloat = (val: any, fallback = 0): number => {
   const n = parseFloat(val);
@@ -292,7 +292,16 @@ export const OloluStore = {
     else if (cleanedPhone.startsWith('8')) cleanedPhone = '62' + cleanedPhone;
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    sessionOtp = otp;
+
+    // Simpan ke database (otps table) agar kebal refresh
+    const supabase = getSupabase();
+    if (supabase) {
+      await supabase.from('otps').upsert({
+        phone_number: cleanedPhone,
+        otp_code: otp,
+        created_at: new Date().toISOString()
+      });
+    }
 
     console.log(`[OTP DEBUG] Mengirim ${otp} ke ${cleanedPhone}`);
 
@@ -315,8 +324,18 @@ export const OloluStore = {
       return false;
     }
   },
-  verifikasiOtp(nomorHp: string, otp: string) {
-    return otp === sessionOtp;
+
+  async verifikasiOtp(nomorHp: string, otpInput: string) {
+    let cleanedPhone = nomorHp.replace(/[^0-9]/g, '');
+    if (cleanedPhone.startsWith('0')) cleanedPhone = '62' + cleanedPhone.slice(1);
+    else if (cleanedPhone.startsWith('8')) cleanedPhone = '62' + cleanedPhone;
+
+    const supabase = getSupabase();
+    if (!supabase) return false;
+
+    // Cek kode di database
+    const { data } = await supabase.from('otps').select('otp_code').eq('phone_number', cleanedPhone).single();
+    return data?.otp_code === otpInput;
   },
 
   async getSopir(id: string): Promise<DetailSopir | null> {
