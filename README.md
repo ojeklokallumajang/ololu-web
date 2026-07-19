@@ -68,6 +68,7 @@
 
 ## 🌍 Dokumentasi Lanjutan
 - 📘 [Product Requirements Document (PRD)](PRD.md) - Detail logika bisnis dan alur kerja.
+- 📂 [Presentation Resources](docs/pitch/) - Materi konten dinamis untuk PPT (User, Driver, Investor).
 - 📂 [Skema Database](supabase_schema.sql) - Struktur tabel dan Trigger Postgres.
 
 ---

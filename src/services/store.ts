@@ -501,7 +501,7 @@ export const OloluStore = {
   },
 
   async getAllUsers(): Promise<ProfilPengguna[]> {
-    const { data } = await getSupabase()!.from('profiles').select('*').order('tanggal_daftar', { ascending: false });
+    const { data } = await getSupabase()!.from('profiles').select('*').order('created_at', { ascending: false });
     return (data || []).map(p => mapProfile(p)).filter(Boolean) as ProfilPengguna[];
   },
 

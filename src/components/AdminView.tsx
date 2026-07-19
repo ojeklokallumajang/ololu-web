@@ -499,8 +499,8 @@ export default function AdminView() {
         {activeTab === 'penumpang' && (
            <div className="space-y-2">
              <h3 className="text-xs font-black text-gray-700 uppercase mb-3">Daftar Pengguna (Penumpang)</h3>
-             {profilList.length === 0 ? <p className="text-xs italic text-gray-400 text-center py-10">Belum ada pengguna terdaftar.</p> :
-               profilList.map(p => (
+             {profilList.filter(p => p.peran === 'penumpang').length === 0 ? <p className="text-xs italic text-gray-400 text-center py-10">Belum ada pengguna terdaftar.</p> :
+               profilList.filter(p => p.peran === 'penumpang').map(p => (
                  <div key={p.id} className="bg-white p-3 rounded-xl border flex items-center justify-between shadow-xs">
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600"><Users size={16} /></div>
