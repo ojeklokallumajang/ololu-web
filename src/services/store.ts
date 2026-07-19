@@ -158,9 +158,9 @@ const mapOrder = (db: any): Pesanan | null => {
     jarakKm: Math.ceil(safeParseFloat(db.jarak_km, 1)),
     itemsAwal: (db.items_awal || []).map((i: any) => ({
       id: i.id,
-      namaBarang: i.nama_barang,
+      namaBarang: i.namaBarang || i.nama_barang,
       jumlah: i.jumlah,
-      perkiraanHarga: i.perkiraan_harga
+      perkiraanHarga: i.perkiraanHarga || i.perkiraan_harga
     })),
     tarifDasar: safeParseFloat(db.tarif_dasar, 0),
     tarifPerKm: safeParseFloat(db.tarif_per_km, 0),
@@ -183,19 +183,19 @@ const mapOrder = (db: any): Pesanan | null => {
       lng: safeParseFloat(s.lng, KOORDINAT_LUMAJANG.lng),
       urutan: s.urutan || 1,
       status: s.status || 'pending',
-      daftarItem: (s.items || []).map((i: any) => ({
+      daftarItem: (s.daftar_item || []).map((i: any) => ({
         id: i.id,
-        namaBarang: i.nama_barang,
+        namaBarang: i.namaBarang || i.nama_barang,
         jumlah: i.jumlah,
-        perkiraanHarga: i.perkiraan_harga
+        perkiraanHarga: i.perkiraanHarga || i.perkiraan_harga
       })),
       pilihanParkir: s.pilihan_parkir || 'tidak_ada',
-      nota: s.nota ? {
-        namaToko: s.nota.nama_toko,
-        totalToko: s.nota.total_toko,
-        rincianBarang: s.nota.rincian_barang,
-        fotoNota: s.nota.foto_nota,
-        waktuDicatat: s.nota.waktu_dicatat
+      nota: s.nota_nama_toko ? {
+        namaToko: s.nota_nama_toko,
+        totalToko: s.nota_total_toko,
+        rincianBarang: s.nota_rincian_barang,
+        fotoNota: s.nota_foto_url,
+        waktuDicatat: s.nota_waktu_dicatat
       } : undefined
     })),
     tahapAktif: db.tahap_aktif || 0,
@@ -453,12 +453,12 @@ export const OloluStore = {
     if (!newOrder) return null;
 
     await supabase.from('order_stops').insert(stops.map(s => ({
-      id_pesanan: newOrder.id,
+      order_id: newOrder.id,
       alamat: s.alamat,
       lat: s.lat,
       lng: s.lng,
       urutan: s.urutan,
-      items: s.items || []
+      daftar_item: s.items || []
     })));
 
     const { data: finalOrder } = await supabase.from('orders')
@@ -630,15 +630,24 @@ export const OloluStore = {
   },
 
   async simpanNotaToko(pesananId: string, stopId: string, namaToko: string, rincian: string, total: number, fotoBase64: string) {
-    const nota = {
-      nama_toko: namaToko,
-      rincian_barang: rincian,
-      total_toko: total,
-      foto_nota: fotoBase64,
-      waktu_dicatat: new Date().toISOString()
+    const updateData = {
+      nota_nama_toko: namaToko,
+      nota_rincian_barang: rincian,
+      nota_total_toko: total,
+      nota_foto_url: fotoBase64,
+      nota_waktu_dicatat: new Date().toISOString()
     };
-    await getSupabase()!.from('order_stops').update({ nota }).eq('id', stopId);
-    ololuRealtime.broadcastTripUpdate(pesananId, { type: 'nota_update', stopId, nota });
+    await getSupabase()!.from('order_stops').update(updateData).eq('id', stopId);
+
+    // Broadcast for realtime update with mapped keys
+    const notaForUI = {
+      namaToko,
+      totalToko: total,
+      rincianBarang: rincian,
+      fotoNota: fotoBase64,
+      waktuDicatat: updateData.nota_waktu_dicatat
+    };
+    ololuRealtime.broadcastTripUpdate(pesananId, { type: 'nota_update', stopId, nota: notaForUI });
   },
 
   async selesaikanPesanan(pesananId: string, finalOrderData: Pesanan) {
