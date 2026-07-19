@@ -128,7 +128,7 @@ const mapDriver = (db: any): DetailSopir | null => {
     saldoDompet: safeParseFloat(db.saldo_dompet, 0),
     ratingRataRata: safeParseFloat(db.rating_rata_rata, 5),
     jumlahPesananSelesai: parseInt(db.jumlah_pesanan_selesai || 0),
-    lokasiSaatIni: db.lokasi_lat ? { lat: db.lokasi_lat, lng: db.lokasi_lng } : undefined
+    lokasiSaatIni: db.lat_sekarang ? { lat: db.lat_sekarang, lng: db.lng_sekarang } : undefined
   };
 };
 
@@ -475,7 +475,7 @@ export const OloluStore = {
       console.error("❌ GAGAL SIMPAN STOPS:", stopsError.message);
     }
 
-    // 3. Fetch Final Order with SAFE LEFT JOINS (No '!' to allow NULL drivers)
+    // 3. Fetch Final Order with SAFE LEFT JOINS (Explicit FK names to avoid ambiguity)
     const { data: finalOrder, error: fetchError } = await supabase.from('orders')
       .select(`
         *,
@@ -487,17 +487,17 @@ export const OloluStore = {
 
     if (fetchError) {
       console.error("❌ GAGAL FETCH FINAL ORDER:", fetchError.message);
-      // Fallback: use the newOrder directly with provided stops
-      const fallbackOrder = {
+      // Fallback: use the newOrder directly so the user can see the "Searching" screen
+      const fallbackMapped = mapOrder({
         ...newOrder,
         order_stops: stops.map(s => ({
           ...s,
           order_id: newOrder.id,
           daftar_item: s.items || []
-        })),
-        profiles: { nama: 'Pelanggan', nomor_hp: '' }
-      };
-      return mapOrder(fallbackOrder);
+        }))
+      });
+      if (fallbackMapped) ololuRealtime.broadcastNewOrder(fallbackMapped);
+      return fallbackMapped;
     }
 
     const mapped = mapOrder(finalOrder);
@@ -508,7 +508,7 @@ export const OloluStore = {
   },
 
   async getAllPesanan(): Promise<Pesanan[]> {
-    const { data } = await getSupabase()!.from('orders')
+    const { data, error } = await getSupabase()!.from('orders')
       .select(`
         *,
         order_stops(*),
@@ -516,11 +516,16 @@ export const OloluStore = {
         driver_details:id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))
       `)
       .order('waktu_dibuat', { ascending: false });
+
+    if (error) {
+      console.error("❌ ERROR FETCH ALL PESANAN:", error.message);
+      return [];
+    }
     return (data || []).map(o => mapOrder(o)).filter(Boolean) as Pesanan[];
   },
 
   async getPesananById(id: string): Promise<Pesanan | null> {
-    const { data } = await getSupabase()!.from('orders')
+    const { data, error } = await getSupabase()!.from('orders')
       .select(`
         *,
         order_stops(*),
@@ -528,6 +533,11 @@ export const OloluStore = {
         driver_details:id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))
       `)
       .eq('id', id).single();
+
+    if (error) {
+      console.error(`❌ ERROR FETCH ORDER ${id}:`, error.message);
+      return null;
+    }
     return mapOrder(data);
   },
 
