@@ -72,6 +72,12 @@ export const generateReceipt = (order: Pesanan, companyName: string = "OLOLU LUM
           `).join('')}
         </table>
       </div>
+      ${order.notaAwal ? `
+        <div class="merchant-summary">
+          <span>Toko: <b>${order.notaAwal.namaToko}</b></span>
+          <span style="float: right;">Nilai Nota: <b>Rp ${order.notaAwal.totalToko.toLocaleString('id-ID')}</b></span>
+        </div>
+      ` : ''}
     </div>
   ` : '';
 
