@@ -134,14 +134,12 @@ const mapDriver = (db: any): DetailSopir | null => {
 const mapOrder = (db: any): Pesanan | null => {
   if (!db) return null;
 
-  // Extract Passenger Info from joined profile
-  // Handling both possible join result formats (object or array)
-  const passenger = Array.isArray(db.profiles) ? db.profiles[0] : (db.profiles || {});
+  // Extract Passenger Info from joined profile (LEFT JOIN result)
+  const passenger = db.profiles || {};
 
   // Extract Driver Info from joined driver_details and its profile
-  // Driver might be null for new orders
-  const driverDetail = db.driver_details ? (Array.isArray(db.driver_details) ? db.driver_details[0] : db.driver_details) : {};
-  const driverProfile = driverDetail.profiles ? (Array.isArray(driverDetail.profiles) ? driverDetail.profiles[0] : driverDetail.profiles) : {};
+  const driverDetail = db.driver_details || {};
+  const driverProfile = driverDetail.profiles || {};
 
   return {
     id: db.id,
