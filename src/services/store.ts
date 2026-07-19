@@ -139,8 +139,9 @@ const mapOrder = (db: any): Pesanan | null => {
   const passenger = Array.isArray(db.profiles) ? db.profiles[0] : (db.profiles || {});
 
   // Extract Driver Info from joined driver_details and its profile
-  const driverDetail = Array.isArray(db.driver_details) ? db.driver_details[0] : (db.driver_details || {});
-  const driverProfile = Array.isArray(driverDetail.profiles) ? driverDetail.profiles[0] : (driverDetail.profiles || {});
+  // Driver might be null for new orders
+  const driverDetail = db.driver_details ? (Array.isArray(db.driver_details) ? db.driver_details[0] : db.driver_details) : {};
+  const driverProfile = driverDetail.profiles ? (Array.isArray(driverDetail.profiles) ? driverDetail.profiles[0] : driverDetail.profiles) : {};
 
   return {
     id: db.id,
@@ -431,7 +432,8 @@ export const OloluStore = {
 
     const nomorPesanan = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    const { data: newOrder, error } = await supabase.from('orders').insert({
+    // 1. Create Base Order
+    const { data: newOrder, error: orderError } = await supabase.from('orders').insert({
       nomor_pesanan: nomorPesanan,
       id_penumpang: orderData.idPenumpang,
       jenis_layanan: orderData.jenisLayanan,
@@ -446,14 +448,15 @@ export const OloluStore = {
       status: 'mencari_sopir'
     }).select().single();
 
-    if (error) {
-      console.error("❌ GAGAL BUAT PESANAN:", error.message);
+    if (orderError) {
+      console.error("❌ GAGAL BUAT PESANAN (Base):", orderError.message);
       return null;
     }
 
     if (!newOrder) return null;
 
-    await supabase.from('order_stops').insert(stops.map(s => ({
+    // 2. Insert Stops
+    const { error: stopsError } = await supabase.from('order_stops').insert(stops.map(s => ({
       order_id: newOrder.id,
       alamat: s.alamat,
       lat: s.lat,
@@ -462,17 +465,28 @@ export const OloluStore = {
       daftar_item: s.items || []
     })));
 
-    const { data: finalOrder } = await supabase.from('orders')
-      .select('*, order_stops(*), profiles!id_penumpang(nama, nomor_hp), driver_details!id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))')
-      .eq('id', newOrder.id).single();
-    if (finalOrder) {
-      const mapped = mapOrder(finalOrder);
-      if (mapped) {
-        ololuRealtime.broadcastNewOrder(mapped);
-      }
-      return mapped;
+    if (stopsError) {
+      console.error("❌ GAGAL SIMPAN STOPS:", stopsError.message);
+      // We don't return null here yet, as the main order exists, but it's risky.
+      // Better to continue and fetch whatever we have.
     }
-    return null;
+
+    // 3. Fetch Final Order with simple join (passenger only, driver is definitely null)
+    const { data: finalOrder, error: fetchError } = await supabase.from('orders')
+      .select('*, order_stops(*), profiles:id_penumpang(nama, nomor_hp)')
+      .eq('id', newOrder.id).single();
+
+    if (fetchError) {
+      console.error("❌ GAGAL FETCH FINAL ORDER:", fetchError.message);
+      // Fallback: use the newOrder directly (it just won't have the stops and profiles joined)
+      return mapOrder({ ...newOrder, order_stops: stops });
+    }
+
+    const mapped = mapOrder(finalOrder);
+    if (mapped) {
+      ololuRealtime.broadcastNewOrder(mapped);
+    }
+    return mapped;
   },
 
   async getAllPesanan(): Promise<Pesanan[]> {
