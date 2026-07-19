@@ -292,16 +292,26 @@ export default function App() {
                 <input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} placeholder="Ulangi Sandi" className="w-full p-4 bg-gray-50 rounded-2xl outline-none text-sm font-bold border-2 border-transparent focus:border-[#046A38]" />
 
                 {selectedRole === 'sopir' && (
-                  <div className="space-y-3 pt-4 border-t border-dashed">
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest text-center">Berkas Kendaraan & Driver</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button onClick={()=>handleFilePicker(setDocKtp)} className={`p-3 rounded-xl border-2 border-dashed text-[8px] font-black ${docKtp?'bg-emerald-50 border-emerald-500 text-emerald-600':'text-gray-400 border-gray-100'}`}>FOTO KTP {docKtp&&'✅'}</button>
-                      <button onClick={()=>handleFilePicker(setDocSim)} className={`p-3 rounded-xl border-2 border-dashed text-[8px] font-black ${docSim?'bg-emerald-50 border-emerald-500 text-emerald-600':'text-gray-400 border-gray-100'}`}>FOTO SIM {docSim&&'✅'}</button>
-                      <button onClick={()=>handleFilePicker(setDocStnk)} className={`p-3 rounded-xl border-2 border-dashed text-[8px] font-black ${docStnk?'bg-emerald-50 border-emerald-500 text-emerald-600':'text-gray-400 border-gray-100'}`}>FOTO STNK {docStnk&&'✅'}</button>
-                      <button onClick={()=>handleFilePicker(setDocVehicle)} className={`p-3 rounded-xl border-2 border-dashed text-[8px] font-black ${docVehicle?'bg-emerald-50 border-emerald-500 text-emerald-600':'text-gray-400 border-gray-100'}`}>FOTO MOTOR {docVehicle&&'✅'}</button>
+                  <div className="space-y-4 pt-4 border-t border-dashed animate-in slide-in-from-top-2">
+                    <p className="text-[10px] font-black text-[#046A38] uppercase tracking-widest text-center">Berkas Kendaraan & Driver (Wajib)</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button onClick={()=>handleFilePicker(setDocKtp)} className={`aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center space-y-1 transition-all ${docKtp?'bg-emerald-50 border-emerald-500 text-emerald-600':'text-gray-400 border-gray-100 bg-gray-50'}`}>
+                         {docKtp ? <img src={docKtp} className="w-full h-full object-cover rounded-xl" /> : <><Camera size={20} /><span className="text-[8px] font-black uppercase">KTP</span></>}
+                      </button>
+                      <button onClick={()=>handleFilePicker(setDocSim)} className={`aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center space-y-1 transition-all ${docSim?'bg-emerald-50 border-emerald-500 text-emerald-600':'text-gray-400 border-gray-100 bg-gray-50'}`}>
+                         {docSim ? <img src={docSim} className="w-full h-full object-cover rounded-xl" /> : <><Camera size={20} /><span className="text-[8px] font-black uppercase">SIM</span></>}
+                      </button>
+                      <button onClick={()=>handleFilePicker(setDocStnk)} className={`aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center space-y-1 transition-all ${docStnk?'bg-emerald-50 border-emerald-500 text-emerald-600':'text-gray-400 border-gray-100 bg-gray-50'}`}>
+                         {docStnk ? <img src={docStnk} className="w-full h-full object-cover rounded-xl" /> : <><Camera size={20} /><span className="text-[8px] font-black uppercase">STNK</span></>}
+                      </button>
+                      <button onClick={()=>handleFilePicker(setDocVehicle)} className={`aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center space-y-1 transition-all ${docVehicle?'bg-emerald-50 border-emerald-500 text-emerald-600':'text-gray-400 border-gray-100 bg-gray-50'}`}>
+                         {docVehicle ? <img src={docVehicle} className="w-full h-full object-cover rounded-xl" /> : <><Camera size={20} /><span className="text-[8px] font-black uppercase">MOTOR</span></>}
+                      </button>
                     </div>
-                    <input type="text" value={platNomor} onChange={e=>setPlatNomor(e.target.value.toUpperCase())} placeholder="PLAT NOMOR (N-XXXX-YX)" className="w-full p-3 bg-gray-50 rounded-xl text-[10px] font-black border-2 border-transparent focus:border-[#046A38] uppercase" />
-                    <input type="text" value={jenisMotor} onChange={e=>setJenisMotor(e.target.value)} placeholder="TIPE MOTOR (cth: Honda Vario 125)" className="w-full p-3 bg-gray-50 rounded-xl text-[10px] font-black border-2 border-transparent focus:border-[#046A38] uppercase" />
+                    <div className="space-y-3">
+                      <input type="text" value={platNomor} onChange={e=>setPlatNomor(e.target.value.toUpperCase())} placeholder="PLAT NOMOR (N-XXXX-YX)" className="w-full p-4 bg-gray-50 rounded-2xl text-sm font-black border-2 border-transparent focus:border-[#046A38] uppercase outline-none" />
+                      <input type="text" value={jenisMotor} onChange={e=>setJenisMotor(e.target.value)} placeholder="TIPE MOTOR (cth: Honda Beat)" className="w-full p-4 bg-gray-50 rounded-2xl text-sm font-bold border-2 border-transparent focus:border-[#046A38] outline-none" />
+                    </div>
                   </div>
                 )}
 

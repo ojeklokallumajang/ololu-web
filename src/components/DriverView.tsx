@@ -81,6 +81,8 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
   const [fotoStnk, setFotoStnk] = useState('');
   const [fotoKendaraan, setFotoKendaraan] = useState('');
 
+  const [isEditingDocs, setIsEditingDocs] = useState(false);
+
   // WALLET FORM STATE
   const [topUpAmount, setTopUpAmount] = useState<number>(50000);
   const [topUpProof, setTopUpProof] = useState<string | null>(null);
@@ -790,113 +792,136 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
   }
 
   // =========================================================================
-  // VIEW 2.1: AKUN BELUM DISETUJUI ADMIN (UPLOAD BERKAS)
+  // VIEW 2.1: AKUN BELUM DISETUJUI ADMIN (STATUS / UPLOAD)
   // =========================================================================
   if (!driverDetail.disetujuiAdmin) {
+    const isDataSubmitted = driverDetail.platNomor && !isEditingDocs;
+
     return (
       <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen p-4 space-y-4 pb-20">
         
         {/* STATUS BAR REGISTER */}
-        <div className="bg-white p-5 rounded-2xl border-t-4 border-yellow-500 shadow-sm text-center space-y-2">
-          <div className="bg-yellow-50 text-yellow-600 p-2.5 rounded-full w-12 h-12 flex items-center justify-center mx-auto text-xl">
-            ⏳
+        <div className="bg-white p-6 rounded-[32px] border border-gray-150 shadow-sm text-center space-y-3 animate-in fade-in zoom-in duration-500">
+          <div className="bg-amber-50 text-amber-600 p-4 rounded-full w-20 h-20 flex items-center justify-center mx-auto text-3xl shadow-inner">
+            {driverDetail.ditolakAdmin ? '❌' : '⏳'}
           </div>
-          <h2 className="text-base font-bold text-gray-800">
-            {driverDetail.ditolakAdmin ? 'Pengajuan Anda Ditolak Admin' : 'Akun Anda Belum Disetujui Admin'}
-          </h2>
-          <p className="text-xs text-gray-500 leading-relaxed">
-            {driverDetail.ditolakAdmin 
-              ? `Alasan Penolakan: "${driverDetail.alasanDitolak || 'Berkas tidak jelas'}"`
-              : 'Silakan isi kelengkapan dokumen kendaraan dan identitas Anda di bawah untuk diverifikasi oleh tim Admin Ololu.'}
-          </p>
+          <div className="space-y-1">
+            <h2 className="text-lg font-black text-gray-800 uppercase tracking-tight">
+              {driverDetail.ditolakAdmin ? 'Pendaftaran Ditolak' : 'Menunggu Verifikasi'}
+            </h2>
+            <p className="text-xs text-gray-500 font-medium leading-relaxed px-4">
+              {driverDetail.ditolakAdmin
+                ? `Maaf, Admin menolak berkas Anda. Alasan: "${driverDetail.alasanDitolak || 'Berkas tidak jelas'}"`
+                : 'Data pendaftaran Anda sudah kami terima dan sedang ditinjau oleh tim Admin Ololu Lumajang.'}
+            </p>
+          </div>
+
+          {!driverDetail.ditolakAdmin && isDataSubmitted && (
+            <div className="pt-4 border-t border-dashed mt-2">
+              <div className="bg-emerald-50 p-3 rounded-2xl flex items-center justify-center space-x-2 border border-emerald-100 mb-4">
+                 <ShieldCheck size={16} className="text-emerald-600" />
+                 <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Berkas Sudah Lengkap ✅</span>
+              </div>
+              <button
+                onClick={() => setIsEditingDocs(true)}
+                className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-[#046A38] transition-colors"
+              >
+                Tinjau atau Edit Berkas Saya
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* FORM UPLOAD BERKAS */}
-        <form onSubmit={handleDocUpload} className="bg-white p-4 rounded-2xl border border-gray-150 shadow-xs space-y-4 text-left">
-          <h3 className="text-xs font-bold text-gray-700 border-b pb-2">FORMULIR KENDARAAN & DOKUMEN</h3>
-          
-          <div>
-            <label className="block text-[11px] font-semibold text-gray-700 mb-1">Nomor Plat Polisi (Lumajang N-XXX)</label>
-            <input
-              type="text"
-              value={platNomor}
-              onChange={(e) => setPlatNomor(e.target.value.toUpperCase())}
-              placeholder="cth. N 4321 YX"
-              className="w-full p-2 bg-[#FAFBF9] border rounded-lg text-xs focus:outline-[#046A38] font-bold font-mono text-gray-800"
-            />
-          </div>
+        {/* FORM UPLOAD BERKAS (HANYA MUNCUL JIKA DATA KOSONG ATAU MAU EDIT) */}
+        {(!isDataSubmitted || isEditingDocs) && (
+          <form onSubmit={handleDocUpload} className="bg-white p-5 rounded-[32px] border border-gray-150 shadow-sm space-y-5 text-left animate-in slide-in-from-bottom-4 duration-500">
+            <div className="flex justify-between items-center border-b pb-3">
+               <h3 className="text-xs font-black text-gray-700 uppercase tracking-widest">Detail Kendaraan & Dokumen</h3>
+               {isEditingDocs && <button onClick={()=>setIsEditingDocs(false)} className="text-[10px] font-black text-red-500 uppercase">Batal</button>}
+            </div>
 
-          <div>
-            <label className="block text-[11px] font-semibold text-gray-700 mb-1">Jenis / Merk Motor</label>
-            <input
-              type="text"
-              value={jenisMotor}
-              onChange={(e) => setJenisMotor(e.target.value)}
-              placeholder="cth. Honda Vario 125cc"
-              className="w-full p-2 bg-[#FAFBF9] border rounded-lg text-xs focus:outline-[#046A38] text-gray-800"
-            />
-          </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nomor Plat Polisi (N-XXX)</label>
+                <input
+                  type="text"
+                  required
+                  value={platNomor}
+                  onChange={(e) => setPlatNomor(e.target.value.toUpperCase())}
+                  placeholder="cth. N 4321 YX"
+                  className="w-full p-3.5 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-2xl text-sm font-black font-mono text-gray-800 outline-none transition-all"
+                />
+              </div>
 
-          <div className="flex items-center space-x-2 bg-emerald-50 p-3 rounded-lg border border-emerald-100">
-            <input
-              type="checkbox"
-              id="bisaBarangBesar"
-              checked={bisaBarangBesar}
-              onChange={(e) => setBisaBarangBesar(e.target.checked)}
-              className="w-4 h-4 text-[#046A38] focus:ring-[#046A38] border-gray-300 rounded"
-            />
-            <label htmlFor="bisaBarangBesar" className="text-[10px] text-[#0A8A4E] font-bold leading-none cursor-pointer">
-              Bisa Bawa Barang Besar (Punya Bak Motor / Kapasitas Jumbo)
-            </label>
-          </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Jenis / Merk Motor</label>
+                <input
+                  type="text"
+                  required
+                  value={jenisMotor}
+                  onChange={(e) => setJenisMotor(e.target.value)}
+                  placeholder="cth. Honda Vario 125cc"
+                  className="w-full p-3.5 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-2xl text-sm font-bold text-gray-800 outline-none transition-all"
+                />
+              </div>
 
-          {/* SIMULASI FILE UPLOAD BUTTONS */}
-          <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 pt-2 border-t border-dashed">
+              <div className="flex items-center space-x-3 bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                <input
+                  type="checkbox"
+                  id="bisaBarangBesar"
+                  checked={bisaBarangBesar}
+                  onChange={(e) => setBisaBarangBesar(e.target.checked)}
+                  className="w-5 h-5 text-[#046A38] focus:ring-[#046A38] border-gray-300 rounded-lg cursor-pointer"
+                />
+                <label htmlFor="bisaBarangBesar" className="text-[10px] text-[#0A8A4E] font-black uppercase leading-tight cursor-pointer">
+                  Bisa Bawa Barang Besar / Logistik
+                </label>
+              </div>
+
+              {/* DOKUMEN UPLOAD */}
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-dashed">
+                {[
+                  { id: 'ktp', label: 'Foto KTP', val: fotoKtp },
+                  { id: 'sim', label: 'Foto SIM', val: fotoSim },
+                  { id: 'stnk', label: 'Foto STNK', val: fotoStnk },
+                  { id: 'kendaraan', label: 'Foto Motor', val: fotoKendaraan }
+                ].map(doc => (
+                  <button
+                    key={doc.id}
+                    type="button"
+                    onClick={() => handleDocFilePicker(doc.id as any)}
+                    className={`aspect-square bg-gray-50 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-2 space-y-2 transition-all hover:bg-emerald-50 ${doc.val ? 'border-emerald-500 bg-emerald-50/50' : 'border-gray-200'}`}
+                  >
+                    {doc.val ? (
+                      <div className="relative w-full h-full rounded-xl overflow-hidden shadow-sm">
+                        <img src={doc.val} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-emerald-600/20 flex items-center justify-center"><CheckCircle size={24} className="text-white drop-shadow-md" /></div>
+                      </div>
+                    ) : (
+                      <>
+                        <Camera size={24} className="text-gray-300" />
+                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">{doc.label}</span>
+                      </>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <button
-              type="button"
-              onClick={() => handleDocFilePicker('ktp')}
-              className={`p-3 bg-[#FAFBF9] hover:bg-[#E6F4EC] rounded-lg border border-dashed flex flex-col items-center justify-center space-y-1 transition-all ${fotoKtp ? 'border-[#046A38]' : 'border-gray-300'}`}
+              type="submit"
+              disabled={isSubmittingDoc}
+              className="w-full py-4 bg-[#034F2A] hover:bg-[#046A38] text-white font-black rounded-2xl text-xs border-b-4 border-emerald-900 shadow-xl transition-all disabled:opacity-50 active:scale-95 uppercase tracking-widest"
             >
-              <Upload size={16} className="text-gray-400" />
-              <span className="text-[9px] font-bold">Foto KTP {fotoKtp && '✅'}</span>
+              {isSubmittingDoc ? 'Sedang Mengirim...' : (isEditingDocs ? 'Simpan Perubahan Berkas' : 'Kirim Lamaran Mitra Ololu')}
             </button>
+          </form>
+        )}
 
-            <button
-              type="button"
-              onClick={() => handleDocFilePicker('sim')}
-              className={`p-3 bg-[#FAFBF9] hover:bg-[#E6F4EC] rounded-lg border border-dashed flex flex-col items-center justify-center space-y-1 transition-all ${fotoSim ? 'border-[#046A38]' : 'border-gray-300'}`}
-            >
-              <Upload size={16} className="text-gray-400" />
-              <span className="text-[9px] font-bold">Foto SIM {fotoSim && '✅'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleDocFilePicker('stnk')}
-              className={`p-3 bg-[#FAFBF9] hover:bg-[#E6F4EC] rounded-lg border border-dashed flex flex-col items-center justify-center space-y-1 transition-all ${fotoStnk ? 'border-[#046A38]' : 'border-gray-300'}`}
-            >
-              <Upload size={16} className="text-gray-400" />
-              <span className="text-[9px] font-bold">Foto STNK {fotoStnk && '✅'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleDocFilePicker('kendaraan')}
-              className={`p-3 bg-[#FAFBF9] hover:bg-[#E6F4EC] rounded-lg border border-dashed flex flex-col items-center justify-center space-y-1 transition-all ${fotoKendaraan ? 'border-[#046A38]' : 'border-gray-300'}`}
-            >
-              <Upload size={16} className="text-gray-400" />
-              <span className="text-[9px] font-bold">Foto Motor {fotoKendaraan && '✅'}</span>
-            </button>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmittingDoc}
-            className="w-full py-3 bg-[#034F2A] hover:bg-[#046A38] text-white font-bold rounded-xl text-xs border border-[#D4AF37] shadow-sm transition-all disabled:opacity-50"
-          >
-            {isSubmittingDoc ? 'Sedang Mengirim...' : 'Kirim Lamaran Mitra Ololu'}
-          </button>
-        </form>
+        {/* LOGOUT BUTTON FOR UNAPPROVED USERS */}
+        <button onClick={onLogout} className="w-full py-3 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] hover:text-red-500 transition-colors">
+          Keluar / Batalkan Pendaftaran
+        </button>
 
       </div>
     );
