@@ -15,7 +15,7 @@ Menjadi infrastruktur digital utama bagi transportasi dan logistik di Kabupaten 
     3. Menentukan lokasi menggunakan *Map Picker*, deteksi GPS otomatis, atau *Copy-Paste Link Google Maps*.
     4. Khusus layanan Belanja: Mengisi daftar item per-toko.
     5. Melacak posisi driver secara *live* di peta.
-    6. Mengunduh e-Nota setelah pesanan selesai.
+    6. Mengunduh **Invoice Pro (e-Nota)** super detail setelah pesanan selesai.
 
 ### 2.2 Mitra Driver (Sopir)
 - **Kebutuhan:** Mendapatkan orderan terdekat dan mengelola pendapatan secara mandiri.

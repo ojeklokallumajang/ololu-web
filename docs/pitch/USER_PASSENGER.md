@@ -19,7 +19,7 @@
 ## Slide 4: Keamanan & Kenyamanan
 - **Driver Terverifikasi:** Semua mitra Driver sudah melalui proses seleksi dokumen (KTP/SIM/STNK).
 - **Chat Multimedia:** Bisa kirim foto lokasi jemput atau rekam suara (Voice Note) biar lebih cepat koordinasi.
-- **e-Nota Digital:** Langsung download nota resmi setelah belanja untuk bukti pembayaran atau klaim kantor.
+- **Invoice Pro Digital:** Langsung download nota resmi super detail (transparansi tarif & timeline) setelah pesanan selesai untuk bukti pembayaran atau klaim kantor.
 
 ---
 *"Warga Lumajang, Bela Beli Produk Lumajang!"*

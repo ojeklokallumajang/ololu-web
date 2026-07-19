@@ -23,7 +23,7 @@
 ### 💰 Sistem Dompet & Keuangan Terpadu
 - **Auto-Commission:** Potongan bagi hasil aplikator dilakukan otomatis setiap kali order selesai.
 - **Dashboard Pendapatan Driver:** Pantau hasil kerja harian, mingguan, dan bulanan secara *real-time*.
-- **E-Nota Profesional:** Penumpang bisa mengunduh nota belanja digital resmi dalam format PDF.
+- **Invoice Pro (e-Nota):** Penumpang bisa mengunduh nota belanja digital super detail (breakdown tarif, timeline perjalanan, dan stempel digital).
 - **Financial Reporting Admin:** Ekspor laporan keuangan ke format Excel (XLS) untuk periode Harian, Mingguan, dan 3 bulan terakhir.
 
 ### 💬 Komunikasi Real-time Tingkat Lanjut
