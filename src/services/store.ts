@@ -133,17 +133,25 @@ const mapDriver = (db: any): DetailSopir | null => {
 
 const mapOrder = (db: any): Pesanan | null => {
   if (!db) return null;
+
+  // Extract Passenger Info from joined profile
+  const passenger = db.profiles || {}; // profiles is joined via id_penumpang
+
+  // Extract Driver Info from joined driver_details and its profile
+  const driverDetail = db.driver_details || {};
+  const driverProfile = driverDetail.profiles || {};
+
   return {
     id: db.id,
     nomorPesanan: db.nomor_pesanan || 'ORD-0000',
     jenisLayanan: db.jenis_layanan,
     idPenumpang: db.id_penumpang,
-    namaPenumpang: db.nama_penumpang || 'Pelanggan',
-    nomorHpPenumpang: db.nomor_hp_penumpang || '',
+    namaPenumpang: passenger.nama || 'Pelanggan',
+    nomorHpPenumpang: passenger.nomor_hp || '',
     idSopir: db.id_sopir || null,
-    namaSopir: db.nama_sopir || '',
-    nomorHpSopir: db.nomor_hp_sopir || '',
-    platNomorSopir: db.plat_nomor_sopir || '',
+    namaSopir: driverProfile.nama || '',
+    nomorHpSopir: driverProfile.nomor_hp || '',
+    platNomorSopir: driverDetail.plat_nomor || '',
     asalAlamat: db.asal_alamat || '',
     asalLat: safeParseFloat(db.asal_lat, KOORDINAT_LUMAJANG.lat),
     asalLng: safeParseFloat(db.asal_lng, KOORDINAT_LUMAJANG.lng),
@@ -453,7 +461,9 @@ export const OloluStore = {
       items: s.items || []
     })));
 
-    const { data: finalOrder } = await supabase.from('orders').select('*, order_stops(*)').eq('id', newOrder.id).single();
+    const { data: finalOrder } = await supabase.from('orders')
+      .select('*, order_stops(*), profiles!id_penumpang(nama, nomor_hp), driver_details!id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))')
+      .eq('id', newOrder.id).single();
     if (finalOrder) {
       const mapped = mapOrder(finalOrder);
       if (mapped) {
@@ -465,12 +475,16 @@ export const OloluStore = {
   },
 
   async getAllPesanan(): Promise<Pesanan[]> {
-    const { data } = await getSupabase()!.from('orders').select('*, order_stops(*)').order('waktu_dibuat', { ascending: false });
+    const { data } = await getSupabase()!.from('orders')
+      .select('*, order_stops(*), profiles!id_penumpang(nama, nomor_hp), driver_details!id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))')
+      .order('waktu_dibuat', { ascending: false });
     return (data || []).map(o => mapOrder(o)).filter(Boolean) as Pesanan[];
   },
 
   async getPesananById(id: string): Promise<Pesanan | null> {
-    const { data } = await getSupabase()!.from('orders').select('*, order_stops(*)').eq('id', id).single();
+    const { data } = await getSupabase()!.from('orders')
+      .select('*, order_stops(*), profiles!id_penumpang(nama, nomor_hp), driver_details!id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))')
+      .eq('id', id).single();
     return mapOrder(data);
   },
 
