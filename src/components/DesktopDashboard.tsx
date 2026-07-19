@@ -133,6 +133,40 @@ export default function DesktopDashboard() {
               {drivers.filter(d => d.statusOnline).length} <span className="text-[10px] text-slate-500 font-normal">/ {drivers.length}</span>
             </p>
           </div>
+        </div>
+
+        <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800/80 flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+            <Activity size={20} className="animate-pulse" />
+          </div>
+          <div>
+            <p className="text-[9px] text-slate-400 font-bold uppercase">Pesanan Aktif</p>
+            <p className="text-lg font-bold text-white font-mono leading-tight">{activeOrdersCount}</p>
+          </div>
+        </div>
+
+        <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800/80 flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+            <CheckCircle size={20} />
+          </div>
+          <div>
+            <p className="text-[9px] text-slate-400 font-bold uppercase">Selesai Hari Ini</p>
+            <p className="text-lg font-bold text-white font-mono leading-tight">{completedOrdersCount}</p>
+          </div>
+        </div>
+
+        <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800/80 flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center text-yellow-400 shrink-0">
+            <Coins size={20} />
+          </div>
+          <div className="overflow-hidden">
+            <p className="text-[9px] text-slate-400 font-bold uppercase">Omset Sukses</p>
+            <p className="text-sm font-bold text-[#D4AF37] font-mono leading-tight truncate" title={`Rp ${totalOmset.toLocaleString('id-ID')}`}>
+              Rp {totalOmset.toLocaleString('id-ID')}
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* EMERGENCY TICKER */}
       {emergency.active && (

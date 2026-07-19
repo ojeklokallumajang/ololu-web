@@ -237,11 +237,9 @@ function MapPickerSearch({
 function LiveDriversMap() {
   const [drivers, setDrivers] = useState<any[]>([]);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
+  const [config, setConfig] = useState<any>(null);
 
   useEffect(() => {
-    // Track usage for monitoring dashboard
-    OloluStore.trackGoogleUsage();
-
     // 1. Subscribe Driver Online
     const unsubscribe = ololuRealtime.subscribeToDriversOnline((state) => {
       const active: any[] = [];
@@ -252,7 +250,10 @@ function LiveDriversMap() {
       setDrivers(active);
     });
 
-    // 2. Lacak Lokasi User (Titik Hijau)
+    // 2. Fetch Config
+    OloluStore.getPengaturan().then(setConfig);
+
+    // 3. Lacak Lokasi User (Titik Hijau)
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude });

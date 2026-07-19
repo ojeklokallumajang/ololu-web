@@ -1,33 +1,77 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+  <img width="400" alt="Ololu Logo" src="public/favicon.svg" />
+  <h1>Ololu Lumajang - Super App Transportasi & Logistik Lokal</h1>
+  <p>Aplikasi Web Progresif (PWA) tercanggih khusus untuk masyarakat Kabupaten Lumajang.</p>
 </div>
 
-# Ololu Lumajang - Progressive Web App
+---
 
-Aplikasi ojek dan pengantaran logistik lokal khusus Kabupaten Lumajang.
+## 🌟 Apa itu Ololu?
+**Ololu Lumajang** adalah platform *all-in-one* yang menghubungkan masyarakat Lumajang dengan mitra driver lokal. Dibangun dengan fokus pada efisiensi biaya API, akurasi rute nyata, dan kemudahan penggunaan bagi warga lokal.
 
-## 🚀 Fitur Utama
-- **Login Cepat:** Nomor HP + Kata Sandi.
-- **OTP WhatsApp:** Verifikasi pendaftaran via Fonnte API Nyata.
-- **One-Step Registration:** Pendaftaran mitra rider langsung lengkap dengan dokumen (KTP, SIM, STNK, dll).
-- **Tempat & Tanggal Lahir:** Pendataan identitas lengkap sejak awal pendaftaran.
-- **Realtime Radar:** Pelacakan posisi rider di peta Lumajang secara instan menggunakan Supabase Realtime.
-- **Admin Dashboard:** Kendali penuh untuk Superuser dan Sub-Admin dengan Audit Log.
+## 🚀 Fitur Unggulan
+### 📍 Sistem Peta Hybrid & Cerdas (Anti-Boncos)
+- **Google Maps x OpenStreetMap:** Berpindah otomatis ke OpenStreetMap jika kuota Google Maps habis untuk menjaga biaya operasional tetap Rp 0.
+- **Strict Lumajang Search:** Pencarian lokasi dikunci ketat di area Lumajang agar hasil selalu akurat dan relevan.
+- **Copy-Paste Link Maps:** Penumpang bisa menempel link dari aplikasi Google Maps asli untuk menentukan titik jemput/antar secara instan.
 
-## 🛠️ Teknologi
-- **Frontend:** React, Vite, Tailwind CSS.
-- **Backend:** Supabase (PostgreSQL, Realtime).
-- **Hosting:** Cloudflare Pages.
-- **WhatsApp API:** Fonnte.
+### 🍔 Alur Belanja Multi-Resto (Estafet)
+- **Belanja Efisien:** Penumpang bisa memesan dari banyak toko/restoran sekaligus dalam satu kali jalan.
+- **Item List Per-Stop:** Rincian belanja terpisah rapi untuk setiap toko agar driver tidak bingung.
+- **Auto-Home:** Alamat rumah otomatis terdeteksi via GPS saat membuka layanan Makanan.
 
-## 📦 Cara Menjalankan Lokal
-1. **Install dependencies:** `npm install`
-2. **Setup .env:** Isi `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, dan `VITE_GOOGLE_MAPS_PLATFORM_KEY`.
-3. **Run development:** `npm run dev`
+### 💰 Sistem Dompet & Keuangan Terpadu
+- **Auto-Commission:** Potongan bagi hasil aplikator dilakukan otomatis setiap kali order selesai.
+- **Dashboard Pendapatan Driver:** Pantau hasil kerja harian, mingguan, dan bulanan secara *real-time*.
+- **E-Nota Profesional:** Penumpang bisa mengunduh nota belanja digital resmi dalam format PDF.
+- **Financial Reporting Admin:** Ekspor laporan keuangan ke format Excel (XLS) untuk periode Harian, Mingguan, dan 3 bulan terakhir.
 
-## 🌍 Deployment
-Aplikasi ini di-deploy otomatis ke Cloudflare Pages dari branch `main`. Pastikan Environment Variables sudah diatur di dashboard Cloudflare.
+### 💬 Komunikasi Real-time Tingkat Lanjut
+- **Instant Chat:** Kirim pesan teks secepat kilat menggunakan teknologi WebSocket.
+- **Kirim Foto & Suara:** Bagikan foto lokasi atau nota fisik serta pesan suara (Voice Note) di dalam aplikasi.
 
-## 📄 Dokumentasi
-- [Product Requirements Document (PRD)](PRD.md)
-- [Database Schema (SQL)](supabase_schema.sql)
+---
+
+## 🛠️ Arsitektur Teknologi
+- **Core:** React 19 + TypeScript + Vite.
+- **Styling:** Tailwind CSS 4.0.
+- **Database & Realtime:** Supabase (Postgres & Broadcast Channels).
+- **Maps Engine:** Google Maps JS SDK + Leaflet (OpenStreetMap).
+- **Otentikasi:** WhatsApp OTP via Fonnte API.
+- **Hosting:** Cloudflare Pages (Enterprise-grade Speed).
+
+---
+
+## 📦 Panduan Instalasi Lokal
+1. **Clone Repositori:**
+   ```bash
+   git clone https://github.com/ojeklokallumajang/ololu-web.git
+   cd ololu-web
+   ```
+2. **Install Dependensi:**
+   ```bash
+   npm install
+   ```
+3. **Konfigurasi Environment:**
+   Buat file `.env` di root folder dan isi:
+   ```env
+   VITE_SUPABASE_URL=your_supabase_url
+   VITE_SUPABASE_ANON_KEY=your_anon_key
+   VITE_GOOGLE_MAPS_PLATFORM_KEY=your_google_key
+   ```
+4. **Jalankan Aplikasi:**
+   ```bash
+   npm run dev
+   ```
+
+---
+
+## 🌍 Dokumentasi Lanjutan
+- 📘 [Product Requirements Document (PRD)](PRD.md) - Detail logika bisnis dan alur kerja.
+- 📂 [Skema Database](supabase_schema.sql) - Struktur tabel dan Trigger Postgres.
+
+---
+<div align="center">
+  <p><b>PT Ololu Pengantaran Nusantara Lumajang</b></p>
+  <p><i>"Warga Lumajang, Bela Beli Produk Lumajang!"</i></p>
+</div>
