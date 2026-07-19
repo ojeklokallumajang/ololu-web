@@ -365,13 +365,15 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
     return () => clearInterval(timer);
   }, [realtimeOrderAlert, isAutobidActive, orderAcceptingStatus]);
 
-  const handleAcceptRealtimeOrder = (orderId: string) => {
+  const handleAcceptRealtimeOrder = async (orderId: string) => {
     if (!driverDetail) return;
     setOrderAcceptingStatus('Mengamankan pesanan...');
     
-    // STRATEGI IRIT: Jangan tulis ke DB sekarang. Cukup broadcast ke penumpang.
-    setTimeout(() => {
-      // Kunci UI Sopir secara lokal
+    // 1. UPDATE DATABASE (MUST WRITE TO DB TO ASSIGN DRIVER)
+    const res = await OloluStore.terimaPesanan(orderId, driverDetail.id);
+
+    if (res.success) {
+      // 2. Kunci UI Sopir secara lokal
       OloluStore.setLocalOrderLock({ orderId, role: 'sopir' });
 
       const order = realtimeOrderAlert || activeOrder; // Fallback jika refresh
@@ -385,7 +387,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
         };
         setActiveOrder(updatedOrder);
 
-        // Beritahu penumpang via Broadcast (0 Write)
+        // 3. Beritahu penumpang via Broadcast (Sync UI)
         ololuRealtime.broadcastTripUpdate(orderId, {
           type: 'accepted',
           driver: {
@@ -396,10 +398,12 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
           }
         });
       }
+    } else {
+      alert("Gagal mengambil pesanan: " + res.error);
+    }
 
-      setOrderAcceptingStatus(null);
-      setRealtimeOrderAlert(null);
-    }, 800);
+    setOrderAcceptingStatus(null);
+    setRealtimeOrderAlert(null);
   };
 
   const handleDocFilePicker = (field: 'ktp' | 'sim' | 'stnk' | 'kendaraan') => {

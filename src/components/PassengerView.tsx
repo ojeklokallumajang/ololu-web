@@ -410,7 +410,12 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       if (data.type === 'location') setDriverLoc(data.coords);
       else if (data.type === 'accepted' || data.type === 'full-sync') {
         setActiveOrder(prev => prev ? ({ ...prev, status: data.status || 'sopir_ditemukan', idSopir: data.driver.id, namaSopir: data.driver.nama, platNomorSopir: data.driver.platNomor, tahapAktif: data.tahapAktif ?? prev.tahapAktif }) : null);
-      } else if (data.type === 'status_update') setActiveOrder(prev => prev ? ({ ...prev, status: data.status }) : null);
+      } else if (data.type === 'status_update') {
+        setActiveOrder(prev => prev ? ({ ...prev, status: data.status }) : null);
+        if (data.status === 'selesai' || data.status === 'dibatalkan') {
+          OloluStore.setLocalOrderLock(null);
+        }
+      }
       else if (data.type === 'parking_update') setActiveOrder(prev => prev ? ({ ...prev, daftarTujuan: prev.daftarTujuan.map(s => s.id === data.stopId ? { ...s, pilihanParkir: data.choice } : s) }) : null);
       else if (data.type === 'stop_complete') setActiveOrder(prev => prev ? ({ ...prev, daftarTujuan: prev.daftarTujuan.map(s => s.id === data.stopId ? { ...s, status: 'selesai' as any } : s), tahapAktif: data.nextTahap }) : null);
       else if (data.type === 'nota_update') setActiveOrder(prev => prev ? ({ ...prev, daftarTujuan: prev.daftarTujuan.map(s => s.id === data.stopId ? { ...s, nota: data.nota } : s) }) : null);

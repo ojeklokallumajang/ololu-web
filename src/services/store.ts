@@ -682,6 +682,15 @@ export const OloluStore = {
     ololuRealtime.broadcastChatMessage(pesananId, { senderId, senderName, senderRole, message, voiceData, photoData, timestamp: new Date().toISOString() });
   },
 
+  async terimaPesanan(orderId: string, driverId: string) {
+    const { error } = await getSupabase()!.from('orders').update({
+      id_sopir: driverId,
+      status: 'sopir_ditemukan',
+      waktu_diterima: new Date().toISOString()
+    }).eq('id', orderId);
+    return { success: !error, error: error?.message };
+  },
+
   async updateStatusPesanan(id: string, status: StatusPesanan) {
     await getSupabase()!.from('orders').update({ status }).eq('id', id);
   },
