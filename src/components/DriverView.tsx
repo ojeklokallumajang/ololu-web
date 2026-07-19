@@ -9,6 +9,7 @@ import { ololuRealtime } from '../services/supabaseClient';
 import { GOOGLE_MAPS_KEY } from './SplashMapKey';
 import ChatRoom from './ChatRoom';
 import MapDirections from './MapDirections';
+import { generateReceipt } from '../utils/receiptGenerator';
 import {
   DetailSopir,
   Pesanan,
@@ -1651,11 +1652,20 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                             <span className="text-[9px] text-gray-400 block font-bold uppercase leading-none">Pelanggan</span>
                             <span className="font-bold text-gray-800">{p.namaPenumpang}</span>
                           </div>
-                          <div className="text-right">
+                          <div className="text-right flex flex-col items-end">
                             <span className="text-[9px] text-gray-400 block font-bold uppercase leading-none">Pendapatan Bersih</span>
                             <span className="font-bold text-emerald-600">
                               + Rp {(p.totalBayarAkhir || 0).toLocaleString('id-ID')}
                             </span>
+                            {p.status === 'selesai' && (
+                              <button
+                                onClick={() => generateReceipt(p)}
+                                className="mt-1 flex items-center space-x-1 text-[8px] font-black text-blue-600 uppercase hover:underline"
+                              >
+                                <FileText size={10} />
+                                <span>Cetak e-Nota</span>
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>

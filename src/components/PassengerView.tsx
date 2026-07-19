@@ -497,10 +497,10 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   };
 
   const getTarifBreakdown = () => {
-    if (!config) return { base: 0, perKm: 0, min: 0, multiStop: 0, total: 0 };
+    if (!config) return { base: 0, perKm: 0, min: 0, multiStop: 0, total: 0, commission: 10 };
     const j = hitungTotalJarak();
     const jarakBulat = Math.max(1, Math.ceil(j));
-    let h = 0, s = config.biayaPerStopTambahan, m = 0, perKm = 0, base = 0;
+    let h = 0, s = config.biayaPerStopTambahan, m = 0, perKm = 0, base = 0, comm = 10;
 
     if (selectedLayanan === 'ojek') {
       base = config.ojekTarifDasar;
@@ -508,6 +508,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       h = jarakBulat <= config.ojekBatasKmTarifDasar ? base : (jarakBulat * perKm);
       s = config.ojekBiayaPerStop;
       m = config.ojekTarifMinimum;
+      comm = config.ojekPersenJasa;
     }
     else if (selectedLayanan === 'mobil') {
       base = config.mobilTarifDasar;
@@ -515,6 +516,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       h = jarakBulat <= config.mobilBatasKmTarifDasar ? base : (jarakBulat * perKm);
       s = config.mobilBiayaPerStop;
       m = config.mobilTarifMinimum;
+      comm = config.mobilPersenJasa;
     }
     else if (selectedLayanan === 'makanan') {
       base = config.makananTarifDasar;
@@ -522,6 +524,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       h = jarakBulat <= config.makananBatasKmTarifDasar ? base : (jarakBulat * perKm);
       s = config.makananBiayaPerStop;
       m = config.makananTarifMinimum;
+      comm = config.makananPersenJasa;
     }
     else if (selectedLayanan === 'paket') {
       base = config.paketTarifDasar;
@@ -529,6 +532,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       h = jarakBulat <= config.paketBatasKmTarifDasar ? base : (jarakBulat * perKm);
       s = config.paketBiayaPerStop;
       m = config.paketTarifMinimum;
+      comm = config.paketPersenJasa;
     }
     else {
       base = config.barangBesarTarifDasar;
@@ -536,6 +540,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       h = jarakBulat <= config.barangBesarBatasKmTarifDasar ? base : (jarakBulat * perKm);
       s = config.barangBesarBiayaPerStop;
       m = config.barangBesarTarifMinimum;
+      comm = config.barangBesarPersenJasa;
     }
 
     const multiStop = (stops.length > 1 ? (stops.length - 1) * s : 0);
@@ -545,6 +550,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       perKm,
       min: m,
       multiStop,
+      commission: comm,
       total: murni + multiStop
     };
   };
@@ -696,6 +702,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
         tarifPerKm: breakdown.perKm,
         tarifMinimum: breakdown.min,
         tambahanTujuan: breakdown.multiStop,
+        biayaLayananPersen: breakdown.commission,
         totalBayarAkhir: breakdown.total,
         pembayaranTunai,
         tarifPerjalananMurni: breakdown.total - breakdown.multiStop

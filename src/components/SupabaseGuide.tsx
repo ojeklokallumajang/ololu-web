@@ -66,15 +66,19 @@ ALTER TABLE public.otps ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Akses Publik OTP" ON public.otps;
 CREATE POLICY "Akses Publik OTP" ON public.otps FOR ALL USING (true) WITH CHECK (true);
 
--- 5. Perbarui Trigger Potong Saldo (Versi Presisi 10% Flat)
+-- 5. Perbarui Trigger Potong Saldo (Versi Dinamis Sesuai Pengaturan)
 CREATE OR REPLACE FUNCTION public.process_completed_order()
 RETURNS TRIGGER AS $$
 DECLARE
+  v_comm_rate NUMERIC;
   v_comm NUMERIC;
   v_cur_saldo NUMERIC;
 BEGIN
   IF NEW.status = 'selesai' AND (OLD.status IS NULL OR OLD.status <> 'selesai') THEN
-    v_comm := ROUND(NEW.tarif_perjalanan_murni * 0.1);
+    -- Mengambil persentase yang tersimpan di pesanan (default 10% jika null)
+    v_comm_rate := COALESCE(NEW.biaya_layanan_persen, 10.0) / 100.0;
+    v_comm := ROUND(NEW.tarif_perjalanan_murni * v_comm_rate);
+
     UPDATE public.driver_details
     SET saldo_dompet = COALESCE(saldo_dompet, 0) - v_comm,
         jumlah_pesanan_selesai = COALESCE(jumlah_pesanan_selesai, 0) + 1
@@ -82,7 +86,8 @@ BEGIN
     RETURNING saldo_dompet INTO v_cur_saldo;
 
     INSERT INTO public.wallet_transactions (id_sopir, jenis, jumlah, saldo_awal, saldo_akhir, deskripsi, status_tarik)
-    VALUES (NEW.id_sopir, 'potongan_jasa', v_comm, v_cur_saldo + v_comm, v_cur_saldo, 'Bagi hasil Order #' || NEW.nomor_pesanan, 'disetujui');
+    VALUES (NEW.id_sopir, 'potongan_jasa', v_comm, v_cur_saldo + v_comm, v_cur_saldo,
+            'Bagi hasil Ololu ' || (v_comm_rate * 100)::text || '% - Order #' || NEW.nomor_pesanan, 'disetujui');
   END IF;
   RETURN NEW;
 END;
