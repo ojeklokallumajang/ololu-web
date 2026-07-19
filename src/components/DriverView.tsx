@@ -950,7 +950,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
             <Power size={18} className={driverDetail.statusOnline ? 'animate-pulse text-[#D4AF37]' : ''} />
           )}
           <span>
-            {isTogglingOnline ? 'MEMPROSES...' : (driverDetail.statusOnline ? '🟢 ANDA SEDANG ONLINE' : '🔴 AKTIFKAN MODE ONLINE')}
+            {isTogglingOnline ? 'MEMPROSES...' : (driverDetail.statusOnline ? '🟢 ANDA SEDANG ONLINE' : (!driverDetail.disetujuiAdmin ? '⌛ MENUNGGU VERIFIKASI' : '🔴 AKTIFKAN MODE ONLINE'))}
           </span>
         </button>
 
@@ -993,9 +993,9 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
           <div className="bg-[#E6F4EC] text-[#034F2A] p-2.5 rounded-xl text-[10px] space-y-1">
             <p className="font-bold">⚠️ Syarat Aktif Online Sopir:</p>
             <ul className="list-disc pl-4 space-y-0.5">
-              <li>Akun terverifikasi oleh Admin: <span className="font-bold text-[#059669]">Lolos ✅</span></li>
+              <li>Akun terverifikasi oleh Admin: <span className={`font-bold ${driverDetail.disetujuiAdmin ? 'text-[#059669]' : 'text-[#DC2626]'}`}>{driverDetail.disetujuiAdmin ? 'Lolos ✅' : 'Belum Lolos ❌'}</span></li>
               <li>Saldo Dompet Ololu ≥ Rp {(config.saldoMinimalOnlineSopir || 0).toLocaleString('id-ID')}: <span className={`font-bold ${driverDetail.saldoDompet >= config.saldoMinimalOnlineSopir ? 'text-[#059669]' : 'text-[#DC2626]'}`}>{driverDetail.saldoDompet >= config.saldoMinimalOnlineSopir ? 'Lolos' : 'Kurang'} (Rp {(driverDetail.saldoDompet || 0).toLocaleString('id-ID')})</span></li>
-              <li>Tidak sedang membawa order aktif: <span className="font-bold text-[#059669]">Lolos ✅</span></li>
+              <li>Tidak sedang membawa order aktif: <span className="font-bold text-[#059669]">{activeOrder ? 'Membawa Order' : 'Lolos ✅'}</span></li>
             </ul>
           </div>
         )}
