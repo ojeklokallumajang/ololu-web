@@ -17,6 +17,7 @@ export interface ProfilPengguna {
   tanggalDaftar: string;
   fotoProfil?: string;
   isSubAdmin?: boolean; // Menandai jika user adalah admin tambahan
+  isSuspended?: boolean; // Menandai jika akun ditangguhkan
 }
 
 export interface LogAudit {

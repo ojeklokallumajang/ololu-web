@@ -109,6 +109,12 @@ export default function AdminView() {
 
   const [showProofModal, setShowProofModal] = useState<string | null>(null);
 
+  // SEARCH & FILTER STATES
+  const [searchUserQuery, setSearchUserQuery] = useState('');
+  const [searchDriverQuery, setSearchDriverQuery] = useState('');
+  const [selectedUserDetail, setSelectedUserDetail] = useState<ProfilPengguna | null>(null);
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
+
   // FORM ADD SUB-ADMIN
   const [newAdminPhone, setNewAdminPhone] = useState('');
   const [newAdminName, setNewAdminName] = useState('');
@@ -284,6 +290,38 @@ export default function AdminView() {
     }
   };
 
+  const handleToggleSuspend = async (user: ProfilPengguna) => {
+    if (!profile) return;
+    const action = user.isSuspended ? "Membatalkan Suspend" : "Menangguhkan (Suspend)";
+    if (confirm(`Apakah Anda yakin ingin ${action} akun ${user.nama}?`)) {
+      setIsProcessingAction(true);
+      const res = await OloluStore.toggleSuspendUser(user.id, !!user.isSuspended);
+      if (res.success) {
+        await OloluStore.addAuditLog(profile.id, profile.nama, action, `Akun: ${user.nama} (${user.nomorHp})`);
+        alert(`Berhasil ${action} akun.`);
+        // Note: Global sync will handle list updates
+      } else {
+        alert("Gagal: " + res.error);
+      }
+      setIsProcessingAction(false);
+    }
+  };
+
+  const handleForceOffline = async (drvId: string, drvNama: string) => {
+    if (!profile) return;
+    if (confirm(`Paksa Driver ${drvNama} untuk Offline?`)) {
+      setIsProcessingAction(true);
+      const res = await OloluStore.forceOfflineDriver(drvId);
+      if (res.success) {
+        await OloluStore.addAuditLog(profile.id, profile.nama, "Force Offline", `Driver: ${drvNama}`);
+        alert("Driver berhasil dipaksa offline.");
+      } else {
+        alert("Gagal: " + res.error);
+      }
+      setIsProcessingAction(false);
+    }
+  };
+
   const handleProsesTx = async (id: string, status: 'disetujui' | 'ditolak') => {
     let alasan = '';
     if (status === 'ditolak') {
@@ -390,6 +428,18 @@ export default function AdminView() {
 
         {activeTab === 'sopir' && (
           <div className="space-y-4">
+             {/* SEARCH RIDER */}
+             <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Cari Nama / Plat Rider..."
+                  value={searchDriverQuery}
+                  onChange={(e) => setSearchDriverQuery(e.target.value)}
+                  className="w-full p-3 pl-10 bg-white border rounded-2xl text-xs font-bold outline-none focus:border-[#046A38] transition-all shadow-sm"
+                />
+                <Search size={16} className="absolute left-3.5 top-3.5 text-gray-400" />
+             </div>
+
              <div className="space-y-2">
                 <h3 className="text-[10px] font-black text-amber-600 uppercase tracking-widest px-1">⏳ Menunggu Verifikasi</h3>
                 {sopirList.filter(s => !s.disetujuiAdmin && !s.ditolakAdmin).length === 0 ? (
@@ -412,19 +462,26 @@ export default function AdminView() {
 
              <div className="space-y-2 pt-2">
                 <h3 className="text-[10px] font-black text-[#046A38] uppercase tracking-widest px-1">✅ Mitra Aktif Ololu</h3>
-                {sopirList.filter(s => s.disetujuiAdmin).length === 0 ? (
-                  <p className="text-[10px] italic text-gray-400 text-center py-4">Belum ada mitra aktif.</p>
+                {sopirList.filter(s => s.disetujuiAdmin && (
+                  (s as any).nama?.toLowerCase().includes(searchDriverQuery.toLowerCase()) ||
+                  s.platNomor?.toLowerCase().includes(searchDriverQuery.toLowerCase())
+                )).length === 0 ? (
+                  <p className="text-[10px] italic text-gray-400 text-center py-4 bg-white rounded-xl border border-dashed">Rider tidak ditemukan.</p>
                 ) : (
-                  sopirList.filter(s => s.disetujuiAdmin).map(s => {
+                  sopirList.filter(s => s.disetujuiAdmin && (
+                    (s as any).nama?.toLowerCase().includes(searchDriverQuery.toLowerCase()) ||
+                    s.platNomor?.toLowerCase().includes(searchDriverQuery.toLowerCase())
+                  )).map(s => {
                     const hasPendingTopup = transaksiList.some(t => t.idSopir === s.id && t.jenis === 'topup' && t.statusTarik === 'menunggu');
                     return (
                     <div key={s.id} className={`bg-white p-3 rounded-xl border flex items-center justify-between shadow-xs transition-all ${hasPendingTopup ? 'border-emerald-500 bg-emerald-50/10' : ''}`}>
-                       <div className="flex items-center space-x-3">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${hasPendingTopup ? 'bg-emerald-50 text-white animate-pulse' : 'bg-emerald-50 text-[#046A38]'}`}><Bike size={16} /></div>
+                       <div className="flex items-center space-x-3 cursor-pointer group" onClick={() => { setSelectedSopir(s); setShowSopirModal(true); }}>
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-transform group-active:scale-90 ${hasPendingTopup ? 'bg-emerald-500 text-white animate-pulse' : 'bg-emerald-50 text-[#046A38]'}`}><Bike size={16} /></div>
                           <div>
                             <div className="flex items-center space-x-1">
                               <p className="text-xs font-black text-gray-800 uppercase">{(s as any).nama}</p>
                               {hasPendingTopup && <span className="bg-emerald-600 text-white text-[6px] px-1 rounded animate-bounce">DEPOSIT</span>}
+                              {(s as any).isSuspended && <span className="bg-red-500 text-white text-[6px] px-1 rounded">BLOKIR</span>}
                             </div>
                             <p className="text-[9px] text-gray-500 font-medium">{s.platNomor} • {s.jenisMotor}</p>
                           </div>
@@ -432,6 +489,14 @@ export default function AdminView() {
                        <div className="text-right flex flex-col items-end space-y-1">
                           <p className="text-[10px] font-black text-emerald-600">Rp {s.saldoDompet?.toLocaleString()}</p>
                           <div className="flex space-x-1">
+                             {s.statusOnline && (
+                               <button
+                                 onClick={() => handleForceOffline(s.id, (s as any).nama)}
+                                 className="bg-orange-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded shadow-sm hover:bg-orange-600"
+                               >
+                                 OFFLINE
+                               </button>
+                             )}
                              <button onClick={() => { if (hasPendingTopup) setActiveTab('dompet'); else { setTopUpModalTargetId(s.id); setShowTopUpModal(true); } }} className={`${hasPendingTopup ? 'bg-emerald-700' : 'bg-emerald-600'} text-white text-[7px] font-black px-1.5 py-0.5 rounded shadow-sm hover:bg-emerald-700`}>{hasPendingTopup ? 'VERIFIKASI' : 'ISI SALDO'}</button>
                              <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${s.statusOnline ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>{s.statusOnline ? 'ONLINE' : 'OFFLINE'}</span>
                           </div>
@@ -499,17 +564,42 @@ export default function AdminView() {
         {activeTab === 'penumpang' && (
            <div className="space-y-2">
              <h3 className="text-xs font-black text-gray-700 uppercase mb-3">Daftar Pengguna (Penumpang)</h3>
-             {profilList.filter(p => p.peran === 'penumpang').length === 0 ? <p className="text-xs italic text-gray-400 text-center py-10">Belum ada pengguna terdaftar.</p> :
-               profilList.filter(p => p.peran === 'penumpang').map(p => (
-                 <div key={p.id} className="bg-white p-3 rounded-xl border flex items-center justify-between shadow-xs">
+
+             {/* SEARCH USER */}
+             <div className="relative mb-3">
+                <input
+                  type="text"
+                  placeholder="Cari Nama / HP Penumpang..."
+                  value={searchUserQuery}
+                  onChange={(e) => setSearchUserQuery(e.target.value)}
+                  className="w-full p-3 pl-10 bg-white border rounded-2xl text-xs font-bold outline-none focus:border-[#046A38] transition-all shadow-sm"
+                />
+                <Search size={16} className="absolute left-3.5 top-3.5 text-gray-400" />
+             </div>
+
+             {profilList.filter(p => p.peran === 'penumpang' && (
+               p.nama?.toLowerCase().includes(searchUserQuery.toLowerCase()) ||
+               p.nomorHp?.toLowerCase().includes(searchUserQuery.toLowerCase())
+             )).length === 0 ? <p className="text-xs italic text-gray-400 text-center py-10 bg-white rounded-xl border border-dashed">Pengguna tidak ditemukan.</p> :
+               profilList.filter(p => p.peran === 'penumpang' && (
+                 p.nama?.toLowerCase().includes(searchUserQuery.toLowerCase()) ||
+                 p.nomorHp?.toLowerCase().includes(searchUserQuery.toLowerCase())
+               )).map(p => (
+                 <div key={p.id} className="bg-white p-3 rounded-xl border flex items-center justify-between shadow-xs cursor-pointer active:scale-[0.98] transition-all" onClick={() => setSelectedUserDetail(p)}>
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600"><Users size={16} /></div>
                       <div>
-                        <p className="text-xs font-black text-gray-800">{p.nama}</p>
+                        <div className="flex items-center space-x-1">
+                          <p className="text-xs font-black text-gray-800">{p.nama}</p>
+                          {p.isSuspended && <span className="bg-red-500 text-white text-[6px] px-1 rounded uppercase font-bold">Terblokir</span>}
+                        </div>
                         <p className="text-[9px] text-gray-500">{p.nomorHp}</p>
                       </div>
                     </div>
-                    <div className="text-right"><p className="text-[8px] text-gray-400 uppercase font-medium">{new Date(p.tanggalDaftar).toLocaleDateString()}</p></div>
+                    <div className="text-right">
+                       <p className="text-[8px] text-gray-400 uppercase font-bold">{new Date(p.tanggalDaftar).toLocaleDateString('id-ID')}</p>
+                       <ChevronRight size={14} className="text-gray-300 ml-auto" />
+                    </div>
                  </div>
                ))
              }
@@ -794,20 +884,116 @@ export default function AdminView() {
         </div>
       )}
 
-      {/* MODAL VERIFIKASI SOPIR */}
+      {/* MODAL VERIFIKASI / DETAIL SOPIR */}
       {showSopirModal && selectedSopir && (
         <div className="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
            <div className="bg-white w-full max-w-sm rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
               <div className="bg-[#034F2A] text-white p-5 flex justify-between items-center shrink-0">
-                 <div><h3 className="text-sm font-black uppercase tracking-widest">Verifikasi Mitra</h3><p className="text-[10px] text-emerald-100">Review Kelengkapan Berkas</p></div>
+                 <div>
+                    <h3 className="text-sm font-black uppercase tracking-widest">Detail Mitra Driver</h3>
+                    <p className="text-[10px] text-emerald-100">Kelola Akun & Dokumen</p>
+                 </div>
                  <button onClick={() => setShowSopirModal(false)} className="p-2 hover:bg-white/10 rounded-full transition-all"><XCircle size={20} /></button>
               </div>
               <div className="p-5 space-y-5 overflow-y-auto scrollbar-none flex-1">
-                 <div className="bg-gray-50 p-4 rounded-2xl border space-y-2"><div className="flex justify-between text-[10px] font-bold uppercase text-gray-400"><span>Data Identitas</span></div><p className="text-base font-black text-gray-800">{(selectedSopir as any).nama}</p><p className="text-xs font-bold text-[#046A38]">{(selectedSopir as any).nomorHp}</p><div className="pt-2 grid grid-cols-2 gap-2 border-t border-dashed mt-2"><div><span className="text-[8px] font-bold text-gray-400 uppercase">Plat Nomor</span><p className="text-[10px] font-black">{selectedSopir.platNomor}</p></div><div><span className="text-[8px] font-bold text-gray-400 uppercase">Tipe Motor</span><p className="text-[10px] font-black">{selectedSopir.jenisMotor}</p></div></div></div>
-                 <div className="space-y-3"><h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b pb-1">Lampiran Dokumen</h4><div className="grid grid-cols-2 gap-2">{[{ label: 'KTP', url: selectedSopir.fotoKtp }, { label: 'SIM', url: selectedSopir.fotoSim }, { label: 'STNK', url: selectedSopir.fotoStnk }, { label: 'KENDARAAN', url: selectedSopir.fotoKendaraan }].map(doc => (<div key={doc.label} className="space-y-1"><span className="text-[8px] font-bold text-gray-500 uppercase">{doc.label}</span><div className="h-24 bg-gray-100 rounded-xl border overflow-hidden relative group">{doc.url ? <img src={doc.url} alt={doc.label} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[10px] italic text-gray-400">Kosong</div>}{doc.url && <a href={doc.url} target="_blank" rel="noreferrer" className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-white text-[8px] font-bold uppercase">Buka Foto</a>}</div></div>))}</div></div>
-                 <div className="space-y-1"><label className="text-[9px] font-bold text-gray-400 uppercase">Alasan Penolakan (Opsional)</label><textarea value={alasanTolakSopir} onChange={(e) => setAlasanTolakSopir(e.target.value)} placeholder="Masukkan alasan jika ingin menolak pendaftaran..." className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-[10px] font-medium" rows={2} /></div>
+                 <div className="bg-gray-50 p-4 rounded-2xl border space-y-2">
+                    <p className="text-base font-black text-gray-800">{(selectedSopir as any).nama}</p>
+                    <p className="text-xs font-bold text-[#046A38]">{(selectedSopir as any).nomorHp}</p>
+                    <div className="pt-2 grid grid-cols-2 gap-2 border-t border-dashed mt-2">
+                       <div><span className="text-[8px] font-bold text-gray-400 uppercase">Plat Nomor</span><p className="text-[10px] font-black">{selectedSopir.platNomor}</p></div>
+                       <div><span className="text-[8px] font-bold text-gray-400 uppercase">Tipe Motor</span><p className="text-[10px] font-black">{selectedSopir.jenisMotor}</p></div>
+                    </div>
+                 </div>
+
+                 {/* ACTION BUTTONS (SUSPEND & FORCE OFFLINE) */}
+                 {selectedSopir.disetujuiAdmin && (
+                   <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => handleToggleSuspend(profilList.find(p => p.id === selectedSopir.id)!)}
+                        className={`py-2.5 rounded-xl text-[10px] font-black uppercase border-2 transition-all ${
+                          profilList.find(p => p.id === selectedSopir.id)?.isSuspended
+                          ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                          : 'bg-red-50 text-red-600 border-red-100'
+                        }`}
+                      >
+                        {profilList.find(p => p.id === selectedSopir.id)?.isSuspended ? 'Buka Blokir' : 'Blokir Akun'}
+                      </button>
+                      <button
+                        disabled={!selectedSopir.statusOnline}
+                        onClick={() => handleForceOffline(selectedSopir.id, (selectedSopir as any).nama)}
+                        className="py-2.5 bg-orange-50 text-orange-600 border-2 border-orange-100 rounded-xl text-[10px] font-black uppercase disabled:opacity-30 transition-all"
+                      >
+                        Paksa Offline
+                      </button>
+                   </div>
+                 )}
+
+                 <div className="space-y-3">
+                    <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest border-b pb-1">Lampiran Dokumen</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                       {[{ label: 'KTP', url: selectedSopir.fotoKtp }, { label: 'SIM', url: selectedSopir.fotoSim }, { label: 'STNK', url: selectedSopir.fotoStnk }, { label: 'KENDARAAN', url: selectedSopir.fotoKendaraan }].map(doc => (
+                         <div key={doc.label} className="space-y-1">
+                            <span className="text-[8px] font-bold text-gray-500 uppercase">{doc.label}</span>
+                            <div className="h-24 bg-gray-100 rounded-xl border overflow-hidden relative group">
+                               {doc.url ? <img src={doc.url} alt={doc.label} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[10px] italic text-gray-400">Kosong</div>}
+                               {doc.url && <a href={doc.url} target="_blank" rel="noreferrer" className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-white text-[8px] font-bold uppercase">Buka Foto</a>}
+                            </div>
+                         </div>
+                       ))}
+                    </div>
+                 </div>
+
+                 {!selectedSopir.disetujuiAdmin && (
+                   <div className="space-y-1">
+                      <label className="text-[9px] font-bold text-gray-400 uppercase">Alasan Penolakan (Opsional)</label>
+                      <textarea value={alasanTolakSopir} onChange={(e) => setAlasanTolakSopir(e.target.value)} placeholder="Masukkan alasan jika ingin menolak pendaftaran..." className="w-full p-3 bg-gray-50 border rounded-xl outline-none text-[10px] font-medium" rows={2} />
+                   </div>
+                 )}
               </div>
-              <div className="p-5 bg-gray-50 border-t flex space-x-3 shrink-0"><button onClick={() => handleVerifySopir(selectedSopir.id, false)} className="flex-1 py-3.5 bg-white text-red-600 border-2 border-red-100 hover:bg-red-50 font-black rounded-2xl text-[10px] uppercase tracking-widest transition-all">TOLAK</button><button onClick={() => handleVerifySopir(selectedSopir.id, true)} className="flex-[2] py-3.5 bg-[#046A38] text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-200 active:scale-95 transition-all">ACC / SETUJUI MITRA</button></div>
+              <div className="p-5 bg-gray-50 border-t flex space-x-3 shrink-0">
+                 {!selectedSopir.disetujuiAdmin ? (
+                   <>
+                     <button onClick={() => handleVerifySopir(selectedSopir.id, false)} className="flex-1 py-3.5 bg-white text-red-600 border-2 border-red-100 hover:bg-red-50 font-black rounded-2xl text-[10px] uppercase tracking-widest transition-all">TOLAK</button>
+                     <button onClick={() => handleVerifySopir(selectedSopir.id, true)} className="flex-[2] py-3.5 bg-[#046A38] text-white font-black rounded-2xl text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-200 active:scale-95 transition-all">SETUJUI MITRA</button>
+                   </>
+                 ) : (
+                   <button onClick={() => setShowSopirModal(false)} className="w-full py-3.5 bg-gray-800 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest transition-all">TUTUP DETAIL</button>
+                 )}
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* MODAL DETAIL USER / PENUMPANG */}
+      {selectedUserDetail && (
+        <div className="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+           <div className="bg-white w-full max-w-xs rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+              <div className="bg-blue-600 text-white p-5 flex justify-between items-center">
+                 <div><h3 className="text-sm font-black uppercase tracking-widest">Detail Penumpang</h3><p className="text-[10px] opacity-80">Manajemen Profil User</p></div>
+                 <button onClick={() => setSelectedUserDetail(null)} className="p-2 hover:bg-white/10 rounded-full transition-all"><X size={20} /></button>
+              </div>
+              <div className="p-6 space-y-6">
+                 <div className="text-center space-y-2">
+                    <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 mx-auto border-4 border-white shadow-md"><User size={32} /></div>
+                    <div><p className="text-lg font-black text-gray-800">{selectedUserDetail.nama}</p><p className="text-xs font-bold text-blue-600">{selectedUserDetail.nomorHp}</p></div>
+                 </div>
+                 <div className="bg-gray-50 p-4 rounded-2xl border divide-y divide-gray-100">
+                    <div className="py-2 flex justify-between items-center"><span className="text-[10px] font-bold text-gray-400 uppercase">Tgl Daftar</span><span className="text-[10px] font-black">{new Date(selectedUserDetail.tanggalDaftar).toLocaleDateString('id-ID')}</span></div>
+                    <div className="py-2 flex justify-between items-center"><span className="text-[10px] font-bold text-gray-400 uppercase">Total Order</span><span className="text-[10px] font-black">{pesananList.filter(o => o.idPenumpang === selectedUserDetail.id).length} Pesanan</span></div>
+                    <div className="py-2 flex justify-between items-center"><span className="text-[10px] font-bold text-gray-400 uppercase">Status Akun</span><span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${selectedUserDetail.isSuspended ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>{selectedUserDetail.isSuspended ? 'DITANGGUHKAN' : 'AKTIF'}</span></div>
+                 </div>
+                 <button
+                   disabled={isProcessingAction}
+                   onClick={() => handleToggleSuspend(selectedUserDetail)}
+                   className={`w-full py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                     selectedUserDetail.isSuspended
+                     ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100'
+                     : 'bg-red-600 text-white shadow-lg shadow-red-100'
+                   }`}
+                 >
+                   {isProcessingAction ? '...' : (selectedUserDetail.isSuspended ? 'AKTIFKAN AKUN KEMBALI' : 'SUSPEND / BLOKIR AKUN')}
+                 </button>
+              </div>
            </div>
         </div>
       )}

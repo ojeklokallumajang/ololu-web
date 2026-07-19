@@ -32,6 +32,7 @@ CREATE TABLE public.profiles (
     nomor_hp TEXT UNIQUE NOT NULL,
     peran TEXT NOT NULL CHECK (peran IN ('penumpang', 'sopir', 'admin')),
     terverifikasi BOOLEAN DEFAULT FALSE,
+    is_suspended BOOLEAN DEFAULT FALSE, -- Ditambahkan: Untuk blokir akun
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

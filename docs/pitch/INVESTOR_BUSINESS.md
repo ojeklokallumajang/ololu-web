@@ -13,7 +13,7 @@
 
 ## Slide 3: Advanced Feature Ecosystem
 - **Multi-Resto Flow:** First-of-its-kind "Relay Shopping" logic, increasing average transaction value (GTV) per order.
-- **Professional Governance:** Real-time financial reporting for admins (Export to Excel) and digital receipts (e-Nota) for auditability.
+- **Professional Governance:** Real-time financial reporting (Excel), digital receipts (e-Nota), and advanced Account Management (Suspend/Block) to ensure platform safety.
 - **High Engagement:** Integrated photo/voice chat reduces order friction and increases completion rates.
 
 ## Slide 4: Financial Roadmap & Data Integrity

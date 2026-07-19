@@ -38,6 +38,8 @@ Menjadi infrastruktur digital utama bagi transportasi dan logistik di Kabupaten 
     5. Memantau sinyal darurat (SOS) dari radar peta.
     6. Meninjau log audit untuk keamanan internal.
     7. Mengunduh laporan keuangan Excel (Harian, Mingguan, Bulanan).
+    8. Manajemen Akun: Memblokir (Suspend) akun bermasalah dan memaksa status Driver menjadi Offline.
+    9. Pencarian Cepat: Mencari Pengguna atau Rider berdasarkan nama/HP secara instan.
 
 ---
 

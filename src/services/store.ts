@@ -102,7 +102,8 @@ const mapProfile = (db: any): ProfilPengguna | null => {
     terverifikasi: !!db.terverifikasi,
     tanggalDaftar: db.tanggal_daftar || db.created_at,
     fotoProfil: db.foto_profil,
-    isSubAdmin: !!db.is_sub_admin
+    isSubAdmin: !!db.is_sub_admin,
+    isSuspended: !!db.is_suspended
   };
 };
 
@@ -254,6 +255,7 @@ export const OloluStore = {
     if (cleanedPhone.startsWith('0')) cleanedPhone = '62' + cleanedPhone.slice(1);
     const { data, error } = await supabase.from('profiles').select('*').eq('nomor_hp', cleanedPhone).eq('password', passwordInput).single();
     if (error || !data) return { success: false, error: "HP/Sandi salah." };
+    if (data.is_suspended) return { success: false, error: "Akun Anda ditangguhkan. Silakan hubungi Admin." };
     return { success: true, profil: mapProfile(data) as any };
   },
 
@@ -544,6 +546,16 @@ export const OloluStore = {
     const { error } = await getSupabase()!.from('profiles').update({ is_sub_admin: false, peran: 'penumpang' }).eq('id', id);
     if (error) return { success: false, error: error.message };
     return { success: true };
+  },
+
+  async toggleSuspendUser(id: string, currentStatus: boolean) {
+    const { error } = await getSupabase()!.from('profiles').update({ is_suspended: !currentStatus }).eq('id', id);
+    return { success: !error, error: error?.message };
+  },
+
+  async forceOfflineDriver(id: string) {
+    const { error } = await getSupabase()!.from('driver_details').update({ status_online: false }).eq('id', id);
+    return { success: !error, error: error?.message };
   },
 
   async savePengaturan(newCfg: PengaturanTarif, adminId: string, adminNama: string) {
