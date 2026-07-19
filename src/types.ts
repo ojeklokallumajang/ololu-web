@@ -117,6 +117,9 @@ export interface Pesanan {
   biayaLayananPersen: number; // Biaya potongan jasa aplikasi
   biayaParkirTotal: number;
   biayaNotaTotal: number;
+  biayaTungguTotal: number;
+  biayaMalamTambahan: number;
+  durasiMenit: number;
   tarifPerjalananMurni: number; // Jarak * tarifPerKm dst
   totalBayarAkhir: number; // Jumlah yang harus dibayar customer
   pembayaranTunai: boolean; // True jika tunai langsung ke sopir, false jika via Dompet Ololu
@@ -124,6 +127,7 @@ export interface Pesanan {
   // Log Waktu
   waktuDibuat: string;
   waktuSopirDiterima?: string;
+  waktuTibaJemput?: string;
   waktuMulaiJalan?: string;
   waktuSelesai?: string;
   waktuDibatalkan?: string;
@@ -186,7 +190,10 @@ export interface PengaturanTarif {
   // Tarif Ojek Orang
   ojekTarifDasar: number;
   ojekTarifPerKm: number;
+  ojekTarifPerKmJauh: number;
+  ojekBatasKmJauh: number;
   ojekTarifMinimum: number;
+  ojekTarifTungguPerMenit: number;
   ojekPersenJasa: number;
   ojekBatasKmTarifDasar: number; // KM berlakunya tarif dasar (contoh: 3)
   ojekBiayaPerStop: number;
@@ -194,7 +201,10 @@ export interface PengaturanTarif {
   // Tarif Mobil (Ololu-Car)
   mobilTarifDasar: number;
   mobilTarifPerKm: number;
+  mobilTarifPerKmJauh: number;
+  mobilBatasKmJauh: number;
   mobilTarifMinimum: number;
+  mobilTarifTungguPerMenit: number;
   mobilPersenJasa: number;
   mobilBatasKmTarifDasar: number;
   mobilBiayaPerStop: number;
@@ -203,24 +213,27 @@ export interface PengaturanTarif {
   makananTarifDasar: number;
   makananTarifPerKm: number;
   makananTarifMinimum: number;
+  makananTarifTungguPerMenit: number;
   makananPersenJasa: number;
-  makananBatasKmTarifDasar: number; // KM berlakunya tarif dasar (contoh: 3)
+  makananBatasKmTarifDasar: number;
   makananBiayaPerStop: number;
 
   // Tarif Paket Kilat
   paketTarifDasar: number;
   paketTarifPerKm: number;
   paketTarifMinimum: number;
+  paketTarifTungguPerMenit: number;
   paketPersenJasa: number;
-  paketBatasKmTarifDasar: number; // KM berlakunya tarif dasar (contoh: 3)
+  paketBatasKmTarifDasar: number;
   paketBiayaPerStop: number;
 
   // Tarif Barang Besar
   barangBesarTarifDasar: number;
   barangBesarTarifPerKm: number;
   barangBesarTarifMinimum: number;
+  barangBesarTarifTungguPerMenit: number;
   barangBesarPersenJasa: number;
-  barangBesarBatasKmTarifDasar: number; // KM berlakunya tarif dasar (contoh: 3)
+  barangBesarBatasKmTarifDasar: number;
   barangBesarBiayaPerStop: number;
 
   // Aturan Parkir (Sistem Parkir Baru)
@@ -231,8 +244,15 @@ export interface PengaturanTarif {
   biayaPerStopTambahan: number; // Tambahan biaya per stop (mulai stop ke-2 dst)
   biayaKelebihanItem: number; // Biaya jika > 5 item per stop
 
+  // Jam Malam & Surcharge
+  malamAktif: boolean;
+  malamMulai: string; // "22:00"
+  malamSelesai: string; // "05:00"
+  malamTambahanFlat: number;
+
   // Pengaturan Jangkauan & Aturan
   radiusPencarianSopirKm: number;
+  jarakMaksimalOrderKm: number;
   saldoMinimalOnlineSopir: number; // Rp 5.000
   dendaBatalSopir: number;
   dendaBatalPenumpang: number;
