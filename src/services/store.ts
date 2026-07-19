@@ -164,6 +164,13 @@ const mapOrder = (db: any): Pesanan | null => {
       jumlah: i.jumlah,
       perkiraanHarga: i.perkiraanHarga || i.perkiraan_harga
     })),
+    notaAwal: db.nota_awal_nama_toko ? {
+      namaToko: db.nota_awal_nama_toko,
+      totalToko: safeParseFloat(db.nota_awal_total_toko, 0),
+      rincianBarang: db.nota_awal_rincian_barang,
+      fotoNota: db.nota_awal_foto_url,
+      waktuDicatat: db.nota_awal_waktu_dicatat
+    } : undefined,
     tarifDasar: safeParseFloat(db.tarif_dasar, 0),
     tarifPerKm: safeParseFloat(db.tarif_per_km, 0),
     tarifMinimum: safeParseFloat(db.tarif_minimum, 0),
@@ -642,6 +649,26 @@ export const OloluStore = {
       photo_data: photoData
     });
     ololuRealtime.broadcastChatMessage(pesananId, { senderId, senderName, senderRole, message, voiceData, photoData, timestamp: new Date().toISOString() });
+  },
+
+  async simpanNotaAwal(pesananId: string, namaToko: string, rincian: string, total: number, fotoBase64: string) {
+    const updateData = {
+      nota_awal_nama_toko: namaToko,
+      nota_awal_rincian_barang: rincian,
+      nota_awal_total_toko: total,
+      nota_awal_foto_url: fotoBase64,
+      nota_awal_waktu_dicatat: new Date().toISOString()
+    };
+    await getSupabase()!.from('orders').update(updateData).eq('id', pesananId);
+
+    const notaForUI = {
+      namaToko,
+      totalToko: total,
+      rincianBarang: rincian,
+      fotoNota: fotoBase64,
+      waktuDicatat: updateData.nota_awal_waktu_dicatat
+    };
+    ololuRealtime.broadcastTripUpdate(pesananId, { type: 'nota_awal_update', nota: notaForUI });
   },
 
   async simpanNotaToko(pesananId: string, stopId: string, namaToko: string, rincian: string, total: number, fotoBase64: string) {

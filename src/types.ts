@@ -96,6 +96,13 @@ export interface Pesanan {
   asalLat: number;
   asalLng: number;
   itemsAwal?: ItemBelanja[]; // Daftar belanja di lokasi awal (Toko/Resto)
+  notaAwal?: {
+    namaToko: string;
+    rincianBarang: string;
+    totalToko: number;
+    fotoNota: string;
+    waktuDicatat: string;
+  };
   daftarTujuan: TujuanStop[]; // Maksimal 5 stop untuk makanan/belanja
   
   // Biaya & Tarif

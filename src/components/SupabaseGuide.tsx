@@ -4,11 +4,57 @@
  */
 
 import React, { useState } from 'react';
-import { Copy, Check, Database, Code, Shield, Cloud } from 'lucide-react';
+import { Copy, Check, Database, Code, Shield, Cloud, Plus } from 'lucide-react';
 
 export default function SupabaseGuide() {
-  const [activeTab, setActiveTab] = useState<'panduan' | 'sql' | 'edge'>('panduan');
+  const [activeTab, setActiveTab] = useState<'panduan' | 'sql' | 'edge' | 'migrasi'>('panduan');
   const [copied, setCopied] = useState<string | null>(null);
+
+  const migrationSql = `-- =========================================================================
+-- SQL PEMBARUAN (MIGRATION) - JALANKAN INI JIKA ADA FITUR BARU
+-- =========================================================================
+
+-- 1. Tambah kolom menu di lokasi awal (Resto 1)
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS items_awal JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS nota_awal_nama_toko TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS nota_awal_rincian_barang TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS nota_awal_total_toko NUMERIC DEFAULT 0;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS nota_awal_foto_url TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS nota_awal_waktu_dicatat TIMESTAMPTZ;
+
+-- 2. Tambah kolom rincian belanja di tiap titik antar (Resto 2 dst)
+ALTER TABLE public.order_stops ADD COLUMN IF NOT EXISTS daftar_item JSONB DEFAULT '[]'::jsonb;
+
+-- 3. Tambah kolom status blokir pada profil
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN DEFAULT FALSE;
+
+-- 4. Perbarui Trigger Potong Saldo (Versi Presisi)
+CREATE OR REPLACE FUNCTION public.process_completed_order()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_commission_rate NUMERIC;
+  v_commission NUMERIC;
+  v_current_saldo NUMERIC;
+BEGIN
+  IF NEW.status = 'selesai' AND (OLD.status IS NULL OR OLD.status <> 'selesai') THEN
+    v_commission_rate := COALESCE(NEW.biaya_layanan_persen, 10.0) / 100.0;
+    v_commission := ROUND(NEW.tarif_perjalanan_murni * v_commission_rate);
+
+    UPDATE public.driver_details
+    SET saldo_dompet = COALESCE(saldo_dompet, 0) - v_commission,
+        jumlah_pesanan_selesai = COALESCE(jumlah_pesanan_selesai, 0) + 1
+    WHERE id = NEW.id_sopir
+    RETURNING saldo_dompet INTO v_current_saldo;
+
+    INSERT INTO public.wallet_transactions (id_sopir, jenis, jumlah, saldo_awal, saldo_akhir, deskripsi, status_tarik)
+    VALUES (NEW.id_sopir, 'potongan_jasa', v_commission, v_current_saldo + v_commission, v_current_saldo, 'Bagi hasil Ololu - Order #' || NEW.nomor_pesanan, 'disetujui');
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS on_order_completed ON public.orders;
+CREATE TRIGGER on_order_completed AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION public.process_completed_order();`;
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -76,6 +122,11 @@ CREATE TABLE public.orders (
     asal_lat NUMERIC NOT NULL,
     asal_lng NUMERIC NOT NULL,
     items_awal JSONB DEFAULT '[]'::jsonb,
+    nota_awal_nama_toko TEXT,
+    nota_awal_rincian_barang TEXT,
+    nota_awal_total_toko NUMERIC DEFAULT 0,
+    nota_awal_foto_url TEXT,
+    nota_awal_waktu_dicatat TIMESTAMPTZ,
     jarak_km NUMERIC NOT NULL,
     tarif_perjalanan_murni NUMERIC NOT NULL,
     biaya_parkir_total NUMERIC DEFAULT 0,
@@ -422,12 +473,43 @@ serve(async (req) => {
           }`}
         >
           <Code size={14} />
-          <span>3. Edge Function</span>
+          <span>3. Edge API</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('migrasi')}
+          className={`flex-1 py-3 text-xs font-semibold text-center flex items-center justify-center space-x-1.5 border-b-2 transition-all ${
+            activeTab === 'migrasi'
+              ? 'border-[#B8941F] text-[#B8941F]'
+              : 'border-transparent text-[#6B7280] hover:text-[#B8941F]'
+          }`}
+        >
+          <Plus size={14} />
+          <span>4. SQL Migrasi</span>
         </button>
       </div>
 
-      {/* ISI KONTEN */}
       <div className="p-4 space-y-4">
+        {activeTab === 'migrasi' && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+             <div className="bg-amber-50 p-4 rounded-2xl border border-amber-200">
+               <h3 className="text-xs font-black text-amber-800 uppercase flex items-center space-x-2">
+                 <Shield size={16} /> <span>Pembaruan Database Penting</span>
+               </h3>
+               <p className="text-[10px] text-amber-700 mt-1 leading-relaxed">
+                 Jalankan SQL di bawah ini pada <b>SQL Editor Supabase</b> untuk mengaktifkan fitur: multi-resto detail belanja, sistem blokir akun, dan pembagian komisi yang lebih akurat.
+               </p>
+             </div>
+
+             <div className="bg-slate-900 rounded-2xl p-4 relative group">
+                <button onClick={() => handleCopy(migrationSql, 'mig')} className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-all">
+                  {copied === 'mig' ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                </button>
+                <pre className="text-[9px] text-emerald-400 font-mono overflow-x-auto whitespace-pre leading-relaxed scrollbar-thin scrollbar-thumb-white/10">
+                  {migrationSql}
+                </pre>
+             </div>
+          </div>
+        )}
         {activeTab === 'panduan' && (
           <div className="space-y-4">
             {/* CARD STEP 1 */}

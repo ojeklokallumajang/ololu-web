@@ -93,6 +93,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
   const [notaGoods, setNotaGoods] = useState('');
   const [notaTotal, setNotaTotal] = useState<string>('');
   const [activeNotaStopId, setActiveNotaStopId] = useState<string | null>(null);
+  const [isNotaAsal, setIsNotaAsal] = useState(false);
 
   // SUPABASE REALTIME & AUTOBID STATES
   const [config, setConfig] = useState<any>(null);
@@ -133,6 +134,30 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
 
     return { daily, weekly, monthly };
   }, [historyOrders]);
+
+  // Realtime calculation of current order total
+  const calculatedTotals = useMemo(() => {
+    if (!activeOrder || !config) return { parkir: 0, nota: 0, final: 0 };
+
+    // 1. Calculate Parking
+    const totalParkir = activeOrder.daftarTujuan.reduce((sum, s) => {
+      if (s.pilihanParkir === 'parkir_biasa') return sum + (config.biayaParkirBiasa || 0);
+      if (s.pilihanParkir === 'parkir_pasar') return sum + (config.biayaParkirPasar || 0);
+      return sum;
+    }, 0);
+
+    // 2. Calculate Nota
+    const notaAsal = activeOrder.notaAwal?.totalToko || 0;
+    const notaStops = activeOrder.daftarTujuan.reduce((sum, s) => sum + (s.nota?.totalToko || 0), 0);
+    const totalNota = notaAsal + notaStops;
+
+    // 3. Final Total
+    // total = murni + tambahan + parkir + nota
+    const base = activeOrder.tarifPerjalananMurni + (activeOrder.tambahanTujuan || 0) + (activeOrder.tambahanItem || 0);
+    const final = base + totalParkir + totalNota;
+
+    return { parkir: totalParkir, nota: totalNota, final };
+  }, [activeOrder, config]);
 
   const initDriver = async () => {
     const p = await OloluStore.getProfilLogin();
@@ -537,23 +562,48 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
 
   const handleAddNotaToko = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeOrder || !activeNotaStopId) return;
+    if (!activeOrder) return;
     const tot = parseFloat(notaTotal);
     if (!notaStoreName || !notaGoods || isNaN(tot) || tot <= 0) {
       alert("Lengkapi detail nota toko dengan benar!");
       return;
     }
 
-    // Harusnya ambil dari foto kamera asli, jika belum ada tampilkan warning
-    alert("Fitur pengambilan foto nota fisik sedang disiapkan. Mengirim data teks nota...");
-
-    OloluStore.simpanNotaToko(activeOrder.id, activeNotaStopId, notaStoreName, notaGoods, tot, "");
+    if (isNotaAsal) {
+      OloluStore.simpanNotaAwal(activeOrder.id, notaStoreName, notaGoods, tot, "");
+      setActiveOrder({
+        ...activeOrder,
+        notaAwal: {
+          namaToko: notaStoreName,
+          rincianBarang: notaGoods,
+          totalToko: tot,
+          fotoNota: "",
+          waktuDicatat: new Date().toISOString()
+        }
+      });
+    } else if (activeNotaStopId) {
+      OloluStore.simpanNotaToko(activeOrder.id, activeNotaStopId, notaStoreName, notaGoods, tot, "");
+      setActiveOrder({
+        ...activeOrder,
+        daftarTujuan: activeOrder.daftarTujuan.map(s => s.id === activeNotaStopId ? {
+          ...s,
+          nota: {
+            namaToko: notaStoreName,
+            totalToko: tot,
+            rincianBarang: notaGoods,
+            fotoNota: "",
+            waktuDicatat: new Date().toISOString()
+          }
+        } : s)
+      });
+    }
     
     // Reset form nota
     setNotaStoreName('');
     setNotaGoods('');
     setNotaTotal('');
     setActiveNotaStopId(null);
+    setIsNotaAsal(false);
   };
 
   const handleCompleteStop = (stopId: string) => {
@@ -593,7 +643,14 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
     // FINAL WRITE: Tulis semua status perjalanan ke database dalam satu kali aksi
     alert("🚀 MENYIMPAN DATA PERJALANAN KE CLOUD...");
 
-    await OloluStore.selesaikanPesanan(activeOrder.id, activeOrder);
+    const finalOrder = {
+      ...activeOrder,
+      biayaParkirTotal: calculatedTotals.parkir,
+      biayaNotaTotal: calculatedTotals.nota,
+      totalBayarAkhir: calculatedTotals.final
+    };
+
+    await OloluStore.selesaikanPesanan(activeOrder.id, finalOrder);
 
     // Force clear locally immediately
     OloluStore.setLocalOrderLock(null);
@@ -943,18 +1000,46 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
               
               {/* STATUS UTAMA DAN TOMBOL UPDATE */}
               <div className="bg-[#FAFBF9] p-3 rounded-xl border border-gray-100 space-y-2">
-                {/* Rincian Belanja di Awal jika ada */}
-                {activeOrder.itemsAwal && activeOrder.itemsAwal.length > 0 && (
-                  <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-100 mb-2">
-                    <span className="text-[10px] font-bold text-[#046A38] uppercase block mb-1">🛒 BELANJA DI LOKASI JEMPUT:</span>
-                    {activeOrder.itemsAwal.map(it => (
-                      <div key={it.id} className="text-[11px] text-emerald-800 flex justify-between font-bold">
-                        <span>• {it.namaBarang}</span>
-                        <span>x{it.jumlah}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="border-b pb-2 mb-2">
+                   <div className="flex justify-between items-baseline mb-1">
+                      <span className="text-[10px] font-bold text-[#046A38] uppercase">Titik Jemput / Toko Utama:</span>
+                      <span className="text-[9px] text-gray-400 font-mono">{activeOrder.asalLat.toFixed(5)}, {activeOrder.asalLng.toFixed(5)}</span>
+                   </div>
+                   <p className="text-xs font-bold text-gray-700">{activeOrder.asalAlamat}</p>
+
+                   {/* Rincian Belanja di Awal jika ada */}
+                   {activeOrder.itemsAwal && activeOrder.itemsAwal.length > 0 && (
+                     <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-100 mt-2">
+                       <span className="text-[9px] font-black text-[#046A38] uppercase block mb-1">🛒 DAFTAR BELANJA (TOKO 1):</span>
+                       {activeOrder.itemsAwal.map(it => (
+                         <div key={it.id} className="text-[11px] text-emerald-800 flex justify-between font-bold">
+                           <span>• {it.namaBarang}</span>
+                           <span>x{it.jumlah}</span>
+                         </div>
+                       ))}
+
+                       {/* Input Nota untuk Toko Utama */}
+                       {activeOrder.jenisLayanan === 'makanan' && activeOrder.status !== 'selesai' && (
+                         <div className="mt-2 pt-2 border-t border-emerald-200">
+                           {activeOrder.notaAwal ? (
+                             <div className="flex justify-between items-center">
+                               <span className="text-[10px] text-emerald-700">Total: <b>Rp {activeOrder.notaAwal.totalToko.toLocaleString('id-ID')}</b></span>
+                               <button onClick={() => { setIsNotaAsal(true); setActiveNotaStopId(null); setNotaStoreName(activeOrder.notaAwal?.namaToko || ''); setNotaTotal(activeOrder.notaAwal?.totalToko.toString() || ''); setNotaGoods(activeOrder.notaAwal?.rincianBarang || ''); }} className="text-[10px] font-black text-[#046A38] underline">Edit</button>
+                             </div>
+                           ) : (
+                             <button
+                               onClick={() => { setIsNotaAsal(true); setActiveNotaStopId(null); }}
+                               className="w-full py-1.5 bg-[#046A38] text-white rounded-lg text-[9px] font-black uppercase flex items-center justify-center space-x-1 shadow-sm"
+                             >
+                               <Camera size={12} />
+                               <span>INPUT NOTA TOKO 1</span>
+                             </button>
+                           )}
+                         </div>
+                       )}
+                     </div>
+                   )}
+                </div>
 
                 <div className="flex justify-between items-baseline text-xs">
                   <span className="font-semibold text-gray-500">TAHAPAN PESANAN:</span>
@@ -1156,7 +1241,7 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
                 <div>
                   <span className="text-[10px] text-gray-500 block uppercase font-bold">Total Tagihan Penumpang</span>
                   <span className="text-lg font-black text-[#B8941F]">
-                    Rp {(activeOrder.totalBayarAkhir || 0).toLocaleString('id-ID')}
+                    Rp {calculatedTotals.final.toLocaleString('id-ID')}
                   </span>
                 </div>
                 <span className="bg-[#FAFBF9] text-[#046A38] text-[10px] font-bold px-2 py-1 rounded border border-gray-150">
