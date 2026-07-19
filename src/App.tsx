@@ -97,6 +97,15 @@ export default function App() {
       try {
         const s = await OloluStore.getSesi();
         if (s) {
+          // Validasi apakah user benar-benar ada di database (Fix stale session after reset)
+          const profile = await OloluStore.getProfilLogin();
+          if (!profile) {
+            console.warn("Sesi ditemukan tapi profil tidak ada di DB. Membersihkan sesi...");
+            handleLogout();
+            setInitializing(false);
+            return;
+          }
+
           setSesi(s);
           setRole(s.role);
           setShowLogin(false);

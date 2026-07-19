@@ -386,17 +386,22 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
 
   useEffect(() => {
     const init = async () => {
-      const p = await OloluStore.getProfilLogin();
-      setProfile(p);
-      const cfg = await OloluStore.getPengaturan();
-      setConfig(cfg);
-      if (p) {
-        const orders = await OloluStore.getAllPesanan();
-        setHistoryOrders(orders.filter(o => o.idPenumpang === p.id));
-      }
-      if (lockedOrderId) {
-        const order = await OloluStore.getPesananById(lockedOrderId);
-        if (order) { setActiveOrder(order); ololuRealtime.requestStateSync(lockedOrderId); }
+      try {
+        const p = await OloluStore.getProfilLogin();
+        if (!p) return;
+        setProfile(p);
+        const cfg = await OloluStore.getPengaturan();
+        setConfig(cfg);
+        if (p) {
+          const orders = await OloluStore.getAllPesanan();
+          setHistoryOrders(orders.filter(o => o.idPenumpang === p.id));
+        }
+        if (lockedOrderId) {
+          const order = await OloluStore.getPesananById(lockedOrderId);
+          if (order) { setActiveOrder(order); ololuRealtime.requestStateSync(lockedOrderId); }
+        }
+      } catch (err) {
+        console.error("Passenger init error:", err);
       }
     };
     init();

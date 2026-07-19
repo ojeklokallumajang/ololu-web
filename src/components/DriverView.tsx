@@ -161,20 +161,30 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
   }, [activeOrder, config]);
 
   const initDriver = async () => {
-    const p = await OloluStore.getProfilLogin();
-    setProfile(p);
-
-    const cfg = await OloluStore.getPengaturan();
-    setConfig(cfg);
-
-    if (p) {
-      const detail = await OloluStore.getSopir(p.id);
-      setDriverDetail(detail || null);
-      if (detail) {
-        setPlatNomor(detail.platNomor || '');
-        setJenisMotor(detail.jenisMotor || '');
-        setBisaBarangBesar(detail.bisaBarangBesar || false);
+    try {
+      const p = await OloluStore.getProfilLogin();
+      if (!p) {
+        // App.tsx should handle this, but as backup:
+        console.error("Profile not found in DriverView");
+        return;
       }
+      setProfile(p);
+
+      const cfg = await OloluStore.getPengaturan();
+      setConfig(cfg);
+
+      const detail = await OloluStore.getSopir(p.id);
+      if (!detail) {
+         console.warn("Detail driver tidak ditemukan untuk user ini.");
+         // Biarkan loading screen menghilang dengan mengisi detail dummy jika baru daftar
+         setDriverDetail({ id: p.id, disetujuiAdmin: false } as any);
+         return;
+      }
+
+      setDriverDetail(detail);
+      setPlatNomor(detail.platNomor || '');
+      setJenisMotor(detail.jenisMotor || '');
+      setBisaBarangBesar(detail.bisaBarangBesar || false);
 
       // RECOVERY: Ambil order dari kunci lokal jika ada
       if (lockedOrderId) {
@@ -187,6 +197,8 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
 
       const orders = await OloluStore.getAllPesanan();
       setHistoryOrders(orders.filter(o => o.idSopir === p.id));
+    } catch (err) {
+      console.error("initDriver error:", err);
     }
   };
 
