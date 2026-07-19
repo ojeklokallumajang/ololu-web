@@ -13,7 +13,8 @@ import {
   TransaksiDompet,
   LogAudit,
   PengaturanTarif,
-  ChatMessage
+  ChatMessage,
+  StatusPesanan
 } from '../types';
 import { ololuRealtime } from './supabaseClient';
 
@@ -474,7 +475,7 @@ export const OloluStore = {
       console.error("❌ GAGAL SIMPAN STOPS:", stopsError.message);
     }
 
-    // 3. Fetch Final Order with SAFE LEFT JOINS (No '!' to avoid inner joins)
+    // 3. Fetch Final Order with SAFE LEFT JOINS (No '!' to allow NULL drivers)
     const { data: finalOrder, error: fetchError } = await supabase.from('orders')
       .select(`
         *,
