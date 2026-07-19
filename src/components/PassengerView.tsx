@@ -496,39 +496,61 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     return total;
   };
 
-  const hitungHarga = () => {
-    if (!config) return 0;
+  const getTarifBreakdown = () => {
+    if (!config) return { base: 0, perKm: 0, min: 0, multiStop: 0, total: 0 };
     const j = hitungTotalJarak();
     const jarakBulat = Math.max(1, Math.ceil(j));
-    let h = 0, s = config.biayaPerStopTambahan, m = 0;
+    let h = 0, s = config.biayaPerStopTambahan, m = 0, perKm = 0, base = 0;
 
     if (selectedLayanan === 'ojek') {
-      h = jarakBulat <= config.ojekBatasKmTarifDasar ? config.ojekTarifDasar : (jarakBulat * config.ojekTarifPerKm);
+      base = config.ojekTarifDasar;
+      perKm = config.ojekTarifPerKm;
+      h = jarakBulat <= config.ojekBatasKmTarifDasar ? base : (jarakBulat * perKm);
       s = config.ojekBiayaPerStop;
       m = config.ojekTarifMinimum;
     }
     else if (selectedLayanan === 'mobil') {
-      h = jarakBulat <= config.mobilBatasKmTarifDasar ? config.mobilTarifDasar : (jarakBulat * config.mobilTarifPerKm);
+      base = config.mobilTarifDasar;
+      perKm = config.mobilTarifPerKm;
+      h = jarakBulat <= config.mobilBatasKmTarifDasar ? base : (jarakBulat * perKm);
       s = config.mobilBiayaPerStop;
       m = config.mobilTarifMinimum;
     }
     else if (selectedLayanan === 'makanan') {
-      h = jarakBulat <= config.makananBatasKmTarifDasar ? config.makananTarifDasar : (jarakBulat * config.makananTarifPerKm);
+      base = config.makananTarifDasar;
+      perKm = config.makananTarifPerKm;
+      h = jarakBulat <= config.makananBatasKmTarifDasar ? base : (jarakBulat * perKm);
       s = config.makananBiayaPerStop;
       m = config.makananTarifMinimum;
     }
     else if (selectedLayanan === 'paket') {
-      h = jarakBulat <= config.paketBatasKmTarifDasar ? config.paketTarifDasar : (jarakBulat * config.paketTarifPerKm);
+      base = config.paketTarifDasar;
+      perKm = config.paketTarifPerKm;
+      h = jarakBulat <= config.paketBatasKmTarifDasar ? base : (jarakBulat * perKm);
       s = config.paketBiayaPerStop;
       m = config.paketTarifMinimum;
     }
     else {
-      h = jarakBulat <= config.barangBesarBatasKmTarifDasar ? config.barangBesarTarifDasar : (jarakBulat * config.barangBesarTarifPerKm);
+      base = config.barangBesarTarifDasar;
+      perKm = config.barangBesarTarifPerKm;
+      h = jarakBulat <= config.barangBesarBatasKmTarifDasar ? base : (jarakBulat * perKm);
       s = config.barangBesarBiayaPerStop;
       m = config.barangBesarTarifMinimum;
     }
 
-    return Math.max(h, m) + (stops.length > 1 ? (stops.length - 1) * s : 0);
+    const multiStop = (stops.length > 1 ? (stops.length - 1) * s : 0);
+    const murni = Math.max(h, m);
+    return {
+      base,
+      perKm,
+      min: m,
+      multiStop,
+      total: murni + multiStop
+    };
+  };
+
+  const hitungHarga = () => {
+    return getTarifBreakdown().total;
   };
 
   const handleAddStop = () => {
@@ -661,8 +683,8 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     try {
       const jRaw = hitungTotalJarak();
       const jBulat = Math.max(1, Math.ceil(jRaw));
-      const h = hitungHarga();
-      console.log("Memulai proses pemesanan...", { selectedLayanan, h, jBulat });
+      const breakdown = getTarifBreakdown();
+      console.log("Memulai proses pemesanan...", { selectedLayanan, breakdown, jBulat });
 
       const order = await OloluStore.buatPesanan({
         jenisLayanan: selectedLayanan,
@@ -670,9 +692,13 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
         asalAlamat, asalLat, asalLng,
         jarakKm: jBulat,
         itemsAwal: itemsAwal,
-        totalBayarAkhir: h,
+        tarifDasar: breakdown.base,
+        tarifPerKm: breakdown.perKm,
+        tarifMinimum: breakdown.min,
+        tambahanTujuan: breakdown.multiStop,
+        totalBayarAkhir: breakdown.total,
         pembayaranTunai,
-        tarifPerjalananMurni: h
+        tarifPerjalananMurni: breakdown.total - breakdown.multiStop
       }, stops.map((s, i) => ({ ...s, urutan: i + 1 })));
 
       if (order) {

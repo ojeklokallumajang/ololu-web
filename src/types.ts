@@ -16,6 +16,8 @@ export interface ProfilPengguna {
   terverifikasi: boolean;
   tanggalDaftar: string;
   fotoProfil?: string;
+  tempatLahir?: string;
+  tanggalLahir?: string;
   isSubAdmin?: boolean; // Menandai jika user adalah admin tambahan
   isSuspended?: boolean; // Menandai jika akun ditangguhkan
 }

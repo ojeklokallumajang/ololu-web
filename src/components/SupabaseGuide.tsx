@@ -24,7 +24,7 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_sub_admin BOOLEAN DEFAUL
 -- 2. Lengkapi Tabel DRIVER_DETAILS (Fix pendaftaran)
 ALTER TABLE public.driver_details ADD COLUMN IF NOT EXISTS warna_kendaraan TEXT DEFAULT '';
 
--- 3. Lengkapi Tabel ORDERS (Fix error rute & nota & keuangan)
+-- 2. Lengkapi Tabel ORDERS (Fix error rute & nota & keuangan)
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS items_awal JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS nota_awal_nama_toko TEXT;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS nota_awal_total_toko NUMERIC DEFAULT 0;
@@ -34,6 +34,12 @@ ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS nota_awal_waktu_dicatat TIMES
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS waktu_diterima TIMESTAMPTZ;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS waktu_mulai_jalan TIMESTAMPTZ;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS waktu_selesai TIMESTAMPTZ;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS waktu_dibatalkan TIMESTAMPTZ;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS alasan_batal TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS tarif_dasar NUMERIC DEFAULT 0;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS tarif_per_km NUMERIC DEFAULT 0;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS tarif_minimum NUMERIC DEFAULT 0;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS tambahan_item NUMERIC DEFAULT 0;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS biaya_parkir_total NUMERIC DEFAULT 0;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS biaya_nota_total NUMERIC DEFAULT 0;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS tambahan_tujuan NUMERIC DEFAULT 0;
@@ -143,24 +149,36 @@ CREATE TABLE public.orders (
     asal_lat NUMERIC NOT NULL,
     asal_lng NUMERIC NOT NULL,
     jarak_km NUMERIC NOT NULL,
+    -- Rincian Tarif (Penting untuk Invoice)
+    tarif_dasar NUMERIC DEFAULT 0,
+    tarif_per_km NUMERIC DEFAULT 0,
+    tarif_minimum NUMERIC DEFAULT 0,
     tarif_perjalanan_murni NUMERIC NOT NULL,
+    -- Biaya Tambahan
     biaya_parkir_total NUMERIC DEFAULT 0,
     biaya_nota_total NUMERIC DEFAULT 0,
     tambahan_tujuan NUMERIC DEFAULT 0,
+    tambahan_item NUMERIC DEFAULT 0,
+    biaya_layanan_persen NUMERIC DEFAULT 10.0,
+    -- Final
     total_bayar_akhir NUMERIC NOT NULL,
     pembayaran_tunai BOOLEAN DEFAULT TRUE,
     status TEXT DEFAULT 'mencari_sopir',
     tahap_aktif INTEGER DEFAULT 0,
+    -- Items & Nota Awal
     items_awal JSONB DEFAULT '[]'::jsonb,
     nota_awal_nama_toko TEXT,
     nota_awal_total_toko NUMERIC DEFAULT 0,
     nota_awal_rincian_barang TEXT,
     nota_awal_foto_url TEXT,
     nota_awal_waktu_dicatat TIMESTAMPTZ,
+    -- Timeline
     waktu_dibuat TIMESTAMPTZ DEFAULT NOW(),
     waktu_diterima TIMESTAMPTZ,
     waktu_mulai_jalan TIMESTAMPTZ,
-    waktu_selesai TIMESTAMPTZ
+    waktu_selesai TIMESTAMPTZ,
+    waktu_dibatalkan TIMESTAMPTZ,
+    alasan_batal TEXT
 );
 
 -- 4. TABEL: DETAIL STOP (ORDER_STOPS)

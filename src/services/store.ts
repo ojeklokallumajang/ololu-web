@@ -168,8 +168,8 @@ const mapOrder = (db: any): Pesanan | null => {
       namaToko: db.nota_awal_nama_toko,
       totalToko: safeParseFloat(db.nota_awal_total_toko, 0),
       rincianBarang: db.nota_awal_rincian_barang,
-      fotoNota: db.nota_awal_foto_url,
-      waktuDicatat: db.nota_awal_waktu_dicatat
+      fotoNota: db.nota_awal_foto_url || '',
+      waktuDicatat: db.nota_awal_waktu_dicatat || db.waktu_dibuat
     } : undefined,
     tarifDasar: safeParseFloat(db.tarif_dasar, 0),
     tarifPerKm: safeParseFloat(db.tarif_per_km, 0),
@@ -185,6 +185,8 @@ const mapOrder = (db: any): Pesanan | null => {
     status: db.status || 'mencari_sopir',
     waktuDibuat: db.waktu_dibuat || new Date().toISOString(),
     waktuSelesai: db.waktu_selesai || null,
+    waktuDibatalkan: db.waktu_dibatalkan || null,
+    alasanBatal: db.alasan_batal || '',
     daftarTujuan: (db.order_stops || []).map((s: any) => ({
       id: s.id || '',
       alamat: s.alamat || '',
@@ -201,10 +203,10 @@ const mapOrder = (db: any): Pesanan | null => {
       pilihanParkir: s.pilihan_parkir || 'tidak_ada',
       nota: s.nota_nama_toko ? {
         namaToko: s.nota_nama_toko,
-        totalToko: s.nota_total_toko,
+        totalToko: safeParseFloat(s.nota_total_toko, 0),
         rincianBarang: s.nota_rincian_barang,
-        fotoNota: s.nota_foto_url,
-        waktuDicatat: s.nota_waktu_dicatat
+        fotoNota: s.nota_foto_url || '',
+        waktuDicatat: s.nota_waktu_dicatat || db.waktu_dibuat
       } : undefined
     })),
     tahapAktif: db.tahap_aktif || 0,
@@ -514,7 +516,13 @@ export const OloluStore = {
       asal_lng: orderData.asalLng,
       items_awal: orderData.itemsAwal || [],
       jarak_km: orderData.jarakKm,
+      tarif_dasar: orderData.tarifDasar || 0,
+      tarif_per_km: orderData.tarifPerKm || 0,
+      tarif_minimum: orderData.tarifMinimum || 0,
       tarif_perjalanan_murni: orderData.tarifPerjalananMurni || orderData.totalBayarAkhir,
+      tambahan_tujuan: orderData.tambahanTujuan || 0,
+      tambahan_item: orderData.tambahanItem || 0,
+      biaya_layanan_persen: orderData.biayaLayananPersen || 10,
       total_bayar_akhir: orderData.totalBayarAkhir,
       pembayaran_tunai: orderData.pembayaranTunai,
       status: 'mencari_sopir'

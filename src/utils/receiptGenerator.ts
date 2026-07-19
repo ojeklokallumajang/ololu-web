@@ -194,7 +194,7 @@ export const generateReceipt = (order: Pesanan, companyName: string = "OLOLU LUM
               <span>Tarif Jasa Layanan (${order.jarakKm} KM)</span>
               <span>Rp ${order.tarifPerjalananMurni.toLocaleString('id-ID')}</span>
             </div>
-            <div class="price-calc">Rumus: Tarif Dasar + (Jarak &times; Tarif Per KM)</div>
+            <div class="price-calc">Rumus: ${order.tarifDasar > 0 ? `Dasar (Rp ${order.tarifDasar.toLocaleString('id-ID')}) + ` : ''}(Jarak &times; Rp ${order.tarifPerKm.toLocaleString('id-ID')})</div>
 
             ${order.biayaParkirTotal > 0 ? `
               <div class="price-line">
