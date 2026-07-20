@@ -533,7 +533,7 @@ export default function AdminView() {
                      <div className="space-y-1 text-left"><label className="text-[8px] font-black text-emerald-600 uppercase ml-1 text-emerald-600 leading-none">Stop Tambahan (Rp)</label><input type="number" value={tempConfig.biayaPerStopTambahan} onChange={(e)=>setTempConfig({...tempConfig, biayaPerStopTambahan: parseInt(e.target.value)})} className="w-full p-3 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none text-xs font-black text-emerald-600 shadow-inner" /></div>
                   </div>
                   <p className="text-[9px] text-gray-400 italic px-1 leading-tight">
-                    *Kelebihan item dikenakan jika barang belanjaan > 5 item. <br/>
+                    *Kelebihan item dikenakan jika barang belanjaan &gt; 5 item. <br/>
                     *Biaya parkir ditentukan manual oleh Driver per lokasi.
                   </p>
                </div>
