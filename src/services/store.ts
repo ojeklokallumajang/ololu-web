@@ -33,6 +33,7 @@ export const DEFAULT_PENGATURAN_TARIF: PengaturanTarif = {
   ojekPersenJasa: 10,
   ojekBatasKmTarifDasar: 3,
   ojekBiayaPerStop: 2000,
+  layananOjekAktif: true,
 
   mobilTarifDasar: 15000,
   mobilTarifPerKm: 5000,
@@ -43,6 +44,7 @@ export const DEFAULT_PENGATURAN_TARIF: PengaturanTarif = {
   mobilPersenJasa: 10,
   mobilBatasKmTarifDasar: 3,
   mobilBiayaPerStop: 5000,
+  layananMobilAktif: true,
 
   makananTarifDasar: 10000,
   makananTarifPerKm: 3000,
@@ -51,6 +53,7 @@ export const DEFAULT_PENGATURAN_TARIF: PengaturanTarif = {
   makananPersenJasa: 15,
   makananBatasKmTarifDasar: 3,
   makananBiayaPerStop: 3000,
+  layananMakananAktif: true,
 
   paketTarifDasar: 7000,
   paketTarifPerKm: 2000,
@@ -59,14 +62,41 @@ export const DEFAULT_PENGATURAN_TARIF: PengaturanTarif = {
   paketPersenJasa: 10,
   paketBatasKmTarifDasar: 3,
   paketBiayaPerStop: 2000,
+  layananPaketAktif: true,
 
-  barangBesarTarifDasar: 25000,
-  barangBesarTarifPerKm: 8000,
-  barangBesarTarifMinimum: 35000,
-  barangBesarTarifTungguPerMenit: 1000,
-  barangBesarPersenJasa: 10,
-  barangBesarBatasKmTarifDasar: 3,
-  barangBesarBiayaPerStop: 10000,
+  belanjaTarifDasar: 10000,
+  belanjaTarifPerKm: 3000,
+  belanjaTarifMinimum: 15000,
+  belanjaTarifTungguPerMenit: 300,
+  belanjaPersenJasa: 15,
+  belanjaBatasKmTarifDasar: 3,
+  belanjaBiayaPerStop: 3000,
+  layananBelanjaAktif: true,
+
+  cargoTarifDasar: 30000,
+  cargoTarifPerKm: 10000,
+  cargoTarifMinimum: 50000,
+  cargoTarifTungguPerMenit: 1000,
+  cargoPersenJasa: 10,
+  cargoBatasKmTarifDasar: 3,
+  cargoBiayaPerStop: 10000,
+  layananCargoAktif: true,
+
+  marketTarifDasar: 10000,
+  marketTarifPerKm: 3000,
+  marketTarifMinimum: 15000,
+  marketTarifTungguPerMenit: 300,
+  marketPersenJasa: 15,
+  marketBatasKmTarifDasar: 3,
+  marketBiayaPerStop: 3000,
+  layananMarketAktif: true,
+
+  lainnyaTarifDasar: 10000,
+  lainnyaTarifPerKm: 3000,
+  lainnyaTarifMinimum: 15000,
+  lainnyaPersenJasa: 10,
+  lainnyaBiayaPerStop: 3000,
+  layananLainnyaAktif: true,
 
   biayaParkirBiasa: 2000,
   biayaParkirPasar: 5000,
@@ -90,18 +120,8 @@ export const DEFAULT_PENGATURAN_TARIF: PengaturanTarif = {
   intervalKirimLokasiSopir: 5,
   biayaAdminPerjalanan: 1000,
   pengaliTarifPrioritas: 1.2,
-  layananOjekAktif: true,
-  layananMobilAktif: true,
-  layananMakananAktif: true,
-  layananPaketAktif: true,
-  layananBarangBesarAktif: true,
-  layananLanggananAktif: false,
   daftarMotorAktif: true,
   daftarMobilAktif: true,
-  rushHourAktif: false,
-  rushHourMulai: "16:00",
-  rushHourSelesai: "18:00",
-  rushHourPersenKenaikan: 15,
   mapProvider: 'google',
   googleApiLimit: 25000,
   googleApiUsageCount: 0,
@@ -110,7 +130,6 @@ export const DEFAULT_PENGATURAN_TARIF: PengaturanTarif = {
 };
 
 let pengaturans = { ...DEFAULT_PENGATURAN_TARIF };
-// sessionOtp dihapus karena sekarang pakai Database (otps table)
 
 const safeParseFloat = (val: any, fallback = 0): number => {
   const n = parseFloat(val);
@@ -128,7 +147,8 @@ const mapProfile = (db: any): ProfilPengguna | null => {
     tanggalDaftar: db.tanggal_daftar || db.created_at,
     fotoProfil: db.foto_profil,
     isSubAdmin: !!db.is_sub_admin,
-    isSuspended: !!db.is_suspended
+    isSuspended: !!db.is_suspended,
+    created_at: db.created_at
   };
 };
 
@@ -158,11 +178,7 @@ const mapDriver = (db: any): DetailSopir | null => {
 
 const mapOrder = (db: any): Pesanan | null => {
   if (!db) return null;
-
-  // Extract Passenger Info (Standard Supabase join format, handling possible array return)
   const passenger = Array.isArray(db.profiles) ? db.profiles[0] : (db.profiles || {});
-
-  // Extract Driver Info (Standard Supabase join format, handling possible array return)
   const driverDetail = Array.isArray(db.driver_details) ? db.driver_details[0] : (db.driver_details || {});
   const driverProfile = Array.isArray(driverDetail.profiles) ? driverDetail.profiles[0] : (driverDetail.profiles || {});
 
@@ -247,7 +263,6 @@ export const OloluStore = {
   subscribeToStore(listener: () => void) {
     const supabase = getSupabase();
     if (!supabase) return () => {};
-    // Gunakan nama channel unik agar tidak bertabrakan (Fix crash "cannot add callbacks")
     const channelId = `schema-sync-${Math.random().toString(36).substring(7)}`;
     const channel = supabase.channel(channelId).on('postgres_changes', { event: '*', schema: 'public' }, () => { listener(); }).subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -303,165 +318,80 @@ export const OloluStore = {
     if (cleanedPhone.startsWith('0')) cleanedPhone = '62' + cleanedPhone.slice(1);
     const { data, error } = await supabase.from('profiles').select('*').eq('nomor_hp', cleanedPhone).eq('password', passwordInput).single();
     if (error || !data) return { success: false, error: "HP/Sandi salah." };
-    if (data.is_suspended) return { success: false, error: "Akun Anda ditangguhkan. Silakan hubungi Admin." };
+    if (data.is_suspended) return { success: false, error: "Akun Anda ditangguhkan." };
     return { success: true, profil: mapProfile(data) as any };
-  },
-
-  async resetPassword(nomorHp: string, passwordBaru: string): Promise<{ success: boolean; error?: string }> {
-    const supabase = getSupabase();
-    if (!supabase) return { success: false, error: "Database offline" };
-    let cleanedPhone = nomorHp.replace(/[^0-9]/g, '');
-    if (cleanedPhone.startsWith('0')) cleanedPhone = '62' + cleanedPhone.slice(1);
-    const { error } = await supabase.from('profiles').update({ password: passwordBaru }).eq('nomor_hp', cleanedPhone);
-    if (error) return { success: false, error: error.message };
-    return { success: true };
   },
 
   async kirimFonnteOtp(nomorHp: string) {
     let cleanedPhone = nomorHp.replace(/[^0-9]/g, '');
     if (cleanedPhone.startsWith('0')) cleanedPhone = '62' + cleanedPhone.slice(1);
-    else if (cleanedPhone.startsWith('8')) cleanedPhone = '62' + cleanedPhone;
-
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Simpan ke database (otps table) agar kebal refresh
     const supabase = getSupabase();
-    if (supabase) {
-      await supabase.from('otps').upsert({
-        phone_number: cleanedPhone,
-        otp_code: otp,
-        created_at: new Date().toISOString()
-      });
-    }
-
-    console.log(`[OTP DEBUG] Mengirim ${otp} ke ${cleanedPhone}`);
-
-    // Ambil token fonnte terbaru dari database
+    if (supabase) await supabase.from('otps').upsert({ phone_number: cleanedPhone, otp_code: otp, created_at: new Date().toISOString() });
     const config = await this.getPengaturan();
-
     try {
       const response = await fetch("https://api.fonnte.com/send", {
         method: "POST",
-        headers: {
-          "Authorization": config.fonnteToken || "EMTbGPgY8zfmrVGs3idM"
-        },
-        body: new URLSearchParams({
-          "target": cleanedPhone,
-          "message": `[OLOLU OTP] Kode verifikasi pendaftaran akun OLOLU Anda adalah: ${otp}. Masukkan kode ini di aplikasi. Jangan sebar luaskan kode ini!`,
-          "countryCode": "62"
-        })
+        headers: { "Authorization": config.fonnteToken || "EMTbGPgY8zfmrVGs3idM" },
+        body: new URLSearchParams({ "target": cleanedPhone, "message": `[OLOLU OTP] Kode verifikasi: ${otp}.`, "countryCode": "62" })
       });
       const data = await response.json();
       return data.status === true;
-    } catch (err) {
-      console.error("Gagal kirim OTP:", err);
-      return false;
-    }
+    } catch { return false; }
   },
 
   async verifikasiOtp(nomorHp: string, otpInput: string) {
     let cleanedPhone = nomorHp.replace(/[^0-9]/g, '');
     if (cleanedPhone.startsWith('0')) cleanedPhone = '62' + cleanedPhone.slice(1);
-    else if (cleanedPhone.startsWith('8')) cleanedPhone = '62' + cleanedPhone;
-
-    const supabase = getSupabase();
-    if (!supabase) return false;
-
-    // Cek kode di database
-    const { data } = await supabase.from('otps').select('otp_code').eq('phone_number', cleanedPhone).single();
+    const { data } = await getSupabase()!.from('otps').select('otp_code').eq('phone_number', cleanedPhone).single();
     return data?.otp_code === otpInput;
   },
 
   async getSopir(id: string): Promise<DetailSopir | null> {
-    const supabase = getSupabase();
-    if (!supabase) return null;
-    const { data } = await supabase.from('driver_details').select('*').eq('id', id).single();
+    const { data } = await getSupabase()!.from('driver_details').select('*').eq('id', id).single();
     return mapDriver(data);
   },
 
   async updateSopirDokumen(id: string, docs: any) {
-    const supabase = getSupabase();
-    if (!supabase) return { success: false, error: "Database offline" };
-
-    const { error } = await supabase.from('driver_details').upsert({
-      id,
-      foto_ktp: docs.fotoKtp,
-      foto_sim: docs.fotoSim,
-      foto_stnk: docs.fotoStnk,
-      foto_kendaraan: docs.fotoKendaraan,
-      plat_nomor: docs.platNomor,
-      jenis_motor: docs.jenisMotor,
-      jenis_kendaraan: docs.jenisKendaraan || 'motor',
-      warna_kendaraan: docs.warnaKendaraan || '',
-      bisa_barang_besar: !!docs.bisaBarangBesar,
-      disetujui_admin: false,
-      ditolak_admin: false,
-      updated_at: new Date().toISOString()
+    const { error } = await getSupabase()!.from('driver_details').upsert({
+      id, foto_ktp: docs.fotoKtp, foto_sim: docs.fotoSim, foto_stnk: docs.fotoStnk,
+      foto_kendaraan: docs.fotoKendaraan, plat_nomor: docs.platNomor, jenis_motor: docs.jenisMotor,
+      jenis_kendaraan: docs.jenisKendaraan || 'motor', warna_kendaraan: docs.warnaKendaraan || '',
+      bisa_barang_besar: !!docs.bisaBarangBesar, updated_at: new Date().toISOString()
     });
-
-    if (error) {
-      console.error("❌ GAGAL UPDATE DOKUMEN SOPIR:", error.message);
-      return { success: false, error: error.message };
-    }
-    return { success: true };
+    return { success: !error, error: error?.message };
   },
 
   async toggleOnlineSopir(id: string): Promise<{ success: boolean; error?: string }> {
-    const supabase = getSupabase();
-    if (!supabase) return { success: false, error: "Database offline" };
-    try {
-      const { data, error: fetchError } = await supabase.from('driver_details').select('status_online').eq('id', id).single();
-      if (fetchError) throw fetchError;
-
-      const { error: updateError } = await supabase.from('driver_details').update({ status_online: !data.status_online }).eq('id', id);
-      if (updateError) throw updateError;
-
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
+    const { data } = await getSupabase()!.from('driver_details').select('status_online').eq('id', id).single();
+    const { error } = await getSupabase()!.from('driver_details').update({ status_online: !data.status_online }).eq('id', id);
+    return { success: !error, error: error?.message };
   },
 
   async topUpSopir(sopirId: string, jumlah: number, deskripsi: string) {
-    const supabase = getSupabase();
-    if (!supabase) return { success: false, error: "Database offline" };
-    const { data: drv } = await supabase.from('driver_details').select('saldo_dompet').eq('id', sopirId).single();
+    const { data: drv } = await getSupabase()!.from('driver_details').select('saldo_dompet').eq('id', sopirId).single();
     if (!drv) return { success: false, error: "Driver not found" };
     const ns = (drv.saldo_dompet || 0) + jumlah;
-    await supabase.from('driver_details').update({ saldo_dompet: ns }).eq('id', sopirId);
-    await supabase.from('wallet_transactions').insert({ id_sopir: sopirId, jenis: 'topup', jumlah, saldo_awal: drv.saldo_dompet, saldo_akhir: ns, deskripsi });
+    await getSupabase()!.from('driver_details').update({ saldo_dompet: ns }).eq('id', sopirId);
+    await getSupabase()!.from('wallet_transactions').insert({ id_sopir: sopirId, jenis: 'topup', jumlah, saldo_awal: drv.saldo_dompet, saldo_akhir: ns, deskripsi });
     return { success: true };
   },
 
   async ajukanTarikDana(sopirId: string, jumlah: number): Promise<{ success: boolean; error?: string }> {
-    const supabase = getSupabase();
-    const { data: drv } = await supabase!.from('driver_details').select('saldo_dompet').eq('id', sopirId).single();
+    const { data: drv } = await getSupabase()!.from('driver_details').select('saldo_dompet').eq('id', sopirId).single();
     const settings = await this.getPengaturan();
     if (!drv || drv.saldo_dompet < (jumlah + settings.biayaAdminTarik)) return { success: false, error: "Saldo kurang." };
-    await supabase!.from('wallet_transactions').insert({ id_sopir: sopirId, jenis: 'tarik_dana', jumlah, saldo_awal: drv.saldo_dompet, saldo_akhir: drv.saldo_dompet, deskripsi: `Tarik dana`, status_tarik: 'menunggu' });
+    await getSupabase()!.from('wallet_transactions').insert({ id_sopir: sopirId, jenis: 'tarik_dana', jumlah, saldo_awal: drv.saldo_dompet, saldo_akhir: drv.saldo_dompet, deskripsi: `Tarik dana`, status_tarik: 'menunggu' });
     return { success: true };
   },
 
   async ajukanTopUpSopir(sopirId: string, jumlah: number, buktiBase64: string) {
-    const supabase = getSupabase();
-    if (!supabase) return { success: false, error: "Database offline" };
-
-    const { data: drv } = await supabase.from('driver_details').select('saldo_dompet').eq('id', sopirId).single();
-    const currentSaldo = drv?.saldo_dompet || 0;
-
-    const { error } = await supabase.from('wallet_transactions').insert({
-      id_sopir: sopirId,
-      jenis: 'topup',
-      jumlah,
-      saldo_awal: currentSaldo,
-      saldo_akhir: currentSaldo, // Belum bertambah
-      deskripsi: `Deposit via transfer`,
-      bukti_transfer: buktiBase64,
-      status_tarik: 'menunggu'
+    const { data: drv } = await getSupabase()!.from('driver_details').select('saldo_dompet').eq('id', sopirId).single();
+    const { error } = await getSupabase()!.from('wallet_transactions').insert({
+      id_sopir: sopirId, jenis: 'topup', jumlah, saldo_awal: drv?.saldo_dompet || 0, saldo_akhir: drv?.saldo_dompet || 0,
+      deskripsi: `Deposit via transfer`, bukti_transfer: buktiBase64, status_tarik: 'menunggu'
     });
-
-    if (error) return { success: false, error: error.message };
-    return { success: true };
+    return { success: !error, error: error?.message };
   },
 
   async getTransaksiSopir(sopirId: string): Promise<TransaksiDompet[]> {
@@ -470,173 +400,54 @@ export const OloluStore = {
   },
 
   async getAllTransactions(): Promise<TransaksiDompet[]> {
-    const supabase = getSupabase();
-    if (!supabase) return [];
-
-    // Use a simple query first to see if it works, joining manually if needed
-    const { data, error } = await supabase
-      .from('wallet_transactions')
-      .select('*, profiles:id_sopir(nama)')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error("❌ ERROR FETCHING TRANSACTIONS:", error.message);
-      // Fallback: try without join to at least get the numbers
-      const { data: rawData } = await supabase.from('wallet_transactions').select('*').order('created_at', { ascending: false });
-      return (rawData || []).map(d => ({
-        id: d.id,
-        idSopir: d.id_sopir,
-        namaSopir: 'Mitra',
-        jenis: d.jenis,
-        jumlah: d.jumlah,
-        saldoAwal: d.saldo_awal,
-        saldoAkhir: d.saldo_akhir,
-        deskripsi: d.deskripsi,
-        statusTarik: d.status_tarik,
-        buktiTransfer: d.bukti_transfer,
-        timestamp: d.created_at
-      } as any));
-    }
-
-    return (data || []).map(d => ({
-      id: d.id,
-      idSopir: d.id_sopir,
-      namaSopir: d.profiles?.nama || 'Sopir',
-      jenis: d.jenis,
-      jumlah: d.jumlah,
-      saldoAwal: d.saldo_awal,
-      saldoAkhir: d.saldo_akhir,
-      deskripsi: d.deskripsi,
-      statusTarik: d.status_tarik,
-      buktiTransfer: d.bukti_transfer,
-      timestamp: d.created_at
-    } as any));
+    const { data } = await getSupabase()!.from('wallet_transactions').select('*, profiles:id_sopir(nama)').order('created_at', { ascending: false });
+    return (data || []).map(d => ({ id: d.id, idSopir: d.id_sopir, namaSopir: d.profiles?.nama || 'Sopir', jenis: d.jenis, jumlah: d.jumlah, saldoAwal: d.saldo_awal, saldoAkhir: d.saldo_akhir, deskripsi: d.deskripsi, statusTarik: d.status_tarik, buktiTransfer: d.bukti_transfer, timestamp: d.created_at } as any));
   },
 
   async prosesTransaksi(txId: string, status: 'disetujui' | 'ditolak', alasan?: string) {
-    const supabase = getSupabase();
-    const { data: tx } = await supabase!.from('wallet_transactions').select('*').eq('id', txId).single();
+    const { data: tx } = await getSupabase()!.from('wallet_transactions').select('*').eq('id', txId).single();
     if (!tx || tx.status_tarik !== 'menunggu') return;
     if (status === 'disetujui') {
-      const { data: drv } = await supabase!.from('driver_details').select('saldo_dompet').eq('id', tx.id_sopir).single();
-      const settings = await this.getPengaturan();
+      const { data: drv } = await getSupabase()!.from('driver_details').select('saldo_dompet').eq('id', tx.id_sopir).single();
       if (drv) {
-        let n = drv.saldo_dompet;
-        if (tx.jenis === 'topup') n += tx.jumlah;
-        else if (tx.jenis === 'tarik_dana') n -= (tx.jumlah + settings.biayaAdminTarik);
-        await supabase!.from('driver_details').update({ saldo_dompet: n }).eq('id', tx.id_sopir);
-        await supabase!.from('wallet_transactions').update({ status_tarik: 'disetujui', saldo_awal: drv.saldo_dompet, saldo_akhir: n }).eq('id', txId);
+        let n = drv.saldo_dompet + (tx.jenis === 'topup' ? tx.jumlah : -(tx.jumlah + 2500));
+        await getSupabase()!.from('driver_details').update({ saldo_dompet: n }).eq('id', tx.id_sopir);
+        await getSupabase()!.from('wallet_transactions').update({ status_tarik: 'disetujui', saldo_awal: drv.saldo_dompet, saldo_akhir: n }).eq('id', txId);
         return;
       }
     }
-    await supabase!.from('wallet_transactions').update({ status_tarik: status, alasan_penolakan: alasan }).eq('id', txId);
+    await getSupabase()!.from('wallet_transactions').update({ status_tarik: status, alasan_penolakan: alasan }).eq('id', txId);
   },
 
   async buatPesanan(orderData: any, stops: any[]) {
-    const supabase = getSupabase();
-    if (!supabase) return null;
-
+    const supabase = getSupabase()!;
     const nomorPesanan = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    // 1. Create Base Order
     const { data: newOrder, error: orderError } = await supabase.from('orders').insert({
-      nomor_pesanan: nomorPesanan,
-      id_penumpang: orderData.idPenumpang,
-      jenis_layanan: orderData.jenisLayanan,
-      asal_alamat: orderData.asalAlamat,
-      asal_lat: orderData.asalLat,
-      asal_lng: orderData.asalLng,
-      items_awal: orderData.itemsAwal || [],
-      jarak_km: orderData.jarakKm,
-      tarif_dasar: orderData.tarifDasar || 0,
-      tarif_per_km: orderData.tarifPerKm || 0,
-      tarif_minimum: orderData.tarifMinimum || 0,
+      nomor_pesanan: nomorPesanan, id_penumpang: orderData.idPenumpang, jenis_layanan: orderData.jenisLayanan,
+      asal_alamat: orderData.asalAlamat, asal_lat: orderData.asalLat, asal_lng: orderData.asalLng,
+      items_awal: orderData.itemsAwal || [], jarak_km: orderData.jarakKm, tarif_dasar: orderData.tarifDasar || 0,
+      tarif_per_km: orderData.tarifPerKm || 0, tarif_minimum: orderData.tarifMinimum || 0,
       tarif_perjalanan_murni: orderData.tarifPerjalananMurni || orderData.totalBayarAkhir,
-      tambahan_tujuan: orderData.tambahanTujuan || 0,
-      tambahan_item: orderData.tambahanItem || 0,
-      biaya_layanan_persen: orderData.biayaLayananPersen || 10,
-      biaya_tunggu_total: orderData.biayaTungguTotal || 0,
-      biaya_malam_tambahan: orderData.biayaMalamTambahan || 0,
-      durasi_menit: orderData.durasiMenit || 0,
-      total_bayar_akhir: orderData.totalBayarAkhir,
-      pembayaran_tunai: orderData.pembayaranTunai,
-      status: 'mencari_sopir'
+      tambahan_tujuan: orderData.tambahanTujuan || 0, tambahan_item: orderData.tambahanItem || 0,
+      biaya_layanan_persen: orderData.biayaLayananPersen || 10, biaya_tunggu_total: orderData.biayaTungguTotal || 0,
+      biaya_malam_tambahan: orderData.biayaMalamTambahan || 0, durasi_menit: orderData.durasiMenit || 0,
+      total_bayar_akhir: orderData.totalBayarAkhir, pembayaran_tunai: orderData.pembayaranTunai, status: 'mencari_sopir'
     }).select().single();
-
-    if (orderError) {
-      console.error("❌ GAGAL BUAT PESANAN (Base):", orderError.message);
-      return null;
-    }
-
-    if (!newOrder) return null;
-
-    // 2. Insert Stops
-    const { error: stopsError } = await supabase.from('order_stops').insert(stops.map(s => ({
-      order_id: newOrder.id,
-      alamat: s.alamat,
-      lat: s.lat,
-      lng: s.lng,
-      urutan: s.urutan,
-      daftar_item: s.items || []
-    })));
-
-    if (stopsError) {
-      console.error("❌ GAGAL SIMPAN STOPS:", stopsError.message);
-    }
-
-    // 3. Fetch Final Order with SAFE LEFT JOINS (Explicit FK names to avoid ambiguity)
-    const { data: finalOrder, error: fetchError } = await supabase.from('orders')
-      .select(`
-        *,
-        order_stops(*),
-        profiles:id_penumpang(nama, nomor_hp),
-        driver_details:id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))
-      `)
-      .eq('id', newOrder.id).single();
-
-    if (fetchError) {
-      console.error("❌ GAGAL FETCH FINAL ORDER:", fetchError.message);
-      // Fallback: use the newOrder directly so the user can see the "Searching" screen
-      const fallbackMapped = mapOrder({
-        ...newOrder,
-        order_stops: stops.map(s => ({
-          ...s,
-          order_id: newOrder.id,
-          daftar_item: s.items || []
-        }))
-      });
-      if (fallbackMapped) ololuRealtime.broadcastNewOrder(fallbackMapped);
-      return fallbackMapped;
-    }
-
+    if (orderError || !newOrder) return null;
+    await supabase.from('order_stops').insert(stops.map(s => ({ order_id: newOrder.id, alamat: s.alamat, lat: s.lat, lng: s.lng, urutan: s.urutan, daftar_item: s.items || [] })));
+    const { data: finalOrder } = await supabase.from('orders').select('*, order_stops(*), profiles:id_penumpang(nama, nomor_hp), driver_details:id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))').eq('id', newOrder.id).single();
     const mapped = mapOrder(finalOrder);
-    if (mapped) {
-      ololuRealtime.broadcastNewOrder(mapped);
-    }
+    if (mapped) ololuRealtime.broadcastNewOrder(mapped);
     return mapped;
   },
 
   async getAllPesanan(): Promise<Pesanan[]> {
-    const { data, error } = await getSupabase()!.from('orders')
-      .select('*, order_stops(*), profiles:id_penumpang(nama, nomor_hp), driver_details:id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))')
-      .order('waktu_dibuat', { ascending: false });
-
-    if (error) {
-      console.error("❌ ERROR FETCH ALL PESANAN:", error.message);
-      return [];
-    }
+    const { data } = await getSupabase()!.from('orders').select('*, order_stops(*), profiles:id_penumpang(nama, nomor_hp), driver_details:id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))').order('waktu_dibuat', { ascending: false });
     return (data || []).map(o => mapOrder(o)).filter(Boolean) as Pesanan[];
   },
 
   async getPesananById(id: string): Promise<Pesanan | null> {
-    const { data, error } = await getSupabase()!.from('orders')
-      .select('*, order_stops(*), profiles:id_penumpang(nama, nomor_hp), driver_details:id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))')
-      .eq('id', id).single();
-
-    if (error) {
-      console.error(`❌ ERROR FETCH ORDER ${id}:`, error.message);
-      return null;
-    }
+    const { data } = await getSupabase()!.from('orders').select('*, order_stops(*), profiles:id_penumpang(nama, nomor_hp), driver_details:id_sopir(plat_nomor, jenis_motor, profiles(nama, nomor_hp))').eq('id', id).single();
     return mapOrder(data);
   },
 
@@ -645,14 +456,9 @@ export const OloluStore = {
   },
 
   async tambahRating(idPesanan: string, idSopir: string, namaPenumpang: string, bintang: number, ulasan: string) {
-    const supabase = getSupabase();
-    if (!supabase) return;
-    await supabase.from('ratings').insert({ id_pesanan: idPesanan, id_sopir: idSopir, nama_penumpang: namaPenumpang, bintang, ulasan });
-    const { data: ratings } = await supabase.from('ratings').select('bintang').eq('id_sopir', idSopir);
-    if (ratings && ratings.length > 0) {
-      const avg = ratings.reduce((acc, cur) => acc + cur.bintang, 0) / ratings.length;
-      await supabase.from('driver_details').update({ rating_rata_rata: avg }).eq('id', idSopir);
-    }
+    await getSupabase()!.from('ratings').insert({ id_pesanan: idPesanan, id_sopir: idSopir, nama_penumpang: namaPenumpang, bintang, ulasan });
+    const { data: ratings } = await getSupabase()!.from('ratings').select('bintang').eq('id_sopir', idSopir);
+    if (ratings?.length) await getSupabase()!.from('driver_details').update({ rating_rata_rata: (ratings.reduce((a, c) => a + c.bintang, 0) / ratings.length) }).eq('id', idSopir);
   },
 
   async getAllEmergency(): Promise<LaporanDarurat[]> {
@@ -674,29 +480,17 @@ export const OloluStore = {
   },
 
   async getAllSopir(): Promise<DetailSopir[]> {
-    // Explicitly select all columns from driver_details and join profiles
-    const { data, error } = await getSupabase()!.from('driver_details')
-      .select('id, plat_nomor, jenis_motor, jenis_kendaraan, warna_kendaraan, bisa_barang_besar, disetujui_admin, ditolak_admin, alasan_ditolak, status_online, saldo_dompet, rating_rata_rata, jumlah_pesanan_selesai, lat_sekarang, lng_sekarang, foto_ktp, foto_sim, foto_stnk, foto_kendaraan, updated_at, profiles(nama, nomor_hp)');
-
-    if (error) {
-      console.error("❌ ERROR FETCH ALL SOPIR:", error.message);
-      return [];
-    }
+    const { data } = await getSupabase()!.from('driver_details').select('*, profiles(nama, nomor_hp)');
     return (data || []).map(d => {
       const m = mapDriver(d);
-      const profileData = Array.isArray(d.profiles) ? d.profiles[0] : d.profiles;
-      if (m) {
-        (m as any).nama = profileData?.nama || 'Sopir';
-        (m as any).nomorHp = profileData?.nomor_hp || '';
-      }
+      if (m) { (m as any).nama = d.profiles?.nama || 'Sopir'; (m as any).nomorHp = d.profiles?.nomor_hp || ''; }
       return m;
     }).filter(Boolean) as DetailSopir[];
   },
 
   async verifikasiSopir(id: string, ok: boolean, alasan?: string) {
     const { error } = await getSupabase()!.from('driver_details').update({ disetujui_admin: ok, ditolak_admin: !ok, alasan_ditolak: alasan || '' }).eq('id', id);
-    if (error) return { success: false, error: error.message };
-    return { success: true };
+    return { success: !error, error: error?.message };
   },
 
   async getAllAuditLogs(): Promise<LogAudit[]> {
@@ -715,14 +509,12 @@ export const OloluStore = {
 
   async promoteToAdmin(nomorHp: string, nama: string) {
     const { error } = await getSupabase()!.from('profiles').update({ is_sub_admin: true, peran: 'admin' }).eq('nomor_hp', nomorHp);
-    if (error) return { success: false, error: error.message };
-    return { success: true };
+    return { success: !error, error: error?.message };
   },
 
   async removeAdminStatus(id: string) {
     const { error } = await getSupabase()!.from('profiles').update({ is_sub_admin: false, peran: 'penumpang' }).eq('id', id);
-    if (error) return { success: false, error: error.message };
-    return { success: true };
+    return { success: !error, error: error?.message };
   },
 
   async toggleSuspendUser(id: string, currentStatus: boolean) {
@@ -741,150 +533,51 @@ export const OloluStore = {
   },
 
   async trackGoogleUsage() {
-    const supabase = getSupabase();
-    if (!supabase) return;
-
-    // 1. Get current config
+    const supabase = getSupabase()!;
     const { data } = await supabase.from('system_settings').select('value').eq('key', 'global_config').single();
     if (!data?.value) return;
-
-    const currentCfg = data.value as PengaturanTarif;
-    const newCount = (currentCfg.googleApiUsageCount || 0) + 1;
-
-    // 2. Determine if we should switch to OSM automatically
-    let newProvider = currentCfg.mapProvider;
-    if (newCount >= currentCfg.googleApiLimit && currentCfg.mapProvider === 'google') {
-      newProvider = 'osm';
-      console.warn("⚠️ GOOGLE API LIMIT REACHED! Switching to OpenStreetMap.");
-    }
-
-    // 3. Update DB
-    const updatedCfg = { ...currentCfg, googleApiUsageCount: newCount, mapProvider: newProvider };
-    await supabase.from('system_settings').update({ value: updatedCfg }).eq('key', 'global_config');
-    pengaturans = updatedCfg;
+    const c = data.value as PengaturanTarif;
+    const nc = (c.googleApiUsageCount || 0) + 1;
+    const np = nc >= c.googleApiLimit ? 'osm' : c.mapProvider;
+    await supabase.from('system_settings').update({ value: { ...c, googleApiUsageCount: nc, mapProvider: np } }).eq('key', 'global_config');
   },
 
   async getChatMessages(pesananId: string): Promise<ChatMessage[]> {
     const { data } = await getSupabase()!.from('chat_messages').select('*').eq('id_pesanan', pesananId).order('created_at', { ascending: true });
-    return (data || []).map(m => ({
-      id: m.id,
-      idPesanan: m.id_pesanan,
-      senderId: m.sender_id,
-      senderName: m.sender_name,
-      senderRole: m.sender_role,
-      message: m.message,
-      voiceData: m.voice_data,
-      photoData: m.photo_data,
-      timestamp: m.created_at
-    }));
+    return (data || []).map(m => ({ id: m.id, idPesanan: m.id_pesanan, senderId: m.sender_id, senderName: m.sender_name, senderRole: m.sender_role, message: m.message, voiceData: m.voice_data, photoData: m.photo_data, timestamp: m.created_at }));
   },
 
   async sendChatMessage(pesananId: string, senderId: string, senderName: string, senderRole: string, message: string, voiceData?: string, photoData?: string) {
-    await getSupabase()!.from('chat_messages').insert({
-      id_pesanan: pesananId,
-      sender_id: senderId,
-      sender_name: senderName,
-      sender_role: senderRole,
-      message,
-      voice_data: voiceData,
-      photo_data: photoData
-    });
+    await getSupabase()!.from('chat_messages').insert({ id_pesanan: pesananId, sender_id: senderId, sender_name: senderName, sender_role: senderRole, message, voice_data: voiceData, photo_data: photoData });
     ololuRealtime.broadcastChatMessage(pesananId, { senderId, senderName, senderRole, message, voiceData, photoData, timestamp: new Date().toISOString() });
   },
 
   async terimaPesanan(orderId: string, driverId: string) {
-    // ATOMIC UPDATE: Only update if status is still 'mencari_sopir'
-    const { data, error } = await getSupabase()!.from('orders').update({
-      id_sopir: driverId,
-      status: 'sopir_ditemukan',
-      waktu_diterima: new Date().toISOString()
-    })
-    .eq('id', orderId)
-    .eq('status', 'mencari_sopir')
-    .select();
-
-    if (error) {
-      console.error("❌ ERROR TERIMA PESANAN:", error.message);
-      return { success: false, error: error.message };
-    }
-    if (!data || data.length === 0) return { success: false, error: "PESANAN_SUDAH_DIAMBIL" };
-
+    const { data, error } = await getSupabase()!.from('orders').update({ id_sopir: driverId, status: 'sopir_ditemukan', waktu_diterima: new Date().toISOString() }).eq('id', orderId).eq('status', 'mencari_sopir').select();
+    if (error || !data?.length) return { success: false, error: "PESANAN_SUDAH_DIAMBIL" };
     return { success: true };
   },
 
-  async updateStatusPesanan(id: string, status: StatusPesanan) {
-    await getSupabase()!.from('orders').update({ status }).eq('id', id);
-  },
-
-  async updateTahapAktif(id: string, tahap: number) {
-    await getSupabase()!.from('orders').update({ tahap_aktif: tahap }).eq('id', id);
-  },
-
-  async updateParkirStop(stopId: string, choice: string) {
-    await getSupabase()!.from('order_stops').update({ pilihan_parkir: choice }).eq('id', stopId);
-  },
-
-  async setStopSelesai(stopId: string) {
-    await getSupabase()!.from('order_stops').update({ status: 'selesai' }).eq('id', stopId);
-  },
+  async updateStatusPesanan(id: string, status: StatusPesanan) { await getSupabase()!.from('orders').update({ status }).eq('id', id); },
+  async updateTahapAktif(id: string, tahap: number) { await getSupabase()!.from('orders').update({ tahap_aktif: tahap }).eq('id', id); },
+  async updateParkirStop(stopId: string, choice: string) { await getSupabase()!.from('order_stops').update({ pilihan_parkir: choice }).eq('id', stopId); },
+  async setStopSelesai(stopId: string) { await getSupabase()!.from('order_stops').update({ status: 'selesai' }).eq('id', stopId); },
 
   async simpanNotaAwal(pesananId: string, namaToko: string, rincian: string, total: number, fotoBase64: string) {
-    const updateData = {
-      nota_awal_nama_toko: namaToko,
-      nota_awal_rincian_barang: rincian,
-      nota_awal_total_toko: total,
-      nota_awal_foto_url: fotoBase64,
-      nota_awal_waktu_dicatat: new Date().toISOString()
-    };
+    const updateData = { nota_awal_nama_toko: namaToko, nota_awal_rincian_barang: rincian, nota_awal_total_toko: total, nota_awal_foto_url: fotoBase64, nota_awal_waktu_dicatat: new Date().toISOString() };
     await getSupabase()!.from('orders').update(updateData).eq('id', pesananId);
-
-    const notaForUI = {
-      namaToko,
-      totalToko: total,
-      rincianBarang: rincian,
-      fotoNota: fotoBase64,
-      waktuDicatat: updateData.nota_awal_waktu_dicatat
-    };
-    ololuRealtime.broadcastTripUpdate(pesananId, { type: 'nota_awal_update', nota: notaForUI });
+    ololuRealtime.broadcastTripUpdate(pesananId, { type: 'nota_awal_update', nota: { namaToko, totalToko: total, rincianBarang: rincian, fotoNota: fotoBase64, waktuDicatat: updateData.nota_awal_waktu_dicatat } });
   },
 
   async simpanNotaToko(pesananId: string, stopId: string, namaToko: string, rincian: string, total: number, fotoBase64: string) {
-    const updateData = {
-      nota_nama_toko: namaToko,
-      nota_rincian_barang: rincian,
-      nota_total_toko: total,
-      nota_foto_url: fotoBase64,
-      nota_waktu_dicatat: new Date().toISOString()
-    };
+    const updateData = { nota_nama_toko: namaToko, nota_rincian_barang: rincian, nota_total_toko: total, nota_foto_url: fotoBase64, nota_waktu_dicatat: new Date().toISOString() };
     await getSupabase()!.from('order_stops').update(updateData).eq('id', stopId);
-
-    // Broadcast for realtime update with mapped keys
-    const notaForUI = {
-      namaToko,
-      totalToko: total,
-      rincianBarang: rincian,
-      fotoNota: fotoBase64,
-      waktuDicatat: updateData.nota_waktu_dicatat
-    };
-    ololuRealtime.broadcastTripUpdate(pesananId, { type: 'nota_update', stopId, nota: notaForUI });
+    ololuRealtime.broadcastTripUpdate(pesananId, { type: 'nota_update', stopId, nota: { namaToko, totalToko: total, rincianBarang: rincian, fotoNota: fotoBase64, waktuDicatat: updateData.nota_waktu_dicatat } });
   },
 
   async selesaikanPesanan(pesananId: string, finalOrderData: Pesanan) {
-    const supabase = getSupabase();
-    if (!supabase) return;
-
-    const { error } = await supabase.from('orders').update({
-      status: 'selesai',
-      waktu_selesai: new Date().toISOString(),
-      biaya_parkir_total: finalOrderData.biayaParkirTotal,
-      biaya_nota_total: finalOrderData.biayaNotaTotal,
-      total_bayar_akhir: finalOrderData.totalBayarAkhir
-    }).eq('id', pesananId);
-
-    if (!error) {
-      ololuRealtime.broadcastTripUpdate(pesananId, { type: 'status_update', status: 'selesai' });
-      this.setLocalOrderLock(null);
-    }
+    const { error } = await getSupabase()!.from('orders').update({ status: 'selesai', waktu_selesai: new Date().toISOString(), biaya_parkir_total: finalOrderData.biayaParkirTotal, biaya_nota_total: finalOrderData.biayaNotaTotal, total_bayar_akhir: finalOrderData.totalBayarAkhir }).eq('id', pesananId);
+    if (!error) { ololuRealtime.broadcastTripUpdate(pesananId, { type: 'status_update', status: 'selesai' }); this.setLocalOrderLock(null); }
   },
 
   async batalPesanan(pesananId: string, peran: string, alasan: string) {
@@ -895,8 +588,7 @@ export const OloluStore = {
 
   async getSopirLogin(): Promise<DetailSopir | null> {
     const sesi = await this.getSesi();
-    if (!sesi) return null;
-    return this.getSopir(sesi.userId);
+    return sesi ? this.getSopir(sesi.userId) : null;
   },
 
   getLocalOrderLock() { const stored = localStorage.getItem(ORDER_LOCK_KEY); return stored ? JSON.parse(stored) : null; },

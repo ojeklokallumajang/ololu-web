@@ -18,15 +18,16 @@ export interface ProfilPengguna {
   fotoProfil?: string;
   tempatLahir?: string;
   tanggalLahir?: string;
-  isSubAdmin?: boolean; // Menandai jika user adalah admin tambahan
-  isSuspended?: boolean; // Menandai jika akun ditangguhkan
+  isSubAdmin?: boolean;
+  isSuspended?: boolean;
+  created_at?: string;
 }
 
 export interface LogAudit {
   id: string;
   adminId: string;
   adminNama: string;
-  aksi: string; // Misal: "Mengubah Tarif Ojek", "Menyetujui Sopir"
+  aksi: string;
   detail: string;
   timestamp: string;
 }
@@ -38,7 +39,7 @@ export interface DetailSopir {
   fotoStnk: string;
   fotoKendaraan: string;
   platNomor: string;
-  jenisMotor: string; // Tipe spesifik (Vario, Avanza, dll)
+  jenisMotor: string;
   jenisKendaraan: 'motor' | 'mobil';
   warnaKendaraan: string;
   bisaBarangBesar: boolean;
@@ -52,7 +53,7 @@ export interface DetailSopir {
   lokasiSaatIni?: { lat: number; lng: number };
 }
 
-export type JenisLayanan = 'ojek' | 'mobil' | 'makanan' | 'paket' | 'barang_besar' | 'langganan';
+export type JenisLayanan = 'ojek' | 'mobil' | 'makanan' | 'paket' | 'belanja' | 'cargo' | 'market' | 'lainnya';
 
 export interface ItemBelanja {
   id: string;
@@ -74,7 +75,7 @@ export interface TujuanStop {
     namaToko: string;
     rincianBarang: string;
     totalToko: number;
-    fotoNota: string; // URL base64 simulasi
+    fotoNota: string;
     waktuDicatat: string;
   };
 }
@@ -93,11 +94,10 @@ export interface Pesanan {
   nomorHpSopir?: string;
   platNomorSopir?: string;
   
-  // Rute Perjalanan
   asalAlamat: string;
   asalLat: number;
   asalLng: number;
-  itemsAwal?: ItemBelanja[]; // Daftar belanja di lokasi awal (Toko/Resto)
+  itemsAwal?: ItemBelanja[];
   notaAwal?: {
     namaToko: string;
     rincianBarang: string;
@@ -105,26 +105,24 @@ export interface Pesanan {
     fotoNota: string;
     waktuDicatat: string;
   };
-  daftarTujuan: TujuanStop[]; // Maksimal 5 stop untuk makanan/belanja
+  daftarTujuan: TujuanStop[];
   
-  // Biaya & Tarif
   jarakKm: number;
   tarifDasar: number;
   tarifPerKm: number;
   tarifMinimum: number;
-  tambahanTujuan: number; // Biaya tambahan karena mampir-mampir
-  tambahanItem: number; // Biaya tambahan karena jumlah item melebihi batas
-  biayaLayananPersen: number; // Biaya potongan jasa aplikasi
+  tambahanTujuan: number;
+  tambahanItem: number;
+  biayaLayananPersen: number;
   biayaParkirTotal: number;
   biayaNotaTotal: number;
   biayaTungguTotal: number;
   biayaMalamTambahan: number;
   durasiMenit: number;
-  tarifPerjalananMurni: number; // Jarak * tarifPerKm dst
-  totalBayarAkhir: number; // Jumlah yang harus dibayar customer
-  pembayaranTunai: boolean; // True jika tunai langsung ke sopir, false jika via Dompet Ololu
+  tarifPerjalananMurni: number;
+  totalBayarAkhir: number;
+  pembayaranTunai: boolean;
   
-  // Log Waktu
   waktuDibuat: string;
   waktuSopirDiterima?: string;
   waktuTibaJemput?: string;
@@ -132,9 +130,8 @@ export interface Pesanan {
   waktuSelesai?: string;
   waktuDibatalkan?: string;
   
-  // Status & Riwayat Lokasi
   status: StatusPesanan;
-  tahapAktif: number; // Index tujuan aktif (0 s/d daftarTujuan.length - 1)
+  tahapAktif: number;
   riwayatLokasiSopir: { lat: number; lng: number; waktu: string }[];
 }
 
@@ -169,7 +166,7 @@ export interface RatingUlasan {
   idPesanan: string;
   idSopir: string;
   namaPenumpang: string;
-  bintang: number; // 1 s/d 5
+  bintang: number;
   ulasan: string;
   timestamp: string;
 }
@@ -181,13 +178,13 @@ export interface ChatMessage {
   senderName: string;
   senderRole: 'penumpang' | 'sopir';
   message: string;
-  voiceData?: string; // Base64 audio data
-  photoData?: string; // Base64 image data
+  voiceData?: string;
+  photoData?: string;
   timestamp: string;
 }
 
 export interface PengaturanTarif {
-  // Tarif Ojek Orang
+  // Ojek Motor
   ojekTarifDasar: number;
   ojekTarifPerKm: number;
   ojekTarifPerKmJauh: number;
@@ -195,10 +192,11 @@ export interface PengaturanTarif {
   ojekTarifMinimum: number;
   ojekTarifTungguPerMenit: number;
   ojekPersenJasa: number;
-  ojekBatasKmTarifDasar: number; // KM berlakunya tarif dasar (contoh: 3)
+  ojekBatasKmTarifDasar: number;
   ojekBiayaPerStop: number;
+  layananOjekAktif: boolean;
 
-  // Tarif Mobil (Ololu-Car)
+  // Ololu Car
   mobilTarifDasar: number;
   mobilTarifPerKm: number;
   mobilTarifPerKmJauh: number;
@@ -208,8 +206,9 @@ export interface PengaturanTarif {
   mobilPersenJasa: number;
   mobilBatasKmTarifDasar: number;
   mobilBiayaPerStop: number;
+  layananMobilAktif: boolean;
 
-  // Tarif Makanan & Belanja
+  // Food Antar
   makananTarifDasar: number;
   makananTarifPerKm: number;
   makananTarifMinimum: number;
@@ -217,8 +216,9 @@ export interface PengaturanTarif {
   makananPersenJasa: number;
   makananBatasKmTarifDasar: number;
   makananBiayaPerStop: number;
+  layananMakananAktif: boolean;
 
-  // Tarif Paket Kilat
+  // Kirim Paket
   paketTarifDasar: number;
   paketTarifPerKm: number;
   paketTarifMinimum: number;
@@ -226,64 +226,77 @@ export interface PengaturanTarif {
   paketPersenJasa: number;
   paketBatasKmTarifDasar: number;
   paketBiayaPerStop: number;
+  layananPaketAktif: boolean;
 
-  // Tarif Barang Besar
-  barangBesarTarifDasar: number;
-  barangBesarTarifPerKm: number;
-  barangBesarTarifMinimum: number;
-  barangBesarTarifTungguPerMenit: number;
-  barangBesarPersenJasa: number;
-  barangBesarBatasKmTarifDasar: number;
-  barangBesarBiayaPerStop: number;
+  // Belanja
+  belanjaTarifDasar: number;
+  belanjaTarifPerKm: number;
+  belanjaTarifMinimum: number;
+  belanjaTarifTungguPerMenit: number;
+  belanjaPersenJasa: number;
+  belanjaBatasKmTarifDasar: number;
+  belanjaBiayaPerStop: number;
+  layananBelanjaAktif: boolean;
 
-  // Aturan Parkir (Sistem Parkir Baru)
+  // Cargo (Logistik)
+  cargoTarifDasar: number;
+  cargoTarifPerKm: number;
+  cargoTarifMinimum: number;
+  cargoTarifTungguPerMenit: number;
+  cargoPersenJasa: number;
+  cargoBatasKmTarifDasar: number;
+  cargoBiayaPerStop: number;
+  layananCargoAktif: boolean;
+
+  // Market
+  marketTarifDasar: number;
+  marketTarifPerKm: number;
+  marketTarifMinimum: number;
+  marketTarifTungguPerMenit: number;
+  marketPersenJasa: number;
+  marketBatasKmTarifDasar: number;
+  marketBiayaPerStop: number;
+  layananMarketAktif: boolean;
+
+  // Lainnya
+  lainnyaTarifDasar: number;
+  lainnyaTarifPerKm: number;
+  lainnyaTarifMinimum: number;
+  lainnyaPersenJasa: number;
+  lainnyaBiayaPerStop: number;
+  layananLainnyaAktif: boolean;
+
+  // Aturan Parkir
   biayaParkirBiasa: number;
   biayaParkirPasar: number;
+  biayaPerStopTambahan: number;
+  biayaKelebihanItem: number;
 
-  // Biaya Tambahan Lainnya
-  biayaPerStopTambahan: number; // Tambahan biaya per stop (mulai stop ke-2 dst)
-  biayaKelebihanItem: number; // Biaya jika > 5 item per stop
-
-  // Jam Malam & Surcharge
+  // Jam Malam
   malamAktif: boolean;
-  malamMulai: string; // "22:00"
-  malamSelesai: string; // "05:00"
+  malamMulai: string;
+  malamSelesai: string;
   malamTambahanFlat: number;
 
-  // Pengaturan Jangkauan & Aturan
+  // Pengaturan Jangkauan
   radiusPencarianSopirKm: number;
   jarakMaksimalOrderKm: number;
-  saldoMinimalOnlineSopir: number; // Rp 5.000
+  saldoMinimalOnlineSopir: number;
   dendaBatalSopir: number;
   dendaBatalPenumpang: number;
   biayaAdminTopUp: number;
   biayaAdminTarik: number;
-  waktuResponTawaran: number; // detik
-  batasMaksimalPencarianBerikutnya: number; // detik
-  intervalKirimLokasiSopir: number; // detik
-  biayaAdminPerjalanan: number; // Rp
-  pengaliTarifPrioritas: number; // pengali tarif (contoh: 1.2)
-
-  // Saklar Layanan (Aktif/Nonaktif)
-  layananOjekAktif: boolean;
-  layananMobilAktif: boolean;
-  layananMakananAktif: boolean;
-  layananPaketAktif: boolean;
-  layananBarangBesarAktif: boolean;
-  layananLanggananAktif: boolean;
+  waktuResponTawaran: number;
+  batasMaksimalPencarianBerikutnya: number;
+  intervalKirimLokasiSopir: number;
+  biayaAdminPerjalanan: number;
+  pengaliTarifPrioritas: number;
 
   // Kontrol Pendaftaran
   daftarMotorAktif: boolean;
   daftarMobilAktif: boolean;
 
-  // Rush Hour (Jam Sibuk)
-  rushHourAktif: boolean;
-  rushHourMulai: string; // "16:00"
-  rushHourSelesai: string; // "18:00"
-  rushHourPersenKenaikan: number; // contoh: 15%
-  rushHourSchedules?: JadwalRushHour[];
-
-  // Map Hybrid & API Monitoring
+  // Map & API
   mapProvider: 'google' | 'osm';
   googleApiLimit: number;
   googleApiUsageCount: number;
@@ -294,8 +307,8 @@ export interface PengaturanTarif {
 export interface JadwalRushHour {
   id: string;
   nama: string;
-  waktuMulai: string; // "16:00"
-  waktuSelesai: string; // "18:00"
-  persenKenaikan: number; // 15
+  waktuMulai: string;
+  waktuSelesai: string;
+  persenKenaikan: number;
   aktif: boolean;
 }
