@@ -540,8 +540,9 @@ export default function AdminView() {
                        <div className="space-y-1 text-left"><label className="text-[8px] font-black text-emerald-600 uppercase ml-1 text-emerald-600 leading-none">Minimum (Rp)</label><input type="number" value={(tempConfig as any)[`${s.id}TarifMinimum`]} onChange={(e)=>setTempConfig({...tempConfig, [`${s.id}TarifMinimum`]: parseInt(e.target.value)})} className="w-full p-3 bg-emerald-50 border border-emerald-100 rounded-2xl outline-none text-xs font-black text-emerald-600 shadow-inner" /></div>
                     </div>
 
-                    <div className="grid grid-cols-1 pt-2 border-t border-dashed">
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-dashed">
                        <div className="space-y-1 text-left"><label className="text-[8px] font-black text-gray-400 uppercase ml-1 text-gray-400 leading-none">Normal / KM (Rp)</label><input type="number" value={(tempConfig as any)[`${s.id}TarifPerKm`]} onChange={(e)=>setTempConfig({...tempConfig, [`${s.id}TarifPerKm`]: parseInt(e.target.value)})} className="w-full p-3 bg-gray-50 border rounded-2xl outline-none text-xs font-black text-gray-800 shadow-inner" /></div>
+                       <div className="space-y-1 text-left"><label className="text-[8px] font-black text-blue-600 uppercase ml-1 leading-none text-blue-600">Jarak Flat (KM)</label><input type="number" value={(tempConfig as any)[`${s.id}BatasKmTarifDasar`]} onChange={(e)=>setTempConfig({...tempConfig, [`${s.id}BatasKmTarifDasar`]: parseInt(e.target.value)})} className="w-full p-3 bg-blue-50 border border-blue-100 rounded-2xl outline-none text-xs font-black text-blue-600 shadow-inner" /></div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 pt-2 border-t border-dashed">

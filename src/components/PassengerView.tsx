@@ -307,7 +307,15 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     m = config[`${serv}TarifMinimum`] || 0;
     s = config[`${serv}BiayaPerStop`] || 0;
     comm = config[`${serv}PersenJasa`] || 10;
-    const meteredCost = dist <= batasJauh ? (dist * perKm) : (dist * perKmJauh);
+    const flatDist = config[`${serv}BatasKmTarifDasar`] || 0;
+
+    // LOGIKA TARIF FLAT (Update v5.2):
+    // Jika Dist <= flatDist, bayar Dasar saja.
+    // Jika > flatDist, bayar Dasar + (Dist - flatDist) * HargaPerKM
+    const excessDist = Math.max(0, dist - flatDist);
+    const currentRate = dist <= batasJauh ? perKm : perKmJauh;
+    const meteredCost = excessDist * currentRate;
+
     let total = base + meteredCost;
     let rushSur = 0;
     if (config.rushHourAktif) {
