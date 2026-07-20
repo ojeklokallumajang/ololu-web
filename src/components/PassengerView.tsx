@@ -270,20 +270,45 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   }, [activeOrder?.id]);
 
   useEffect(() => {
-    if (!mapsLib || !asalLat || stops.length === 0) return;
-    const calculateDistance = () => {
+    if (!asalLat || stops.length === 0) return;
+
+    const fallbackHaversine = () => {
+      const R = 6371; let totalFallback = 0; let cLat = asalLat; let cLng = asalLng;
+      stops.forEach(s => { const dLat = (s.lat - cLat) * Math.PI / 180; const dLon = (s.lng - cLng) * Math.PI / 180; const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(cLat * Math.PI / 180) * Math.cos(s.lat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2); totalFallback += R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))); cLat = s.lat; cLng = s.lng; });
+      setRouteDistance(totalFallback * 1.25);
+    };
+
+    const calculateWithGoogle = () => {
+      if (!mapsLib) return;
       const ds = new google.maps.DirectionsService();
       ds.route({ origin: { lat: asalLat, lng: asalLng }, destination: { lat: stops[stops.length-1].lat, lng: stops[stops.length-1].lng }, waypoints: stops.slice(0,-1).map(s=>({location:{lat:s.lat,lng:s.lng},stopover:true})), travelMode: google.maps.TravelMode.DRIVING }, (res, st) => {
         if (st === 'OK' && res?.routes[0]?.legs) { let t = 0; res.routes[0].legs.forEach(l => t += l.distance?.value || 0); setRouteDistance(t/1000); }
-        else {
-          const R = 6371; let totalFallback = 0; let cLat = asalLat; let cLng = asalLng;
-          stops.forEach(s => { const dLat = (s.lat - cLat) * Math.PI / 180; const dLon = (s.lng - cLng) * Math.PI / 180; const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(cLat * Math.PI / 180) * Math.cos(s.lat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2); totalFallback += R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))); cLat = s.lat; cLng = s.lng; });
-          setRouteDistance(totalFallback * 1.25);
-        }
+        else { fallbackHaversine(); }
       });
     };
-    calculateDistance();
-  }, [mapsLib, asalLat, asalLng, stops]);
+
+    const calculateWithOSRM = async () => {
+      try {
+        const coords = [`${asalLng},${asalLat}`, ...stops.map(s => `${s.lng},${s.lat}`)].join(';');
+        const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`;
+        const resp = await fetch(url);
+        const data = await resp.json();
+        if (data.code === 'Ok' && data.routes?.[0]) {
+          setRouteDistance(data.routes[0].distance / 1000);
+        } else { fallbackHaversine(); }
+      } catch (err) {
+        console.error("OSRM Error:", err);
+        fallbackHaversine();
+      }
+    };
+
+    if (config?.mapProvider === 'osm') {
+      calculateWithOSRM();
+    } else {
+      if (mapsLib) calculateWithGoogle();
+      else fallbackHaversine();
+    }
+  }, [mapsLib, asalLat, asalLng, stops, config?.mapProvider]);
 
   // --- [HOOKS PHASE 4: COMPLEX MEMO] ---
   const passengerCalculatedTotals = useMemo(() => {
