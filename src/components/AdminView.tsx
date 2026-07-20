@@ -332,7 +332,6 @@ export default function AdminView() {
                  <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full animate-pulse uppercase">Live Track</span>
                </div>
                <div className="h-80 w-full rounded-2xl overflow-hidden border bg-gray-50 relative shadow-inner">
-                  <APIProvider apiKey={config?.googleMapsKey || GOOGLE_MAPS_KEY}>
                     <Map defaultCenter={KOORDINAT_LUMAJANG} defaultZoom={13} mapId="ADMIN_RADAR" disableDefaultUI>
                       {activeTrips.map(order => (
                         <MapDirections
@@ -348,7 +347,6 @@ export default function AdminView() {
                         </AdvancedMarker>
                       ))}
                     </Map>
-                  </APIProvider>
                </div>
             </div>
           </div>
@@ -476,11 +474,9 @@ export default function AdminView() {
                        <span className={`text-[10px] font-black px-3 py-1 rounded-full shadow-sm text-white ${e.status === 'baru' ? 'bg-red-600' : 'bg-emerald-500'}`}>{e.status.toUpperCase()}</span>
                     </div>
                     <div className="h-48 w-full rounded-2xl overflow-hidden border bg-gray-50 relative shadow-inner">
-                       <APIProvider apiKey={config?.googleMapsKey || GOOGLE_MAPS_KEY}>
                           <Map defaultCenter={{ lat: parseFloat(e.lat as any), lng: parseFloat(e.lng as any) }} defaultZoom={16} disableDefaultUI>
                              <AdvancedMarker position={{ lat: parseFloat(e.lat as any), lng: parseFloat(e.lng as any) }}><div className="text-4xl animate-bounce drop-shadow-lg">🆘</div></AdvancedMarker>
                           </Map>
-                       </APIProvider>
                        <div className="absolute top-3 left-3 bg-black/80 text-white text-[9px] px-2 py-1 rounded-lg font-mono shadow-md text-white">{e.lat}, {e.lng}</div>
                     </div>
                     <div className="flex space-x-3 text-white text-center">
