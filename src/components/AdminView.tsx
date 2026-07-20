@@ -520,6 +520,24 @@ export default function AdminView() {
                     </div>
                  </div>
                ))}
+               {/* BIAYA TAMBAHAN & PARKIR */}
+               <div className="bg-white p-5 rounded-[32px] border border-gray-150 shadow-sm space-y-4 text-left text-gray-800">
+                  <div className="flex items-center space-x-2 text-gray-700 font-black uppercase text-[11px] tracking-widest border-b pb-3">
+                     <Settings size={16} className="text-gray-400" />
+                     <span>Biaya Tambahan & Parkir</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-gray-800">
+                     <div className="space-y-1 text-left"><label className="text-[8px] font-black text-gray-400 uppercase ml-1 text-gray-400 leading-none">Parkir Biasa (Rp)</label><input type="number" value={tempConfig.biayaParkirBiasa} onChange={(e)=>setTempConfig({...tempConfig, biayaParkirBiasa: parseInt(e.target.value)})} className="w-full p-3 bg-gray-50 border rounded-2xl outline-none text-xs font-black text-gray-800 shadow-inner" /></div>
+                     <div className="space-y-1 text-left"><label className="text-[8px] font-black text-gray-400 uppercase ml-1 text-gray-400 leading-none">Parkir Pasar (Rp)</label><input type="number" value={tempConfig.biayaParkirPasar} onChange={(e)=>setTempConfig({...tempConfig, biayaParkirPasar: parseInt(e.target.value)})} className="w-full p-3 bg-gray-50 border rounded-2xl outline-none text-xs font-black text-gray-800 shadow-inner" /></div>
+                     <div className="space-y-1 text-left"><label className="text-[8px] font-black text-amber-600 uppercase ml-1 text-amber-600 leading-none">Kelebihan Item (Rp)</label><input type="number" value={tempConfig.biayaKelebihanItem} onChange={(e)=>setTempConfig({...tempConfig, biayaKelebihanItem: parseInt(e.target.value)})} className="w-full p-3 bg-amber-50/50 border border-amber-100 rounded-2xl outline-none text-xs font-black text-amber-600 shadow-inner" /></div>
+                     <div className="space-y-1 text-left"><label className="text-[8px] font-black text-emerald-600 uppercase ml-1 text-emerald-600 leading-none">Stop Tambahan (Rp)</label><input type="number" value={tempConfig.biayaPerStopTambahan} onChange={(e)=>setTempConfig({...tempConfig, biayaPerStopTambahan: parseInt(e.target.value)})} className="w-full p-3 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none text-xs font-black text-emerald-600 shadow-inner" /></div>
+                  </div>
+                  <p className="text-[9px] text-gray-400 italic px-1 leading-tight">
+                    *Kelebihan item dikenakan jika barang belanjaan > 5 item. <br/>
+                    *Biaya parkir ditentukan manual oleh Driver per lokasi.
+                  </p>
+               </div>
+
                <button onClick={saveConfigWithLog} className="w-full py-6 bg-[#046A38] text-white font-black rounded-[40px] text-sm tracking-[0.3em] uppercase shadow-2xl active:scale-95 transition-all sticky bottom-6 z-40 border-b-8 border-emerald-900 shadow-emerald-900/40 text-white text-center leading-none">Simpan Seluruh Perubahan</button>
             </div>
           </div>
