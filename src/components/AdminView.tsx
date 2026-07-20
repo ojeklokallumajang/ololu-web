@@ -58,6 +58,7 @@ import {
   KeyRound,
   Zap,
   TrendingUp,
+  Moon,
   Map as MapIcon,
   ShoppingCart,
   Store,
@@ -509,6 +510,18 @@ export default function AdminView() {
                </div>
             </div>
 
+            {/* GLOBAL NIGHT SHIFT CONFIG */}
+            <div className="bg-indigo-50 p-6 rounded-[32px] border border-indigo-100 shadow-sm space-y-4 text-left text-gray-800">
+               <div className="flex justify-between items-center border-b border-indigo-200 pb-3">
+                  <div className="flex items-center space-x-2 text-indigo-900 font-black uppercase text-[11px] tracking-widest"><Moon size={16}/><span>Jadwal Jam Malam (Night Shift)</span></div>
+                  <input type="checkbox" checked={tempConfig.malamAktif} onChange={(e)=>setTempConfig({...tempConfig, malamAktif: e.target.checked})} className="w-5 h-5 rounded text-indigo-600" />
+               </div>
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1"><label className="text-[8px] font-black text-indigo-700 uppercase ml-1">Mulai Jam</label><input type="time" value={tempConfig.malamMulai} onChange={(e)=>setTempConfig({...tempConfig, malamMulai: e.target.value})} className="w-full p-3 bg-white border border-indigo-200 rounded-2xl outline-none text-xs font-black text-indigo-900" /></div>
+                  <div className="space-y-1"><label className="text-[8px] font-black text-indigo-700 uppercase ml-1">Selesai Jam</label><input type="time" value={tempConfig.malamSelesai} onChange={(e)=>setTempConfig({...tempConfig, malamSelesai: e.target.value})} className="w-full p-3 bg-white border border-indigo-200 rounded-2xl outline-none text-xs font-black text-indigo-900" /></div>
+               </div>
+            </div>
+
             <div className="space-y-8 pb-32 text-gray-800 text-left">
                {[
                  { id: 'ojek', label: 'Ojek Motor (Ride)', icon: <Bike size={16}/>, color: 'text-emerald-600' },
@@ -528,6 +541,10 @@ export default function AdminView() {
 
                     <div className="grid grid-cols-2 gap-4 text-gray-800 text-left">
                        <div className="space-y-1 text-left"><label className="text-[8px] font-black text-gray-400 uppercase ml-1 text-gray-400 leading-none">Dasar (Rp)</label><input type="number" value={(tempConfig as any)[`${s.id}TarifDasar`]} onChange={(e)=>setTempConfig({...tempConfig, [`${s.id}TarifDasar`]: parseInt(e.target.value)})} className="w-full p-3 bg-gray-50 border rounded-2xl outline-none text-xs font-black text-gray-800 shadow-inner" /></div>
+                       <div className="space-y-1 text-left"><label className="text-[8px] font-black text-emerald-600 uppercase ml-1 text-emerald-600 leading-none">Minimum (Rp)</label><input type="number" value={(tempConfig as any)[`${s.id}TarifMinimum`]} onChange={(e)=>setTempConfig({...tempConfig, [`${s.id}TarifMinimum`]: parseInt(e.target.value)})} className="w-full p-3 bg-emerald-50 border border-emerald-100 rounded-2xl outline-none text-xs font-black text-emerald-600 shadow-inner" /></div>
+                    </div>
+
+                    <div className="grid grid-cols-1 pt-2 border-t border-dashed">
                        <div className="space-y-1 text-left"><label className="text-[8px] font-black text-gray-400 uppercase ml-1 text-gray-400 leading-none">Normal / KM (Rp)</label><input type="number" value={(tempConfig as any)[`${s.id}TarifPerKm`]} onChange={(e)=>setTempConfig({...tempConfig, [`${s.id}TarifPerKm`]: parseInt(e.target.value)})} className="w-full p-3 bg-gray-50 border rounded-2xl outline-none text-xs font-black text-gray-800 shadow-inner" /></div>
                     </div>
 
