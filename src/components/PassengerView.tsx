@@ -268,6 +268,21 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       if (d.type === 'location') setDriverLoc(d.coords);
       else if (d.type === 'accepted') { new Audio('https://assets.mixkit.co/active_storage/sfx/1360/1360-preview.mp3').play().catch(()=>null); setActiveOrder(prev => prev ? ({ ...prev, status: 'sopir_ditemukan', idSopir: d.driver.id, namaSopir: d.driver.nama, platNomorSopir: d.driver.platNomor }) : null); }
       else if (d.type === 'status_update') { setActiveOrder(prev => prev ? ({ ...prev, status: d.status }) : null); if (d.status === 'selesai') OloluStore.setLocalOrderLock(null); }
+      else if (d.type === 'nota_awal_update') {
+        setActiveOrder(prev => prev ? ({ ...prev, notaAwal: d.nota }) : null);
+      }
+      else if (d.type === 'nota_update') {
+        setActiveOrder(prev => prev ? ({
+          ...prev,
+          daftarTujuan: prev.daftarTujuan.map(s => s.id === d.stopId ? { ...s, nota: d.nota } : s)
+        }) : null);
+      }
+      else if (d.type === 'parking_update') {
+        setActiveOrder(prev => prev ? ({
+          ...prev,
+          daftarTujuan: prev.daftarTujuan.map(s => s.id === d.stopId ? { ...s, pilihanParkir: d.choice } : s)
+        }) : null);
+      }
     });
     return () => u();
   }, [activeOrder?.id]);
@@ -347,12 +362,61 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     if (o) { OloluStore.setLocalOrderLock({ orderId: o.id, role: 'penumpang' }); setActiveOrder(o as any); }
   };
 
+  // --- REAL-TIME TOTAL CALCULATION FOR PASSENGER ---
+  const passengerCalculatedTotals = useMemo(() => {
+    if (!activeOrder || !config) return { jasa: 0, belanja: 0, total: 0 };
+
+    // 1. Calculate Jasa (Trip + Multi + Item + Malam + Parkir)
+    const parkir = activeOrder.daftarTujuan.reduce((sum, s) => {
+      if (s.pilihanParkir === 'parkir_biasa') return sum + (config.biayaParkirBiasa || 2000);
+      if (s.pilihanParkir === 'parkir_pasar') return sum + (config.biayaParkirPasar || 5000);
+      return sum;
+    }, 0);
+
+    const jasa = activeOrder.tarifPerjalananMurni +
+                 (activeOrder.tambahanTujuan || 0) +
+                 (activeOrder.tambahanItem || 0) +
+                 (activeOrder.biayaMalamTambahan || 0) +
+                 parkir;
+
+    // 2. Calculate Belanja (Nota)
+    const notaAsal = activeOrder.notaAwal?.totalToko || 0;
+    const notaStops = activeOrder.daftarTujuan.reduce((sum, s) => sum + (s.nota?.totalToko || 0), 0);
+    const belanja = notaAsal + notaStops;
+
+    return { jasa, belanja, total: jasa + belanja };
+  }, [activeOrder, config]);
+
   // --- RENDER: ORDER SCREEN ---
   if (activeOrder) return (
     <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen text-left text-gray-800">
       <div className="bg-[#046A38] text-white p-5 text-center border-b-2 border-[#D4AF37] sticky top-0 z-40 shadow-lg"><p className="text-[10px] font-black text-[#F5E6A8] tracking-widest text-white">{activeOrder.nomorPesanan}</p><h2 className="text-lg font-black uppercase tracking-tighter text-white">{activeOrder.status?.replace('_',' ')}</h2></div>
       <div className="h-80 w-full border-b shadow-inner"><APIProvider apiKey={config?.googleMapsKey || GOOGLE_MAPS_KEY}><Map defaultCenter={{ lat: activeOrder.asalLat, lng: activeOrder.asalLng }} defaultZoom={14} mapId="ORDER_MAP_PASSENGER"><MapDirections origin={{ lat: activeOrder.asalLat, lng: activeOrder.asalLng }} destination={{ lat: activeOrder.daftarTujuan[activeOrder.daftarTujuan.length-1].lat, lng: activeOrder.daftarTujuan[activeOrder.daftarTujuan.length-1].lng }} waypoints={activeOrder.daftarTujuan.slice(0,-1).map(s=>({location:{lat:s.lat,lng:s.lng},stopover:true}))} /><AdvancedMarker position={{ lat: activeOrder.asalLat, lng: activeOrder.asalLng }}><Pin background="#046A38" /></AdvancedMarker>{activeOrder.daftarTujuan.map((st, idx) => (<AdvancedMarker key={st.id} position={{ lat: st.lat, lng: st.lng }}><Pin background="#D4AF37" glyphText={(idx+1).toString()} /></AdvancedMarker>))}{driverLoc && <AdvancedMarker position={driverLoc}><div className="text-3xl animate-bounce">🛵</div></AdvancedMarker>}</Map></APIProvider></div>
-      <div className="p-5 space-y-5"><div className="bg-white p-5 rounded-3xl border-l-8 border-[#D4AF37] shadow-xl"><span className="text-[11px] text-gray-400 font-black uppercase tracking-widest">Tagihan Pembayaran</span><p className="text-4xl font-black text-[#B8941F] tracking-tighter mt-1">Rp {activeOrder.totalBayarAkhir?.toLocaleString('id-ID')}</p></div>{activeOrder.namaSopir && <div className="bg-white p-5 rounded-3xl border flex justify-between items-center shadow-md"><div><h4 className="text-[10px] font-black text-gray-400 uppercase leading-none">Driver</h4><h3 className="text-base font-black text-gray-800 uppercase mt-1 leading-none">{activeOrder.namaSopir}</h3><p className="text-[10px] text-[#046A38] font-bold mt-0.5">{activeOrder.platNomorSopir}</p></div><div className="flex space-x-2"><button onClick={() => setIsChatOpen(true)} className="p-3 bg-emerald-50 text-[#046A38] rounded-2xl shadow-sm"><MessageCircle size={24} /></button><a href={`tel:${activeOrder.nomorHpSopir}`} className="p-3 bg-emerald-50 text-[#046A38] rounded-2xl shadow-sm"><Phone size={24} /></a></div></div>}<button onClick={() => OloluStore.tambahEmergency(activeOrder.id, profile.nama, profile.nomorHp, 'penumpang', 0, 0)} className="w-full py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg uppercase tracking-widest text-xs flex items-center justify-center space-x-2 text-white"><AlertTriangle size={18} /><span>SOS DARURAT</span></button>{activeOrder.status === 'selesai' && (<div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 text-center"><div className="bg-white p-8 rounded-[40px] shadow-2xl space-y-6 animate-in zoom-in-95 duration-300 text-gray-800"><div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto shadow-inner text-4xl">🎉</div><h2 className="text-2xl font-black text-gray-800 uppercase tracking-tighter leading-none">Order Selesai!</h2><div className="flex flex-col space-y-3"><button onClick={() => generateReceipt(activeOrder)} className="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-lg text-white">E-Nota Digital</button><button onClick={() => setActiveOrder(null)} className="w-full py-4 bg-gray-900 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-lg text-white">Kembali</button></div></div></div>)}</div>
+
+      <div className="p-5 space-y-5">
+        {/* REAL-TIME PRICE BREAKDOWN FOR PASSENGER */}
+        <div className="bg-white p-6 rounded-[32px] border-l-8 border-[#D4AF37] shadow-xl space-y-4">
+           <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+              <div>
+                 <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Biaya Jasa Ololu</span>
+                 <p className="text-xl font-black text-gray-800 tracking-tight mt-1 leading-none">Rp {passengerCalculatedTotals.jasa.toLocaleString('id-ID')}</p>
+              </div>
+              <div className="text-right">
+                 <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest text-right">Titip Nota (Belanja)</span>
+                 <p className="text-xl font-black text-[#046A38] tracking-tight mt-1 leading-none text-right">Rp {passengerCalculatedTotals.belanja.toLocaleString('id-ID')}</p>
+              </div>
+           </div>
+           <div className="text-left">
+              <span className="text-[11px] text-gray-400 font-black uppercase tracking-widest text-left">Total Pembayaran Akhir</span>
+              <p className="text-4xl font-black text-[#B8941F] tracking-tighter mt-1 text-left leading-none">Rp {passengerCalculatedTotals.total.toLocaleString('id-ID')}</p>
+              <p className="text-[10px] text-gray-400 mt-2 italic text-left">*Total belanja diupdate Driver sesuai nota fisik di toko.</p>
+           </div>
+        </div>
+
+        {activeOrder.namaSopir && <div className="bg-white p-5 rounded-3xl border flex justify-between items-center shadow-md"><div><h4 className="text-[10px] font-black text-gray-400 uppercase leading-none text-left">Driver</h4><h3 className="text-base font-black text-gray-800 uppercase mt-1 leading-none text-left">{activeOrder.namaSopir}</h3><p className="text-[10px] text-[#046A38] font-bold mt-0.5 text-left">{activeOrder.platNomorSopir}</p></div><div className="flex space-x-2"><button onClick={() => setIsChatOpen(true)} className="p-3 bg-emerald-50 text-[#046A38] rounded-2xl shadow-sm"><MessageCircle size={24} /></button><a href={`tel:${activeOrder.nomorHpSopir}`} className="p-3 bg-emerald-50 text-[#046A38] rounded-2xl shadow-sm"><Phone size={24} /></a></div></div>}
+        <button onClick={() => OloluStore.tambahEmergency(activeOrder.id, profile.nama, profile.nomorHp, 'penumpang', 0, 0)} className="w-full py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg uppercase tracking-widest text-xs flex items-center justify-center space-x-2 text-white"><AlertTriangle size={18} /><span>SOS DARURAT</span></button>
+        {activeOrder.status === 'selesai' && (<div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 text-center"><div className="bg-white p-8 rounded-[40px] shadow-2xl space-y-6 animate-in zoom-in-95 duration-300 text-gray-800"><div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto shadow-inner text-4xl">🎉</div><h2 className="text-2xl font-black text-gray-800 uppercase tracking-tighter leading-none text-center">Order Selesai!</h2><div className="flex flex-col space-y-3"><button onClick={() => generateReceipt(activeOrder)} className="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-lg text-white">E-Nota Digital</button><button onClick={() => setActiveOrder(null)} className="w-full py-4 bg-gray-900 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-lg text-white">Kembali</button></div></div></div>)}
+      </div>
       {isChatOpen && <ChatRoom pesananId={activeOrder.id} senderId={profile.id} senderName={profile.nama} senderRole="penumpang" onClose={() => setIsChatOpen(false)} />}
     </div>
   );

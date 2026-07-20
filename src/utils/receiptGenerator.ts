@@ -188,37 +188,24 @@ export const generateReceipt = (order: Pesanan, companyName: string = "OLOLU LUM
           ${itemsAwalHtml}
           ${stopsHtml}
 
-          <div class="section-label" style="margin-top: 40px;">Rincian Transaksi Keuangan</div>
+          <div class="section-label" style="margin-top: 40px;">Ringkasan Tagihan Akhir</div>
           <div class="pricing-table">
             <div class="price-line">
-              <span>Tarif Jasa Layanan (${order.jarakKm} KM)</span>
-              <span>Rp ${order.tarifPerjalananMurni.toLocaleString('id-ID')}</span>
+              <span>Total Jasa Layanan Ololu</span>
+              <span>Rp ${(order.tarifPerjalananMurni + (order.tambahanTujuan || 0) + (order.tambahanItem || 0) + (order.biayaMalamTambahan || 0) + (order.biayaParkirTotal || 0)).toLocaleString('id-ID')}</span>
             </div>
-            <div class="price-calc">Rumus: ${order.tarifDasar > 0 ? `Dasar (Rp ${order.tarifDasar.toLocaleString('id-ID')}) + ` : ''}(Jarak &times; Rp ${order.tarifPerKm.toLocaleString('id-ID')})</div>
-
-            ${order.biayaParkirTotal > 0 ? `
-              <div class="price-line">
-                <span>Total Biaya Parkir & Keamanan</span>
-                <span>Rp ${order.biayaParkirTotal.toLocaleString('id-ID')}</span>
-              </div>
-            ` : ''}
-
-            ${order.tambahanTujuan > 0 ? `
-              <div class="price-line">
-                <span>Biaya Tambahan Multi-Stop</span>
-                <span>Rp ${order.tambahanTujuan.toLocaleString('id-ID')}</span>
-              </div>
-            ` : ''}
+            <div class="price-calc">Termasuk: Trip, Multi-stop, Varian Item, Surcharge Malam & Parkir</div>
 
             ${order.biayaNotaTotal > 0 ? `
-              <div class="price-line" style="color: #046A38; font-weight: 800;">
-                <span>Total Belanja (Sesuai Nota Fisik)</span>
+              <div class="price-line" style="color: #046A38; font-weight: 800; border-top: 1px dashed #e5e7eb; padding-top: 10px; margin-top: 10px;">
+                <span>Total Belanja (Titip Nota Toko)</span>
                 <span>Rp ${order.biayaNotaTotal.toLocaleString('id-ID')}</span>
               </div>
+              <div class="price-calc" style="color: #046A38;">Ganti rugi uang belanja Driver di Toko/Warung</div>
             ` : ''}
 
             <div class="grand-total">
-              <span>TOTAL PEMBAYARAN (${order.pembayaranTunai ? 'TUNAI' : 'NON-TUNAI'})</span>
+              <span>TOTAL YANG DIBAYARKAN</span>
               <b>Rp ${order.totalBayarAkhir.toLocaleString('id-ID')}</b>
             </div>
           </div>

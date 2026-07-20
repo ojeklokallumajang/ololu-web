@@ -1341,16 +1341,28 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
               )}
 
               {/* TARIF TOTAL DIHITUNG REALTIME */}
-              <div className="bg-[#E6F4EC] p-3 rounded-xl border border-emerald-100 flex justify-between items-center">
-                <div>
-                  <span className="text-[10px] text-gray-500 block uppercase font-bold">Total Tagihan Penumpang</span>
-                  <span className="text-lg font-black text-[#B8941F]">
-                    Rp {calculatedTotals.final.toLocaleString('id-ID')}
-                  </span>
-                </div>
-                <span className="bg-[#FAFBF9] text-[#046A38] text-[10px] font-bold px-2 py-1 rounded border border-gray-150">
-                  {activeOrder.pembayaranTunai ? '💵 TUNAI' : '📱 DOMPET'}
-                </span>
+              <div className="bg-[#E6F4EC] p-4 rounded-3xl border border-emerald-100 space-y-3 text-left">
+                 <div className="flex justify-between items-center border-b border-emerald-200 pb-2">
+                    <div className="text-left">
+                       <span className="text-[9px] font-black text-gray-500 uppercase block">Jasa Layanan</span>
+                       <span className="text-sm font-black text-gray-800">Rp {(calculatedTotals.final - calculatedTotals.nota).toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="text-right">
+                       <span className="text-[9px] font-black text-gray-500 uppercase block">Uang Nota Toko</span>
+                       <span className="text-sm font-black text-[#046A38]">Rp {calculatedTotals.nota.toLocaleString('id-ID')}</span>
+                    </div>
+                 </div>
+                 <div className="flex justify-between items-end">
+                    <div>
+                      <span className="text-[10px] text-gray-500 block uppercase font-black leading-none mb-1">Tagihan Penumpang</span>
+                      <span className="text-2xl font-black text-[#B8941F] leading-none">
+                        Rp {calculatedTotals.final.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                    <span className="bg-white text-[#046A38] text-[9px] font-black px-3 py-1.5 rounded-xl border border-emerald-200 shadow-sm uppercase">
+                      {activeOrder.pembayaranTunai ? '💵 TUNAI' : '📱 DOMPET'}
+                    </span>
+                 </div>
               </div>
 
               {/* BUTTON FINISH PESANAN */}
