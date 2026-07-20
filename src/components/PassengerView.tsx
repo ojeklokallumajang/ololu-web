@@ -289,10 +289,43 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
 
   useEffect(() => {
     if (!mapsLib || !asalLat || stops.length === 0) return;
-    const ds = new google.maps.DirectionsService();
-    ds.route({ origin: { lat: asalLat, lng: asalLng }, destination: { lat: stops[stops.length-1].lat, lng: stops[stops.length-1].lng }, waypoints: stops.slice(0,-1).map(s=>({location:{lat:s.lat,lng:s.lng},stopover:true})), travelMode: google.maps.TravelMode.DRIVING }, (res, st) => {
-      if (st === 'OK' && res?.routes[0]?.legs) { let t = 0; res.routes[0].legs.forEach(l => t += l.distance?.value || 0); setRouteDistance(t/1000); }
-    });
+
+    const calculateDistance = () => {
+      const ds = new google.maps.DirectionsService();
+      ds.route({
+        origin: { lat: asalLat, lng: asalLng },
+        destination: { lat: stops[stops.length-1].lat, lng: stops[stops.length-1].lng },
+        waypoints: stops.slice(0,-1).map(s=>({location:{lat:s.lat,lng:s.lng},stopover:true})),
+        travelMode: google.maps.TravelMode.DRIVING
+      }, (res, st) => {
+        if (st === 'OK' && res?.routes[0]?.legs) {
+          let t = 0;
+          res.routes[0].legs.forEach(l => t += l.distance?.value || 0);
+          setRouteDistance(t/1000);
+        } else {
+          // FALLBACK HAIVERSINE JIKA API GOOGLE ROUTE GAGAL (AGAR TIDAK STUCK 1KM)
+          console.warn("Directions API failed, using fallback distance.");
+          const R = 6371; // km
+          let totalFallback = 0;
+          let currentLat = asalLat;
+          let currentLng = asalLng;
+
+          stops.forEach(s => {
+            const dLat = (s.lat - currentLat) * Math.PI / 180;
+            const dLon = (s.lng - currentLng) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(currentLat * Math.PI / 180) * Math.cos(s.lat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            totalFallback += R * c;
+            currentLat = s.lat;
+            currentLng = s.lng;
+          });
+
+          setRouteDistance(totalFallback * 1.25); // Tambah 25% untuk estimasi kelokan jalan
+        }
+      });
+    };
+
+    calculateDistance();
   }, [mapsLib, asalLat, asalLng, stops]);
 
   const getTarifBreakdown = () => {
@@ -331,7 +364,8 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     }
 
     // PEMBULATAN KE RIBUAN (Sesuai Request: Jarang bawa uang ratusan)
-    const roundedTotal = Math.round(total / 1000) * 1000;
+    // Gunakan Math.ceil (bulat ke atas) agar driver tidak rugi kembalian/bensin.
+    const roundedTotal = Math.ceil(total / 1000) * 1000;
 
     return { total: roundedTotal, commission: comm, base, perKm, min: m, multi, malam: malamSur, itemSur: itemSurcharge };
   };
@@ -537,7 +571,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
           </div>
 
           <div className="pt-4 border-t-2 border-dashed space-y-3 text-left">
-             <div className="space-y-1 text-left"><div className="flex justify-between text-[10px] font-black uppercase text-gray-400"><span>Tarif Layanan ({Math.ceil(routeDistance || 1)} KM)</span><span>Rp {(breakdown.total - breakdown.multi - breakdown.malam - breakdown.itemSur).toLocaleString()}</span></div>{breakdown.multi > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-emerald-600"><span>Multi-Stop ({stops.length - 1}x)</span><span>+ Rp {breakdown.multi.toLocaleString()}</span></div>}{breakdown.itemSur > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-amber-600"><span>Biaya Item (&gt;5)</span><span>+ Rp {breakdown.itemSur.toLocaleString()}</span></div>}{breakdown.malam > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-amber-600"><span>Shift Malam</span><span>+ Rp {breakdown.malam.toLocaleString()}</span></div>}</div>
+             <div className="space-y-1 text-left"><div className="flex justify-between text-[10px] font-black uppercase text-gray-400"><span>Tarif Layanan ({(routeDistance || 0).toFixed(1)} KM)</span><span>Rp {(breakdown.total - breakdown.multi - breakdown.malam - breakdown.itemSur).toLocaleString()}</span></div>{breakdown.multi > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-emerald-600"><span>Multi-Stop ({stops.length - 1}x)</span><span>+ Rp {breakdown.multi.toLocaleString()}</span></div>}{breakdown.itemSur > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-amber-600"><span>Biaya Item (&gt;5)</span><span>+ Rp {breakdown.itemSur.toLocaleString()}</span></div>}{breakdown.malam > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-amber-600"><span>Shift Malam</span><span>+ Rp {breakdown.malam.toLocaleString()}</span></div>}</div>
              <div className="flex justify-between items-end text-left text-gray-800"><div><span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Total Estimasi</span><p className="text-3xl font-black text-[#B8941F] tracking-tighter mt-1">Rp {breakdown.total.toLocaleString('id-ID')}</p></div><button onClick={()=>setPembayaranTunai(!pembayaranTunai)} className="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100 flex items-center space-x-2 active:scale-95 transition-all text-emerald-700 shadow-sm"><Tag size={12} className="text-emerald-600" /><span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">{pembayaranTunai ? '💵 TUNAI' : '📱 DOMPET'}</span></button></div>
           </div>
         </div>
