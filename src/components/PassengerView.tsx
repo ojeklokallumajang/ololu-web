@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { OloluStore, KOORDINAT_LUMAJANG } from '../services/store';
 import { GOOGLE_MAPS_KEY } from './SplashMapKey';
 import ChatRoom from './ChatRoom';
@@ -127,8 +127,6 @@ function MapPickerSearch({ query, setQuery, onSelectSuggestion, suggestions, set
 
   const handleSearch = async () => {
     if (!query.trim() || query.length < 3) { setSuggestions([]); return; }
-
-    // --- GOOGLE MAPS LINK DETECTION ---
     if (query.includes('google.com/maps') || query.includes('maps.app.goo.gl') || query.includes('goo.gl/maps')) {
       const coordRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
       const match = query.match(coordRegex);
@@ -140,7 +138,6 @@ function MapPickerSearch({ query, setQuery, onSelectSuggestion, suggestions, set
         setSuggestions([]);
         return;
       }
-
       if (window.google?.maps?.places) {
         setIsSearching(true);
         const ds = new google.maps.places.PlacesService(document.createElement('div'));
@@ -156,7 +153,6 @@ function MapPickerSearch({ query, setQuery, onSelectSuggestion, suggestions, set
         return;
       }
     }
-
     if (window.google?.maps?.places) {
       setIsSearching(true);
       new google.maps.places.AutocompleteService().getPlacePredictions({
@@ -195,7 +191,6 @@ function MapPickerSearch({ query, setQuery, onSelectSuggestion, suggestions, set
           {isSearching ? <div className="w-4 h-4 border-2 border-t-[#046A38] rounded-full animate-spin"></div> : <Search size={20} />}
         </div>
       </div>
-
       {suggestions.length > 0 && (
         <div className="absolute left-0 right-0 top-full mt-2 z-[1000] max-h-60 overflow-y-auto border-2 border-gray-100 rounded-2xl bg-white shadow-2xl divide-y text-gray-800 animate-in fade-in slide-in-from-top-2 duration-200">
           {suggestions.map((s, i) => (
@@ -215,7 +210,7 @@ function MapPickerSearch({ query, setQuery, onSelectSuggestion, suggestions, set
 
 // --- MAIN PASSENGER VIEW ---
 export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChange, lockedOrderId }: PassengerViewProps) {
-  // 1. ALL HOOKS MUST BE AT THE TOP
+  // --- [HOOKS PHASE 1: STATE] ---
   const [profile, setProfile] = useState<any>(null);
   const [config, setConfig] = useState<any>(null);
   const [activeOrder, setActiveOrder] = useState<Pesanan | null>(null);
@@ -227,18 +222,14 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   const [asalAlamat, setAsalAlamat] = useState('Pilih lokasi penjemputan...');
   const [asalLat, setAsalLat] = useState(KOORDINAT_LUMAJANG.lat);
   const [asalLng, setAsalLng] = useState(KOORDINAT_LUMAJANG.lng);
-
   const [itemsAwal, setItemsAwal] = useState<ItemBelanja[]>([]);
   const [stops, setStops] = useState<any[]>([{ id: 'stop-1', alamat: 'Tentukan tujuan...', lat: -8.1385, lng: 113.2208, items: [] }]);
-
   const [showItemModal, setShowItemModal] = useState<{ target: 'asal' | string } | null>(null);
   const [newItemName, setNewItemName] = useState('');
   const [newItemQty, setNewItemQty] = useState('1');
-
   const [pembayaranTunai, setPembayaranTunai] = useState(true);
   const [routeDistance, setRouteDistance] = useState<number>(0);
   const [isChatOpen, setIsChatOpen] = useState(false);
-
   const [mapPickerTarget, setMapPickerTarget] = useState<'asal' | string | null>(null);
   const [tempLat, setTempLat] = useState(KOORDINAT_LUMAJANG.lat);
   const [tempLng, setTempLng] = useState(KOORDINAT_LUMAJANG.lng);
@@ -246,10 +237,9 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   const [mapSearchQuery, setMapSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
 
+  // --- [HOOKS PHASE 2: LIBRARIES & MEMO] ---
   const mapsLib = useMapsLibrary('routes');
-
   const isSuperUser = useMemo(() => profile?.nomorHp === '6285156766317', [profile]);
-
   const labels = useMemo(() => {
     const s = selectedLayanan;
     if (s === 'makanan' || s === 'belanja' || s === 'market') return { asal: 'Resto / Toko Tujuan', asalPlaceholder: 'Pilih Resto / Toko Belanja...', tujuan: 'Alamat Pengantaran' };
@@ -257,6 +247,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     return { asal: 'Lokasi Penjemputan', asalPlaceholder: 'Cari lokasi jemput Anda...', tujuan: 'Tujuan Pengantaran' };
   }, [selectedLayanan]);
 
+  // --- [HOOKS PHASE 3: EFFECTS] ---
   useEffect(() => {
     const init = async () => {
       const p = await OloluStore.getProfilLogin(); if (!p) return; setProfile(p);
@@ -296,6 +287,16 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     calculateDistance();
   }, [mapsLib, asalLat, asalLng, stops]);
 
+  // --- [HOOKS PHASE 4: COMPLEX MEMO] ---
+  const passengerCalculatedTotals = useMemo(() => {
+    if (!activeOrder || !config) return { jasa: 0, belanja: 0, total: 0 };
+    const parkir = activeOrder.daftarTujuan.reduce((sum, s) => sum + (s.pilihanParkir === 'parkir_biasa' ? (config.biayaParkirBiasa || 2000) : s.pilihanParkir === 'parkir_pasar' ? (config.biayaParkirPasar || 5000) : 0), 0);
+    const jasa = activeOrder.tarifPerjalananMurni + (activeOrder.tambahanTujuan || 0) + (activeOrder.tambahanItem || 0) + (activeOrder.biayaMalamTambahan || 0) + parkir;
+    const belanja = (activeOrder.notaAwal?.totalToko || 0) + activeOrder.daftarTujuan.reduce((sum, s) => sum + (s.nota?.totalToko || 0), 0);
+    return { jasa, belanja, total: Math.round((jasa + belanja) / 1000) * 1000 };
+  }, [activeOrder, config]);
+
+  // --- [LOGIC FUNCTIONS] ---
   const getTarifBreakdown = () => {
     if (!config) return { total: 0, commission: 10, base: 0, perKm: 0, min: 0, multi: 0, malam: 0, itemSur: 0, rush: 0, dist: 0 };
     const dist = Math.ceil(routeDistance || 0);
@@ -332,35 +333,11 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     return { total: roundedTotal, commission: comm, base, perKm, min: m, multi, malam: malamSur, itemSur: itemSurcharge, rush: rushSur, dist };
   };
 
-  const passengerCalculatedTotals = useMemo(() => {
-    if (!activeOrder || !config) return { jasa: 0, belanja: 0, total: 0 };
-    const parkir = activeOrder.daftarTujuan.reduce((sum, s) => sum + (s.pilihanParkir === 'parkir_biasa' ? (config.biayaParkirBiasa || 2000) : s.pilihanParkir === 'parkir_pasar' ? (config.biayaParkirPasar || 5000) : 0), 0);
-    const jasa = activeOrder.tarifPerjalananMurni + (activeOrder.tambahanTujuan || 0) + (activeOrder.tambahanItem || 0) + (activeOrder.biayaMalamTambahan || 0) + parkir;
-    const belanja = (activeOrder.notaAwal?.totalToko || 0) + activeOrder.daftarTujuan.reduce((sum, s) => sum + (s.nota?.totalToko || 0), 0);
-    return { jasa, belanja, total: Math.round((jasa + belanja) / 1000) * 1000 };
-  }, [activeOrder, config]);
-
   const handleAddStop = () => { if (stops.length < 5) setStops([...stops, { id: `stop-${Date.now()}`, alamat: 'Tentukan tujuan...', lat: KOORDINAT_LUMAJANG.lat, lng: KOORDINAT_LUMAJANG.lng, items: [] }]); else alert("Maksimal 5 tujuan!"); };
   const handleRemoveStop = (id: string) => { if (stops.length > 1) setStops(stops.filter(s => s.id !== id)); };
-
-  const selectSubLayanan = (id: any) => {
-    if (config && !config[`layanan${id.charAt(0).toUpperCase()+id.slice(1)}Aktif`]) { alert("Layanan ini sedang tidak tersedia."); return; }
-    setSubLayanan(id); setSelectedLayanan(id); setViewMode('booking');
-  };
-
-  const handleAddItem = (e: React.FormEvent) => {
-    e.preventDefault(); if (!newItemName || !showItemModal) return;
-    const item: ItemBelanja = { id: `it-${Date.now()}`, namaBarang: newItemName, jumlah: parseInt(newItemQty) || 1, perkiraanHarga: 0 };
-    if (showItemModal.target === 'asal') setItemsAwal([...itemsAwal, item]);
-    else setStops(stops.map(s => s.id === showItemModal.target ? { ...s, items: [...s.items, item] } : s));
-    setNewItemName(''); setNewItemQty('1'); setShowItemModal(null);
-  };
-
-  const handleRemoveItem = (target: 'asal' | string, itemId: string) => {
-    if (target === 'asal') setItemsAwal(itemsAwal.filter(i => i.id !== itemId));
-    else setStops(stops.map(s => s.id === target ? { ...s, items: s.items.filter((i:any) => i.id !== itemId) } : s));
-  };
-
+  const selectSubLayanan = (id: any) => { if (config && !config[`layanan${id.charAt(0).toUpperCase()+id.slice(1)}Aktif`]) { alert("Layanan ini sedang tidak tersedia."); return; } setSubLayanan(id); setSelectedLayanan(id); setViewMode('booking'); };
+  const handleAddItem = (e: React.FormEvent) => { e.preventDefault(); if (!newItemName || !showItemModal) return; const item: ItemBelanja = { id: `it-${Date.now()}`, namaBarang: newItemName, jumlah: parseInt(newItemQty) || 1, perkiraanHarga: 0 }; if (showItemModal.target === 'asal') setItemsAwal([...itemsAwal, item]); else setStops(stops.map(s => s.id === showItemModal.target ? { ...s, items: [...s.items, item] } : s)); setNewItemName(''); setNewItemQty('1'); setShowItemModal(null); };
+  const handleRemoveItem = (target: 'asal' | string, itemId: string) => { if (target === 'asal') setItemsAwal(itemsAwal.filter(i => i.id !== itemId)); else setStops(stops.map(s => s.id === target ? { ...s, items: s.items.filter((i:any) => i.id !== itemId) } : s)); };
   const handlePesan = async () => {
     if (!profile || !config) return;
     const b = getTarifBreakdown();
@@ -370,7 +347,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     if (o) { OloluStore.setLocalOrderLock({ orderId: o.id, role: 'penumpang' }); setActiveOrder(o as any); }
   };
 
-  // 2. RENDER LOGIC
+  // --- [RENDER LOGIC: EARLY RETURNS] ---
   if (activeOrder) return (
     <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen text-left text-gray-800">
       <div className="bg-[#046A38] text-white p-5 text-center border-b-2 border-[#D4AF37] sticky top-0 z-40 shadow-lg text-white text-center"><p className="text-[10px] font-black text-[#F5E6A8] tracking-widest text-white">{activeOrder.nomorPesanan}</p><h2 className="text-lg font-black uppercase tracking-tighter text-white">{activeOrder.status?.replace('_',' ')}</h2></div>
@@ -395,6 +372,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-24 text-left text-gray-800">
       <div className="p-6 space-y-6 text-left text-gray-800">
         <div className="bg-[#034F2A] p-7 rounded-[40px] shadow-xl relative overflow-hidden text-white text-left">
+           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/10 rounded-full -translate-y-16 translate-x-16 pointer-events-none text-white"></div>
            <div className="relative z-10 flex justify-between items-start text-white text-left">
               <div><h3 className="text-xl font-black tracking-tight leading-none text-white text-left">Halo, {profile?.nama}!</h3><p className="text-[10px] text-emerald-100/70 mt-2 font-bold uppercase tracking-widest leading-relaxed text-white text-left">Pesan layanan Ololu <br/> favorit Anda hari ini.</p></div>
               <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center overflow-hidden shadow-inner text-white text-center">
@@ -442,6 +420,8 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     </div>
   );
 
+  // --- [RENDER: BOOKING] ---
+  const breakdown = getTarifBreakdown();
   return (
     <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen text-left pb-24 text-gray-800">
       <div className="bg-[#034F2A] text-white p-5 rounded-b-[40px] border-b-2 border-[#D4AF37] flex justify-between items-center shadow-xl sticky top-0 z-40 text-left text-white"><div className="flex items-center space-x-3 text-white text-left"><div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-xl shadow-inner text-white">📍</div><h1 className="text-base font-black uppercase tracking-widest text-white leading-none">{subLayanan.toUpperCase()}</h1></div><button onClick={() => setViewMode('home')} className="bg-white/10 px-4 py-2 rounded-xl text-[10px] font-black tracking-widest text-white">BATAL</button></div>
@@ -472,7 +452,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
             {stops.length < 5 && (<button onClick={handleAddStop} className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-[10px] font-black text-gray-400 uppercase tracking-widest hover:border-emerald-500 hover:text-emerald-600 transition-all flex items-center justify-center space-x-2 bg-white text-gray-400 text-center leading-none"><Plus size={16} /><span>Tambah Perhentian / Stop</span></button>)}
           </div>
           <div className="pt-4 border-t-2 border-dashed space-y-3 text-left text-gray-800">
-             <div className="space-y-1 text-left text-gray-400"><div className="flex justify-between text-[10px] font-black uppercase text-left text-gray-400 leading-none"><span>Tarif Layanan ({breakdown.dist} KM)</span><span>Rp {(breakdown.total - breakdown.multi - breakdown.malam - breakdown.itemSur).toLocaleString()}</span></div>{breakdown.multi > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-emerald-600 leading-none"><span>Multi-Stop ({stops.length - 1}x)</span><span>+ Rp {breakdown.multi.toLocaleString()}</span></div>}{breakdown.itemSur > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-amber-600 leading-none"><span>Biaya Item (&gt;5)</span><span>+ Rp {breakdown.itemSur.toLocaleString()}</span></div>}{breakdown.malam > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-amber-600 leading-none"><span>Shift Malam</span><span>+ Rp {breakdown.malam.toLocaleString()}</span></div>}</div>
+             <div className="space-y-1 text-left text-gray-400"><div className="flex justify-between text-[10px] font-black uppercase text-left text-gray-400 leading-none"><span>Tarif Layanan ({breakdown.dist} KM)</span><span>Rp {(breakdown.total - breakdown.multi - breakdown.malam - breakdown.itemSur - (breakdown.rush || 0)).toLocaleString()}</span></div>{breakdown.multi > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-emerald-600 leading-none"><span>Multi-Stop ({stops.length - 1}x)</span><span>+ Rp {breakdown.multi.toLocaleString()}</span></div>}{breakdown.itemSur > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-amber-600 leading-none"><span>Biaya Item (&gt;5)</span><span>+ Rp {breakdown.itemSur.toLocaleString()}</span></div>}{breakdown.rush > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-orange-600 leading-none"><span>Jam Sibuk</span><span>+ Rp {breakdown.rush.toLocaleString()}</span></div>}{breakdown.malam > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-indigo-600 leading-none"><span>Shift Malam</span><span>+ Rp {breakdown.malam.toLocaleString()}</span></div>}</div>
              <div className="flex justify-between items-end text-left text-gray-800 text-left"><div><span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none text-left">Total Estimasi</span><p className="text-3xl font-black text-[#B8941F] tracking-tighter mt-1 text-left leading-none">Rp {breakdown.total.toLocaleString('id-ID')}</p></div><button onClick={()=>setPembayaranTunai(!pembayaranTunai)} className="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100 flex items-center space-x-2 active:scale-95 transition-all text-emerald-700 shadow-sm text-center leading-none"><Tag size={12} className="text-emerald-600" /><span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">{pembayaranTunai ? '💵 TUNAI' : '📱 DOMPET'}</span></button></div>
           </div>
         </div>
