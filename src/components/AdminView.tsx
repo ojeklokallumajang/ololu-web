@@ -492,10 +492,23 @@ export default function AdminView() {
            </div>
         )}
 
-        {/* TARIF SETTINGS */}
+        {/* TAB 7: TARIF */}
         {activeTab === 'tarif' && (
           <div className="space-y-6 animate-in fade-in duration-300 text-left text-gray-800">
-            <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex items-start space-x-3 shadow-sm text-gray-800 text-left"><div className="bg-emerald-100 p-2 rounded-xl text-emerald-600 shadow-inner text-emerald-600"><LayoutGrid size={22} /></div><div><h3 className="text-sm font-black text-emerald-900 uppercase leading-none text-emerald-900">Kendali Layanan v3.8</h3><p className="text-[10px] text-emerald-700 mt-1 uppercase font-bold tracking-widest leading-none text-emerald-700">Tarif Dasar & Mampir</p></div></div>
+            <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 flex items-start space-x-3 shadow-sm text-gray-800 text-left"><div className="bg-emerald-100 p-2 rounded-xl text-emerald-600 shadow-inner text-emerald-600"><LayoutGrid size={22} /></div><div><h3 className="text-sm font-black text-emerald-900 uppercase leading-none text-emerald-900">Kendali Layanan v4.8</h3><p className="text-[10px] text-emerald-700 mt-1 uppercase font-bold tracking-widest leading-none text-emerald-700">Tarif Dinamis & Jam Sibuk</p></div></div>
+
+            {/* GLOBAL RUSH HOUR CONFIG */}
+            <div className="bg-amber-50 p-6 rounded-[32px] border border-amber-100 shadow-sm space-y-4 text-left text-gray-800">
+               <div className="flex justify-between items-center border-b border-amber-200 pb-3">
+                  <div className="flex items-center space-x-2 text-amber-900 font-black uppercase text-[11px] tracking-widest text-amber-900"><Clock size={16}/><span>Jadwal Jam Sibuk (Rush Hour)</span></div>
+                  <input type="checkbox" checked={tempConfig.rushHourAktif} onChange={(e)=>setTempConfig({...tempConfig, rushHourAktif: e.target.checked})} className="w-5 h-5 rounded text-amber-600" />
+               </div>
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1"><label className="text-[8px] font-black text-amber-700 uppercase ml-1 text-amber-700">Mulai Jam</label><input type="time" value={tempConfig.rushHourMulai} onChange={(e)=>setTempConfig({...tempConfig, rushHourMulai: e.target.value})} className="w-full p-3 bg-white border border-amber-200 rounded-2xl outline-none text-xs font-black text-amber-900" /></div>
+                  <div className="space-y-1"><label className="text-[8px] font-black text-amber-700 uppercase ml-1 text-amber-700">Selesai Jam</label><input type="time" value={tempConfig.rushHourSelesai} onChange={(e)=>setTempConfig({...tempConfig, rushHourSelesai: e.target.value})} className="w-full p-3 bg-white border border-amber-200 rounded-2xl outline-none text-xs font-black text-amber-900" /></div>
+               </div>
+            </div>
+
             <div className="space-y-8 pb-32 text-gray-800 text-left">
                {[
                  { id: 'ojek', label: 'Ojek Motor (Ride)', icon: <Bike size={16}/>, color: 'text-emerald-600' },
@@ -512,11 +525,25 @@ export default function AdminView() {
                        <div className={`flex items-center space-x-2 ${s.color} font-black uppercase text-[11px] tracking-widest text-left`}>{s.icon}<span>{s.label}</span></div>
                        <input type="checkbox" checked={(tempConfig as any)[`layanan${s.id.charAt(0).toUpperCase()+s.id.slice(1)}Aktif`]} onChange={(e)=>setTempConfig({...tempConfig, [`layanan${s.id.charAt(0).toUpperCase()+s.id.slice(1)}Aktif`]: e.target.checked})} className="w-5 h-5 rounded text-[#046A38] text-gray-800" />
                     </div>
+
                     <div className="grid grid-cols-2 gap-4 text-gray-800 text-left">
                        <div className="space-y-1 text-left"><label className="text-[8px] font-black text-gray-400 uppercase ml-1 text-gray-400 leading-none">Dasar (Rp)</label><input type="number" value={(tempConfig as any)[`${s.id}TarifDasar`]} onChange={(e)=>setTempConfig({...tempConfig, [`${s.id}TarifDasar`]: parseInt(e.target.value)})} className="w-full p-3 bg-gray-50 border rounded-2xl outline-none text-xs font-black text-gray-800 shadow-inner" /></div>
-                       <div className="space-y-1 text-left"><label className="text-[8px] font-black text-gray-400 uppercase ml-1 text-gray-400 leading-none">KM (Rp)</label><input type="number" value={(tempConfig as any)[`${s.id}TarifPerKm`]} onChange={(e)=>setTempConfig({...tempConfig, [`${s.id}TarifPerKm`]: parseInt(e.target.value)})} className="w-full p-3 bg-gray-50 border rounded-2xl outline-none text-xs font-black text-gray-800 shadow-inner" /></div>
-                       <div className="space-y-1 text-left"><label className="text-[8px] font-black text-emerald-600 uppercase ml-1 text-emerald-600 leading-none">Mampir (Rp)</label><input type="number" value={(tempConfig as any)[`${s.id}BiayaPerStop`]} onChange={(e)=>setTempConfig({...tempConfig, [`${s.id}BiayaPerStop`]: parseInt(e.target.value)})} className="w-full p-3 bg-emerald-50 border border-emerald-100 rounded-2xl outline-none text-xs font-black text-emerald-600 shadow-inner" /></div>
-                       <div className="space-y-1 text-left"><label className="text-[8px] font-black text-blue-600 uppercase ml-1 text-blue-600 leading-none">Potongan (%)</label><input type="number" value={(tempConfig as any)[`${s.id}PersenJasa`]} onChange={(e)=>setTempConfig({...tempConfig, [`${s.id}PersenJasa`]: parseInt(e.target.value)})} className="w-full p-3 bg-blue-50 border border-blue-100 rounded-2xl outline-none text-xs font-black text-blue-600 shadow-inner" /></div>
+                       <div className="space-y-1 text-left"><label className="text-[8px] font-black text-gray-400 uppercase ml-1 text-gray-400 leading-none">Normal / KM (Rp)</label><input type="number" value={(tempConfig as any)[`${s.id}TarifPerKm`]} onChange={(e)=>setTempConfig({...tempConfig, [`${s.id}TarifPerKm`]: parseInt(e.target.value)})} className="w-full p-3 bg-gray-50 border rounded-2xl outline-none text-xs font-black text-gray-800 shadow-inner" /></div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-dashed">
+                       <div className="space-y-1 text-left"><label className="text-[8px] font-black text-amber-600 uppercase ml-1 leading-none text-amber-600">⚡ Jam Sibuk (Rp)</label><input type="number" value={(tempConfig as any)[`${s.id}TarifRushHour`]} onChange={(e)=>setTempConfig({...tempConfig, [`${s.id}TarifRushHour`]: parseInt(e.target.value)})} className="w-full p-3 bg-amber-50/50 border border-amber-100 rounded-2xl outline-none text-xs font-black text-amber-700 shadow-inner" /></div>
+                       <div className="space-y-1 text-left"><label className="text-[8px] font-black text-indigo-600 uppercase ml-1 leading-none text-indigo-600">🌙 Jam Malam (Rp)</label><input type="number" value={(tempConfig as any)[`${s.id}TarifMalam`]} onChange={(e)=>setTempConfig({...tempConfig, [`${s.id}TarifMalam`]: parseInt(e.target.value)})} className="w-full p-3 bg-indigo-50/50 border border-indigo-100 rounded-2xl outline-none text-xs font-black text-indigo-700 shadow-inner" /></div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-dashed text-gray-800">
+                       <div className="space-y-1 text-left"><label className="text-[8px] font-black text-rose-600 uppercase ml-1 leading-none text-rose-600">🚀 KM Jauh (Rp)</label><input type="number" value={(tempConfig as any)[`${s.id}TarifPerKmJauh`]} onChange={(e)=>setTempConfig({...tempConfig, [`${s.id}TarifPerKmJauh`]: parseInt(e.target.value)})} className="w-full p-3 bg-rose-50/50 border border-rose-100 rounded-2xl outline-none text-xs font-black text-rose-700 shadow-inner" /></div>
+                       <div className="space-y-1 text-left"><label className="text-[8px] font-black text-gray-400 uppercase ml-1 text-gray-400 leading-none">Batas KM Jauh</label><input type="number" value={(tempConfig as any)[`${s.id}BatasKmJauh`]} onChange={(e)=>setTempConfig({...tempConfig, [`${s.id}BatasKmJauh`]: parseInt(e.target.value)})} className="w-full p-3 bg-gray-50 border rounded-2xl outline-none text-xs font-black text-gray-800 shadow-inner" /></div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-dashed text-gray-800">
+                       <div className="space-y-1 text-left"><label className="text-[8px] font-black text-gray-500 uppercase ml-1 leading-none text-gray-500">🛡️ Jarak Max (KM)</label><input type="number" value={(tempConfig as any)[`${s.id}JarakMaksimum`]} onChange={(e)=>setTempConfig({...tempConfig, [`${s.id}JarakMaksimum`]: parseInt(e.target.value)})} className="w-full p-3 bg-gray-50 border rounded-2xl outline-none text-xs font-black text-gray-800 shadow-inner" /></div>
+                       <div className="space-y-1 text-left"><label className="text-[8px] font-black text-blue-600 uppercase ml-1 leading-none text-blue-600">Potongan Jasa (%)</label><input type="number" value={(tempConfig as any)[`${s.id}PersenJasa`]} onChange={(e)=>setTempConfig({...tempConfig, [`${s.id}PersenJasa`]: parseInt(e.target.value)})} className="w-full p-3 bg-blue-50 border border-blue-100 rounded-2xl outline-none text-xs font-black text-blue-600 shadow-inner" /></div>
                     </div>
                  </div>
                ))}

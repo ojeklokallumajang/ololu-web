@@ -329,7 +329,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   }, [mapsLib, asalLat, asalLng, stops]);
 
   const getTarifBreakdown = () => {
-    if (!config) return { total: 0, commission: 10, base: 0, perKm: 0, min: 0, multi: 0, malam: 0, itemSur: 0 };
+    if (!config) return { total: 0, commission: 10, base: 0, perKm: 0, min: 0, multi: 0, malam: 0, itemSur: 0, rush: 0, dist: 0 };
 
     // PEMBULATAN JARAK KE ATAS (Sesuai Request: 2.1 -> 3KM, 2.4 -> 3KM)
     const dist = Math.ceil(routeDistance || 0);
@@ -347,7 +347,36 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
 
     // Formula Ojol: (Jarak Bulat Ke Atas * Harga per KM) + Tarif Dasar
     const meteredCost = dist <= batasJauh ? (dist * perKm) : (dist * perKmJauh);
-    const tripCost = base + meteredCost;
+    let total = base + meteredCost;
+
+    // --- JAM SIBUK (RUSH HOUR) PER LAYANAN ---
+    let rushSur = 0;
+    if (config.rushHourAktif) {
+      const now = new Date();
+      const current = now.getHours() * 60 + now.getMinutes();
+      const [startH, startM] = (config.rushHourMulai || "16:00").split(':').map(Number);
+      const [endH, endM] = (config.rushHourSelesai || "18:00").split(':').map(Number);
+      const start = startH * 60 + startM;
+      const end = endH * 60 + endM;
+      if (current >= start && current <= end) {
+        rushSur = config[`${serv}TarifRushHour`] || 0;
+        total += rushSur;
+      }
+    }
+
+    // --- JAM MALAM PER LAYANAN ---
+    let malamSur = 0;
+    if (config.malamAktif) {
+      const now = new Date();
+      const hour = now.getHours();
+      const [mS] = (config.malamMulai || "22:00").split(':').map(Number);
+      const [mE] = (config.malamSelesai || "05:00").split(':').map(Number);
+      const isMalam = mS > mE ? (hour >= mS || hour < mE) : (hour >= mS && hour < mE);
+      if (isMalam) {
+        malamSur = config[`${serv}TarifMalam`] || 0;
+        total += malamSur;
+      }
+    }
 
     const multi = (stops.length > 1 ? (stops.length - 1) * s : 0);
 
@@ -355,22 +384,13 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     const totalItems = itemsAwal.length + stops.reduce((sum, s) => sum + (s.items?.length || 0), 0);
     const itemSurcharge = totalItems > 5 ? (totalItems - 5) * (config.biayaKelebihanItem || 1000) : 0;
 
-    let total = Math.max(tripCost, m) + multi + itemSurcharge;
-
-    let malamSur = 0;
-    if (config.malamAktif) {
-      const now = new Date(); const hour = now.getHours();
-      const [mS] = (config.malamMulai || "22:00").split(':').map(Number);
-      const [mE] = (config.malamSelesai || "05:00").split(':').map(Number);
-      const isMalam = mS > mE ? (hour >= mS || hour < mE) : (hour >= mS && hour < mE);
-      if (isMalam) { malamSur = config.malamTambahanFlat || 5000; total += malamSur; }
-    }
+    total = Math.max(total, m) + multi + itemSurcharge;
 
     // PEMBULATAN KE RIBUAN (Sesuai Request: Jarang bawa uang ratusan)
     // Gunakan Math.ceil (bulat ke atas) agar driver tidak rugi kembalian/bensin.
     const roundedTotal = Math.ceil(total / 1000) * 1000;
 
-    return { total: roundedTotal, commission: comm, base, perKm, min: m, multi, malam: malamSur, itemSur: itemSurcharge, dist };
+    return { total: roundedTotal, commission: comm, base, perKm, min: m, multi, malam: malamSur, itemSur: itemSurcharge, rush: rushSur, dist };
   };
 
   const handleAddStop = () => { if (stops.length < 5) setStops([...stops, { id: `stop-${Date.now()}`, alamat: 'Tentukan tujuan...', lat: KOORDINAT_LUMAJANG.lat, lng: KOORDINAT_LUMAJANG.lng, items: [] }]); else alert("Maksimal 5 tujuan!"); };
@@ -398,7 +418,16 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   };
 
   const handlePesan = async () => {
-    if (!profile) return; const b = getTarifBreakdown();
+    if (!profile || !config) return;
+    const b = getTarifBreakdown();
+
+    // VALIDASI JARAK MAKSIMUM PER LAYANAN
+    const maxDist = config[`${selectedLayanan}JarakMaksimum`] || 50;
+    if (b.dist > maxDist) {
+      alert(`Waduh! Jarak pesanan Anda (${b.dist} KM) melebihi batas maksimum layanan ini (${maxDist} KM).`);
+      return;
+    }
+
     const o = await OloluStore.buatPesanan({
       jenisLayanan: selectedLayanan, idPenumpang: profile.id, asalAlamat, asalLat, asalLng, itemsAwal, jarakKm: b.dist,
       tarifDasar: b.base, tarifPerKm: b.perKm, tarifMinimum: b.min, tambahanTujuan: b.multi, tambahanItem: b.itemSur, biayaLayananPersen: b.commission, biayaMalamTambahan: b.malam, totalBayarAkhir: b.total, pembayaranTunai, tarifPerjalananMurni: b.total - b.multi - b.malam - b.itemSur

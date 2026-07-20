@@ -194,6 +194,9 @@ export interface PengaturanTarif {
   ojekPersenJasa: number;
   ojekBatasKmTarifDasar: number;
   ojekBiayaPerStop: number;
+  ojekTarifRushHour: number;
+  ojekTarifMalam: number;
+  ojekJarakMaksimum: number;
   layananOjekAktif: boolean;
 
   // Ololu Car
@@ -206,64 +209,97 @@ export interface PengaturanTarif {
   mobilPersenJasa: number;
   mobilBatasKmTarifDasar: number;
   mobilBiayaPerStop: number;
+  mobilTarifRushHour: number;
+  mobilTarifMalam: number;
+  mobilJarakMaksimum: number;
   layananMobilAktif: boolean;
 
   // Food Antar
   makananTarifDasar: number;
   makananTarifPerKm: number;
+  makananTarifPerKmJauh: number;
+  makananBatasKmJauh: number;
   makananTarifMinimum: number;
   makananTarifTungguPerMenit: number;
   makananPersenJasa: number;
   makananBatasKmTarifDasar: number;
   makananBiayaPerStop: number;
+  makananTarifRushHour: number;
+  makananTarifMalam: number;
+  makananJarakMaksimum: number;
   layananMakananAktif: boolean;
 
   // Kirim Paket
   paketTarifDasar: number;
   paketTarifPerKm: number;
+  paketTarifPerKmJauh: number;
+  paketBatasKmJauh: number;
   paketTarifMinimum: number;
   paketTarifTungguPerMenit: number;
   paketPersenJasa: number;
   paketBatasKmTarifDasar: number;
   paketBiayaPerStop: number;
+  paketTarifRushHour: number;
+  paketTarifMalam: number;
+  paketJarakMaksimum: number;
   layananPaketAktif: boolean;
 
   // Belanja
   belanjaTarifDasar: number;
   belanjaTarifPerKm: number;
+  belanjaTarifPerKmJauh: number;
+  belanjaBatasKmJauh: number;
   belanjaTarifMinimum: number;
   belanjaTarifTungguPerMenit: number;
   belanjaPersenJasa: number;
   belanjaBatasKmTarifDasar: number;
   belanjaBiayaPerStop: number;
+  belanjaTarifRushHour: number;
+  belanjaTarifMalam: number;
+  belanjaJarakMaksimum: number;
   layananBelanjaAktif: boolean;
 
   // Cargo (Logistik)
   cargoTarifDasar: number;
   cargoTarifPerKm: number;
+  cargoTarifPerKmJauh: number;
+  cargoBatasKmJauh: number;
   cargoTarifMinimum: number;
   cargoTarifTungguPerMenit: number;
   cargoPersenJasa: number;
   cargoBatasKmTarifDasar: number;
   cargoBiayaPerStop: number;
+  cargoTarifRushHour: number;
+  cargoTarifMalam: number;
+  cargoJarakMaksimum: number;
   layananCargoAktif: boolean;
 
   // Market
   marketTarifDasar: number;
   marketTarifPerKm: number;
+  marketTarifPerKmJauh: number;
+  marketBatasKmJauh: number;
   marketTarifMinimum: number;
   marketTarifTungguPerMenit: number;
   marketPersenJasa: number;
   marketBatasKmTarifDasar: number;
   marketBiayaPerStop: number;
+  marketTarifRushHour: number;
+  marketTarifMalam: number;
+  marketJarakMaksimum: number;
   layananMarketAktif: boolean;
 
   // Lainnya
   lainnyaTarifDasar: number;
   lainnyaTarifPerKm: number;
+  lainnyaTarifPerKmJauh: number;
+  lainnyaBatasKmJauh: number;
   lainnyaTarifMinimum: number;
   lainnyaPersenJasa: number;
   lainnyaBiayaPerStop: number;
+  lainnyaTarifRushHour: number;
+  lainnyaTarifMalam: number;
+  lainnyaJarakMaksimum: number;
   layananLainnyaAktif: boolean;
 
   // Aturan Parkir
@@ -277,6 +313,11 @@ export interface PengaturanTarif {
   malamMulai: string;
   malamSelesai: string;
   malamTambahanFlat: number;
+
+  // Rush Hour
+  rushHourAktif: boolean;
+  rushHourMulai: string;
+  rushHourSelesai: string;
 
   // Pengaturan Jangkauan
   radiusPencarianSopirKm: number;
