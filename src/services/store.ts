@@ -180,19 +180,20 @@ const mapOrder = (db: any): Pesanan | null => {
   if (!db) return null;
   const passenger = Array.isArray(db.profiles) ? db.profiles[0] : (db.profiles || {});
   const driverDetail = Array.isArray(db.driver_details) ? db.driver_details[0] : (db.driver_details || {});
-  const driverProfile = Array.isArray(driverDetail.profiles) ? driverDetail.profiles[0] : (driverDetail.profiles || {});
+  const driverProfiles = driverDetail?.profiles;
+  const driverProfile = Array.isArray(driverProfiles) ? driverProfiles[0] : (driverProfiles || {});
 
   return {
     id: db.id,
     nomorPesanan: db.nomor_pesanan || 'ORD-0000',
     jenisLayanan: db.jenis_layanan,
     idPenumpang: db.id_penumpang,
-    namaPenumpang: passenger.nama || db.nama_penumpang || 'Pelanggan',
-    nomorHpPenumpang: passenger.nomor_hp || db.nomor_hp_penumpang || '',
+    namaPenumpang: passenger?.nama || db.nama_penumpang || 'Pelanggan',
+    nomorHpPenumpang: passenger?.nomor_hp || db.nomor_hp_penumpang || '',
     idSopir: db.id_sopir || null,
-    namaSopir: driverProfile.nama || db.nama_sopir || '',
-    nomorHpSopir: driverProfile.nomor_hp || db.nomor_hp_sopir || '',
-    platNomorSopir: driverDetail.plat_nomor || db.plat_nomor_sopir || '',
+    namaSopir: driverProfile?.nama || db.nama_sopir || '',
+    nomorHpSopir: driverProfile?.nomor_hp || db.nomor_hp_sopir || '',
+    platNomorSopir: driverDetail?.plat_nomor || db.plat_nomor_sopir || '',
     asalAlamat: db.asal_alamat || '',
     asalLat: safeParseFloat(db.asal_lat, KOORDINAT_LUMAJANG.lat),
     asalLng: safeParseFloat(db.asal_lng, KOORDINAT_LUMAJANG.lng),
@@ -404,7 +405,19 @@ export const OloluStore = {
     return (data || []).map(d => {
       const driverProfile = d.driver_details?.profiles;
       const namaSopir = Array.isArray(driverProfile) ? driverProfile[0]?.nama : driverProfile?.nama;
-      return { id: d.id, idSopir: d.id_sopir, namaSopir: namaSopir || 'Mitra', jenis: d.jenis, jumlah: d.jumlah, saldoAwal: d.saldo_awal, saldoAkhir: d.saldo_akhir, deskripsi: d.deskripsi, statusTarik: d.status_tarik, buktiTransfer: d.bukti_transfer, timestamp: d.created_at } as any;
+      return {
+        id: d.id,
+        idSopir: d.id_sopir,
+        namaSopir: namaSopir || 'Mitra',
+        jenis: d.jenis,
+        jumlah: d.jumlah,
+        saldoAwal: d.saldo_awal,
+        saldoAkhir: d.saldo_akhir,
+        deskripsi: d.deskripsi,
+        statusTarik: d.status_tarik,
+        buktiTransfer: d.bukti_transfer,
+        timestamp: d.created_at
+      } as any;
     });
   },
 
