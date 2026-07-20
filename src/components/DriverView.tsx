@@ -155,10 +155,11 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
     const notaStops = activeOrder.daftarTujuan.reduce((sum, s) => sum + (s.nota?.totalToko || 0), 0);
     const totalNota = notaAsal + notaStops;
 
-    // 3. Final Total
+    // 3. Final Total (Rounded to Thousands)
     // total = murni + tambahan + parkir + nota
     const base = activeOrder.tarifPerjalananMurni + (activeOrder.tambahanTujuan || 0) + (activeOrder.tambahanItem || 0);
-    const final = base + totalParkir + totalNota;
+    const rawFinal = base + totalParkir + totalNota;
+    const final = Math.round(rawFinal / 1000) * 1000;
 
     return { parkir: totalParkir, nota: totalNota, final };
   }, [activeOrder, config]);

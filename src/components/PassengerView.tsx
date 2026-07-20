@@ -296,27 +296,30 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   }, [mapsLib, asalLat, asalLng, stops]);
 
   const getTarifBreakdown = () => {
-    if (!config) return { total: 0, commission: 10, base: 0, perKm: 0, min: 0, multi: 0, malam: 0 };
-    const j = Math.ceil(routeDistance || 1);
-    let h = 0, s = 0, m = 0, perKm = 0, base = 0, comm = 10, perKmJauh = 0, batasJauh = 999;
+    if (!config) return { total: 0, commission: 10, base: 0, perKm: 0, min: 0, multi: 0, malam: 0, itemSur: 0 };
+    const dist = routeDistance || 0;
+    let s = 0, m = 0, perKm = 0, base = 0, comm = 10, perKmJauh = 0, batasJauh = 999;
     const serv = selectedLayanan;
 
-    base = config[`${serv}TarifDasar`] || 10000;
-    perKm = config[`${serv}TarifPerKm`] || 3000;
+    base = config[`${serv}TarifDasar`] || 0;
+    perKm = config[`${serv}TarifPerKm`] || 0;
     perKmJauh = config[`${serv}TarifPerKmJauh`] || perKm;
-    batasJauh = config[`${serv}BatasKmJauh`] || 10;
-    m = config[`${serv}TarifMinimum`] || 10000;
-    s = config[`${serv}BiayaPerStop`] || 3000;
+    batasJauh = config[`${serv}BatasKmJauh`] || 999;
+    m = config[`${serv}TarifMinimum`] || 0;
+    s = config[`${serv}BiayaPerStop`] || 0;
     comm = config[`${serv}PersenJasa`] || 10;
 
-    h = j <= (config[`${serv}BatasKmTarifDasar`] || 3) ? base : (j <= batasJauh ? (j * perKm) : (j * perKmJauh));
+    // Formula Ojol Presisi: (Jarak Rute Sebenarnya * Harga per KM) + Tarif Dasar
+    const meteredCost = dist <= batasJauh ? (dist * perKm) : (dist * perKmJauh);
+    const tripCost = base + meteredCost;
+
     const multi = (stops.length > 1 ? (stops.length - 1) * s : 0);
 
     // Kelebihan Item Surcharge (Daftar Belanja > 5)
     const totalItems = itemsAwal.length + stops.reduce((sum, s) => sum + (s.items?.length || 0), 0);
     const itemSurcharge = totalItems > 5 ? (totalItems - 5) * (config.biayaKelebihanItem || 1000) : 0;
 
-    let total = Math.max(h, m) + multi + itemSurcharge;
+    let total = Math.max(tripCost, m) + multi + itemSurcharge;
 
     let malamSur = 0;
     if (config.malamAktif) {
@@ -326,7 +329,11 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       const isMalam = mS > mE ? (hour >= mS || hour < mE) : (hour >= mS && hour < mE);
       if (isMalam) { malamSur = config.malamTambahanFlat || 5000; total += malamSur; }
     }
-    return { total, commission: comm, base, perKm, min: m, multi, malam: malamSur, itemSur: itemSurcharge };
+
+    // PEMBULATAN KE RIBUAN (Sesuai Request: Jarang bawa uang ratusan)
+    const roundedTotal = Math.round(total / 1000) * 1000;
+
+    return { total: roundedTotal, commission: comm, base, perKm, min: m, multi, malam: malamSur, itemSur: itemSurcharge };
   };
 
   const handleAddStop = () => { if (stops.length < 5) setStops([...stops, { id: `stop-${Date.now()}`, alamat: 'Tentukan tujuan...', lat: KOORDINAT_LUMAJANG.lat, lng: KOORDINAT_LUMAJANG.lng, items: [] }]); else alert("Maksimal 5 tujuan!"); };
@@ -356,7 +363,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   const handlePesan = async () => {
     if (!profile) return; const b = getTarifBreakdown();
     const o = await OloluStore.buatPesanan({
-      jenisLayanan: selectedLayanan, idPenumpang: profile.id, asalAlamat, asalLat, asalLng, itemsAwal, jarakKm: Math.ceil(routeDistance || 1),
+      jenisLayanan: selectedLayanan, idPenumpang: profile.id, asalAlamat, asalLat, asalLng, itemsAwal, jarakKm: routeDistance || 1,
       tarifDasar: b.base, tarifPerKm: b.perKm, tarifMinimum: b.min, tambahanTujuan: b.multi, tambahanItem: b.itemSur, biayaLayananPersen: b.commission, biayaMalamTambahan: b.malam, totalBayarAkhir: b.total, pembayaranTunai, tarifPerjalananMurni: b.total - b.multi - b.malam - b.itemSur
     }, stops.map((s, i) => ({ ...s, urutan: i + 1 })));
     if (o) { OloluStore.setLocalOrderLock({ orderId: o.id, role: 'penumpang' }); setActiveOrder(o as any); }
@@ -384,7 +391,10 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     const notaStops = activeOrder.daftarTujuan.reduce((sum, s) => sum + (s.nota?.totalToko || 0), 0);
     const belanja = notaAsal + notaStops;
 
-    return { jasa, belanja, total: jasa + belanja };
+    const rawTotal = jasa + belanja;
+    const total = Math.round(rawTotal / 1000) * 1000;
+
+    return { jasa, belanja, total };
   }, [activeOrder, config]);
 
   // --- RENDER: ORDER SCREEN ---
