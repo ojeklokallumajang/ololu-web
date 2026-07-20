@@ -939,7 +939,13 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
       <div className="bg-[#046A38] text-white p-5 border-b-2 border-[#D4AF37] space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <span className="text-xl">🛵</span>
+            {profile?.fotoProfil ? (
+              <div className="w-10 h-10 rounded-xl overflow-hidden border-2 border-white/20 shadow-inner">
+                <img src={profile.fotoProfil} className="w-full h-full object-cover" alt="Profil" />
+              </div>
+            ) : (
+              <span className="text-xl">🛵</span>
+            )}
             <div>
               <h2 className="text-sm font-bold font-sans">{profile?.nama}</h2>
               <p className="text-[10px] text-[#F5E6A8] tracking-widest uppercase font-semibold">Plat: {driverDetail?.platNomor || 'N/A'}</p>
