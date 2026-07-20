@@ -656,6 +656,27 @@ export default function AdminView() {
                  <div className="bg-slate-900 text-white p-6 rounded-3xl space-y-4 shadow-xl relative overflow-hidden text-white text-left"><div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -translate-y-12 translate-x-12 text-white"></div><div className="relative z-10 space-y-4 text-white text-left"><div className="flex justify-between items-center text-white text-left"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-slate-400 text-left">Google Maps Usage</span><span className="text-[9px] font-black bg-emerald-600 px-2.5 py-1 rounded text-white animate-pulse text-white text-center leading-none">ACTIVE</span></div><div className="flex justify-between items-end text-white text-left"><div><div className="text-5xl font-black text-white text-left leading-none">{config.googleApiUsageCount?.toLocaleString() || 0}</div><p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-2 text-slate-500 text-left leading-none">Panggilan API</p></div><div className="text-right text-white"><div className="text-xl font-black text-emerald-400 text-emerald-400 text-right leading-none">{tempConfig.googleApiLimit?.toLocaleString() || 25000}</div><p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-2 text-slate-500 text-right leading-none">Kuota Limit</p></div></div><div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden border border-slate-700 text-gray-800"><div className={`h-full transition-all duration-1000 ${ (config.googleApiUsageCount / config.googleApiLimit) > 0.9 ? 'bg-red-500 shadow-[0_0_15px_#ef4444]' : 'bg-emerald-500' }`} style={{ width: `${Math.min(100, (config.googleApiUsageCount / config.googleApiLimit) * 100)}%` }}></div></div></div></div>
 
                  <div className="space-y-5 text-gray-800 text-left">
+                    <div className="space-y-1.5 text-left text-gray-800">
+                       <label className="text-[9px] font-black text-gray-400 uppercase ml-1 text-gray-400 leading-none text-left">Layanan Peta Aktif</label>
+                       <div className="flex bg-gray-50 p-1.5 rounded-3xl border-2 border-dashed border-gray-100 gap-1.5 shadow-inner">
+                          <button
+                            type="button"
+                            onClick={()=>setTempConfig({...tempConfig, mapProvider: 'google'})}
+                            className={`flex-1 py-4 text-[10px] font-black rounded-2xl transition-all ${tempConfig.mapProvider==='google' ? 'bg-[#046A38] text-white shadow-xl scale-[1.02]' : 'text-gray-400 hover:bg-gray-100'}`}
+                          >
+                             GOOGLE MAPS API
+                          </button>
+                          <button
+                            type="button"
+                            onClick={()=>setTempConfig({...tempConfig, mapProvider: 'osm'})}
+                            className={`flex-1 py-4 text-[10px] font-black rounded-2xl transition-all ${tempConfig.mapProvider==='osm' ? 'bg-[#046A38] text-white shadow-xl scale-[1.02]' : 'text-gray-400 hover:bg-gray-100'}`}
+                          >
+                             OPENSTREETMAP (FREE)
+                          </button>
+                       </div>
+                       <p className="text-[8px] text-amber-600 font-bold italic ml-1 mt-1">*OSM sedang dalam pengembangan sistem sinkronisasi rute.</p>
+                    </div>
+
                     <div className="space-y-1.5 text-left text-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase ml-1 text-gray-400 leading-none text-left">Fonnte WhatsApp Token</label><div className="relative text-gray-800 text-left"><input type="password" value={tempConfig.fonnteToken} onChange={(e)=>setTempConfig({...tempConfig, fonnteToken: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-dashed border-gray-100 rounded-2xl outline-none text-xs font-mono text-gray-800 focus:border-[#046A38] transition-all text-left" /><Lock size={16} className="absolute right-4 top-3.5 text-gray-200" /></div></div>
                     <div className="space-y-1.5 text-left text-gray-800"><label className="text-[9px] font-black text-gray-400 uppercase ml-1 text-gray-400 leading-none text-left">Google API Key</label><div className="relative text-gray-800 text-left"><input type="password" value={tempConfig.googleMapsKey} onChange={(e)=>setTempConfig({...tempConfig, googleMapsKey: e.target.value})} className="w-full p-4 bg-gray-50 border-2 border-dashed border-gray-100 rounded-2xl outline-none text-xs font-mono text-gray-800 focus:border-[#046A38] transition-all text-left" /><KeyRound size={16} className="absolute right-4 top-3.5 text-gray-200" /></div></div>
                  </div>
