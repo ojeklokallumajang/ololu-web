@@ -47,14 +47,8 @@ export default function ChatRoom({ pesananId, senderId, senderName, senderRole, 
       setMessages(prev => [...prev.filter(m => m.id !== newMsg.id), newMsg]);
     });
 
-    // Subscribe to store updates for real-time chat UI updates
-    const unsubscribeStore = OloluStore.subscribeToStore(() => {
-      initChat();
-    });
-
     return () => {
       unsubscribeRealtime();
-      unsubscribeStore();
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [pesananId]);
@@ -185,15 +179,6 @@ export default function ChatRoom({ pesananId, senderId, senderName, senderRole, 
         </div>
 
         <div className="flex items-center space-x-1.5">
-          {targetPhone && (
-            <a
-              href={`tel:${targetPhone}`}
-              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all"
-              title="Hubungi telepon"
-            >
-              <Phone size={14} />
-            </a>
-          )}
           <button
             onClick={onClose}
             className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all"
