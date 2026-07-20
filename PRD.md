@@ -1,95 +1,72 @@
-# Product Requirements Document (PRD) - Ololu Lumajang
+# Product Requirements Document (PRD) - Ololu Lumajang v5.6
 
 ## 1. Visi Produk
-Menjadi infrastruktur digital utama bagi transportasi dan logistik di Kabupaten Lumajang yang berfokus pada kemandirian ekonomi lokal, biaya operasional rendah, dan keandalan sistem *real-time*.
+Menjadi infrastruktur digital utama bagi transportasi dan logistik di Kabupaten Lumajang yang berfokus pada kemandirian ekonomi lokal, keadilan bagi mitra driver (No More Receh), dan keandalan sistem *real-time* yang hemat biaya.
 
 ---
 
 ## 2. Analisis Peran & Alur Kerja
 
 ### 2.1 Penumpang (User)
-- **Kebutuhan:** Memesan jasa transportasi (Ojek/Mobil) atau pengantaran (Makan/Belanja/Paket) dengan harga transparan.
+- **Kebutuhan:** Memesan jasa dengan harga transparan, kemudahan pembayaran tunai tanpa receh, dan identitas driver yang jelas.
 - **Alur Utama:**
-    1. Login via No HP & Sandi (Verifikasi OTP WhatsApp via Fonnte Live).
-    2. Memilih jenis layanan (Ride, Car, Food, Send, Big Cargo).
-    3. Menentukan lokasi menggunakan *Map Picker*, deteksi GPS otomatis, atau *Copy-Paste Link Google Maps*.
-    4. Khusus layanan Belanja: Mengisi daftar item per-toko.
-    5. Melacak posisi driver secara *live* di peta.
-    6. Mengunduh **Invoice Pro (e-Nota)** super detail setelah pesanan selesai.
+    1. Login via No HP & Sandi (Verifikasi OTP WhatsApp via Fonnte).
+    2. Memilih jenis layanan dengan label dinamis (Ojek: "Lokasi Penjemputan", Makanan: "Resto/Toko Tujuan").
+    3. Menentukan lokasi menggunakan *Map Picker* atau *Copy-Paste Link Google Maps*.
+    4. Memantau rincian biaya secara live: **Biaya Jasa** vs **Titip Nota (Belanja)**.
+    5. Melacak posisi driver dan melakukan chat multimedia (Foto/Suara).
+    6. Menerima update nominal nota belanja secara real-time dari driver.
+    7. Mengunduh **Invoice Pro (e-Nota)** detail dengan pemisahan jasa dan belanja.
 
 ### 2.2 Mitra Driver (Sopir)
-- **Kebutuhan:** Mendapatkan orderan terdekat dan mengelola pendapatan secara mandiri.
+- **Kebutuhan:** Pendapatan bersih yang transparan dan perlindungan tarif rute jalan raya.
 - **Alur Utama:**
-    1. Mendaftar dengan mengunggah foto KTP, SIM, STNK, dan Kendaraan.
-    2. Menunggu verifikasi admin.
-    3. Mengaktifkan status "Online" (Syarat: Saldo Dompet ≥ Rp 5.000).
-    4. Menerima tawaran order (Mode Manual atau Otomatis/Autobid).
-    5. Menjalankan tahapan perjalanan (Menuju Jemput -> Dalam Perjalanan -> Selesai).
-    6. Mengunggah rincian nota belanja jika layanan makanan/belanja.
-    7. Melakukan tarik dana (*Withdraw*) pendapatan.
+    1. Registrasi mandiri dengan upload berkas lengkap (KTP, SIM, STNK, Motor).
+    2. Dasboard Pendapatan: Menampilkan **Penghasilan Bersih** (setelah potong komisi) secara Harian/Mingguan/Bulanan.
+    3. Input Nota: Memasukkan nominal belanja fisik di toko yang langsung muncul di HP Penumpang.
+    4. Tracking rute jalan raya asli via Google atau OSRM untuk akurasi jarak.
+    5. Identitas: Foto profil tampil di dashboard trip untuk keamanan.
 
 ### 2.3 Administrator (Superuser)
-- **Kebutuhan:** Kendali penuh atas ekosistem aplikasi dan keamanan keuangan.
+- **Kebutuhan:** Kendali infrastruktur total dan fleksibilitas tarif.
 - **Alur Utama:**
-    1. Memverifikasi kelayakan mitra baru.
-    2. Mengatur tarif (Dasar, Per-KM, Biaya Stop) secara dinamis.
-    3. Menyalakan/Mematikan layanan tertentu berdasarkan kondisi lapangan.
-    4. Menyetujui deposit atau penarikan dana mitra.
-    5. Memantau sinyal darurat (SOS) dari radar peta.
-    6. Meninjau log audit untuk keamanan internal.
-    7. Mengunduh laporan keuangan Excel (Harian, Mingguan, Bulanan).
-    8. Manajemen Akun: Memblokir (Suspend) akun bermasalah dan memaksa status Driver menjadi Offline.
-    9. Pencarian Cepat: Mencari Pengguna atau Rider berdasarkan nama/HP secara instan.
+    1. Manajemen Infrastruktur: Memilih mesin peta aktif (**Google Maps API** atau **OSM + OSRM**).
+    2. Kendali Tarif Pro:
+        - Setel **Tarif Minimum** dan **Tarif Dasar** per layanan.
+        - Setel **Jarak Flat (KM)**: Jarak di mana tarif masih harga dasar (cth: 0-4 KM).
+        - Setel **Jam Sibuk (Rush Hour)** & **Jam Malam (Night Shift)** per layanan.
+        - Setel **Batas Jarak Maksimum** per layanan.
+    3. Monitoring & Laporan: Ekspor Excel, Log Audit, dan SOS Radar.
 
 ---
 
 ## 3. Spesifikasi Fitur Utama (Functional Requirements)
 
-### 3.1 Sistem Peta Hybrid (Ololu Hybrid Maps)
-- **Metering API:** Sistem mencatat setiap penggunaan Google Maps API.
-- **Auto-Switching:** Jika penggunaan mendekati limit gratis $200, sistem otomatis beralih ke OpenStreetMap (OSM) via Leaflet.
-- **Strict Boundary:** Pencarian lokasi dibatasi pada area Lumajang (Lat: -7.9 s/d -8.3, Lng: 113.1 s/d 113.4).
+### 3.1 Sistem Peta Cerdas (Hybrid Routing)
+- **Multi-Engine:** Mendukung Google Maps (Premium) dan OpenStreetMap + OSRM (Gratis).
+- **OSRM Integration:** Menghitung jarak rute jalan raya (bukan garis lurus) untuk mesin OSM tanpa biaya API.
+- **Auto-Switching:** Proteksi kuota API Google dengan fallback otomatis atau manual via Admin.
 
 ### 3.2 Logika Perhitungan Tarif & Jarak
-- **Route-Based Distance:** Jarak dihitung berdasarkan rute jalan nyata (Google Directions), bukan garis lurus.
-- **Pembulatan:** Jarak selalu dibulatkan **KE ATAS** (Contoh: 6.1 KM $\to$ 7 KM).
-- **Rumus Harga Baru:**
-    - Jika Jarak $\le$ Batas KM Dasar: **Harga = Tarif Dasar**.
-    - Jika Jarak $>$ Batas KM Dasar: **Harga = Total KM (Bulat) × Tarif Per KM**.
-- **Double-Accept Protection:** Menggunakan *Atomic Updates* di level database untuk memastikan hanya satu Driver yang bisa menerima satu pesanan aktif.
+- **Route-Based Distance:** Jarak dihitung berdasarkan rute aspal nyata.
+- **Rounding Strategy:**
+    - **Jarak:** Selalu dibulatkan **KE ATAS** (Contoh: 2.1 KM $\to$ 3 KM) untuk keadilan driver.
+    - **Harga:** Total akhir dibulatkan ke **RIBUAN KE ATAS** (Contoh: Rp 12.100 $\to$ Rp 13.000) untuk kemudahan kembalian tunai.
+- **Formula Tarif Flat & Progresif:**
+    - Jika Jarak $\le$ Batas Flat: **Harga = Tarif Dasar + Surcharge**.
+    - Jika Jarak $>$ Batas Flat: **Harga = Tarif Dasar + ((Total KM - Jarak Flat) × Tarif Per KM) + Surcharge**.
+- **Dynamic Surcharge:** Tambahan biaya flat jika masuk jam sibuk atau jam malam yang ditentukan Admin.
 
-### 3.3 Sistem Keuangan & Wallet
-- **Bagi Hasil:** Pemotongan komisi aplikator dilakukan secara otomatis oleh *Postgres Trigger* di database saat status order menjadi 'Selesai'.
-- **Deposit/Top-Up:** Driver melakukan transfer manual dan mengunggah foto bukti untuk diverifikasi Admin.
-- **Withdrawal:** Driver mengajukan penarikan, saldo dikurangi (termasuk biaya admin tarik), dan diproses manual oleh Admin.
-- **Advanced Reporting:** Admin dapat mengekspor laporan kinerja keuangan ke format Excel (.xls) dengan cakupan harian, mingguan, dan riwayat 3 bulan.
-
-### 3.4 Pusat Komunikasi Internal
-- **WebSocket Messaging:** Chat instan antara Driver & Penumpang per-order.
-- **Multimedia Support:** Mendukung pengiriman Foto (Base64) dan Pesan Suara (Webm).
-- **Retention:** Chat tersimpan di database selama 31 hari sebelum dihapus otomatis.
+### 3.3 Transparansi Ekonomi
+- **Pemisahan Tagihan:** Sistem memisahkan saldo Belanja (Titip Nota) dari Biaya Jasa agar statistik keuangan tidak rancu.
+- **Net Income Stats:** Driver hanya melihat uang yang menjadi hak miliknya (Ongkir - Komisi + Parkir).
 
 ---
 
-## 4. Aturan Bisnis & Integritas Data
-
-1. **Sesi Pengguna:** Sesi login tidak boleh kadaluwarsa kecuali di-logout manual.
-2. **Keamanan Saldo:** Saldo driver disimpan di tabel `driver_details` dan `wallets` yang disinkronkan oleh database trigger untuk mencegah manipulasi.
-3. **Audit Log:** Setiap perubahan tarif atau status admin wajib mencatat ID Admin, Nama, Aksi, dan Timestamp.
-4. **SOS System:** Sinyal darurat penumpang/driver akan membunyikan alarm kencang di dashboard Admin dan memunculkan posisi GPS terakhir.
+## 4. Teknologi & Infrastruktur
+- **Routing Engine:** OSRM (Open Source Routing Machine).
+- **Communication:** WebSocket & Supabase Broadcast (Instant Chat & GPS Sync).
+- **Identity:** Cloud Storage for Profile Pictures.
 
 ---
-
-## 5. Infrastruktur & Skalabilitas
-
-- **Frontend:** React 19 (Vite) - Dioptimalkan untuk akses cepat di jaringan seluler Lumajang.
-- **Backend:** Supabase PostgreSQL - Menggunakan *Row Level Security* (RLS) untuk perlindungan data.
-- **Realtime:** Supabase Realtime Channels - Digunakan untuk koordinasi GPS dan Chat.
-- **Hosting:** Cloudflare Pages - Menyediakan proteksi DDoS dan CDN lokal Indonesia.
-- **Integrasi Pihak Ketiga:**
-    - WhatsApp: Fonnte API.
-    - Maps: Google Maps API v3.
-    - PDF: Native Browser Printing for Receipts.
-
----
-*Dokumen ini adalah acuan resmi pengembangan Ololu Lumajang versi 2.0 (Produksi).*
+*Dokumen v5.6 - Standar Produksi Ololu Lumajang.*
