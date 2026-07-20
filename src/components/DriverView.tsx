@@ -127,14 +127,21 @@ export default function DriverView({ onNotifyAdminPanic, onLogout, lockedOrderId
 
     const completed = historyOrders.filter(o => o.status === 'selesai');
 
+    // Helper to calculate Net Income for an order (Jasa - Komisi + Parkir)
+    const getNet = (o: Pesanan) => {
+      const jasaMurni = o.tarifPerjalananMurni + (o.tambahanTujuan || 0) + (o.tambahanItem || 0) + (o.biayaMalamTambahan || 0);
+      const komisi = Math.round(jasaMurni * (o.biayaLayananPersen || 10) / 100);
+      return (jasaMurni - komisi) + (o.biayaParkirTotal || 0);
+    };
+
     const daily = completed.filter(o => new Date(o.waktuSelesai || o.waktuDibuat).toLocaleDateString('id-ID') === today)
-      .reduce((sum, o) => sum + o.totalBayarAkhir, 0);
+      .reduce((sum, o) => sum + getNet(o), 0);
 
     const weekly = completed.filter(o => new Date(o.waktuSelesai || o.waktuDibuat) >= startOfWeek)
-      .reduce((sum, o) => sum + o.totalBayarAkhir, 0);
+      .reduce((sum, o) => sum + getNet(o), 0);
 
     const monthly = completed.filter(o => new Date(o.waktuSelesai || o.waktuDibuat) >= startOfMonth)
-      .reduce((sum, o) => sum + o.totalBayarAkhir, 0);
+      .reduce((sum, o) => sum + getNet(o), 0);
 
     return { daily, weekly, monthly };
   }, [historyOrders]);
