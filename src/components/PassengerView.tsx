@@ -54,7 +54,10 @@ import {
   ShieldCheck,
   ChevronRight,
   ArrowRight,
-  FileText
+  FileText,
+  LogOut,
+  Map as MapIcon,
+  Tag
 } from 'lucide-react';
 import OloluLogo from './OloluLogo';
 import { ololuRealtime } from '../services/supabaseClient';
@@ -385,10 +388,12 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
 
   const selectSubLayanan = (sub: any) => {
     setSubLayanan(sub);
-    if (sub === 'ojek') setSelectedLayanan(pilihanKendaraan === 'mobil' ? 'mobil' : 'ojek');
+    setViewMode('booking');
+    if (sub === 'ojek') setSelectedLayanan('ojek');
     else if (sub === 'kirim') setSelectedLayanan('paket');
     else if (sub === 'wisata') setSelectedLayanan('barang_besar');
-    else setSelectedLayanan('makanan');
+    else if (sub === 'makanan') setSelectedLayanan('makanan');
+    else setSelectedLayanan('ojek');
   };
 
   const handlePesan = async () => {
@@ -417,7 +422,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     }
   };
 
-  // --- RENDER ORDER SCREEN ---
+  // --- VIEW: ACTIVE ORDER ---
   if (activeOrder) return (
     <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen text-left">
       <div className="bg-[#046A38] text-white p-5 text-center border-b-2 border-[#D4AF37] sticky top-0 z-40 shadow-lg">
@@ -458,13 +463,13 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
         )}
         <button onClick={() => OloluStore.tambahEmergency(activeOrder.id, profile.nama, profile.nomorHp, 'penumpang', 0, 0)} className="w-full py-4 bg-red-600 text-white font-black rounded-2xl shadow-lg uppercase tracking-widest text-xs flex items-center justify-center space-x-2"><AlertTriangle size={18} /><span>SOS DARURAT</span></button>
         {activeOrder.status === 'selesai' && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-            <div className="bg-white p-8 rounded-[40px] shadow-2xl text-center space-y-6 animate-in zoom-in-95 duration-300">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 text-center">
+            <div className="bg-white p-8 rounded-[40px] shadow-2xl space-y-6 animate-in zoom-in-95 duration-300">
                <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto shadow-inner text-4xl">🎉</div>
                <h2 className="text-2xl font-black text-gray-800 uppercase tracking-tighter leading-none">Pesanan Selesai!</h2>
                <div className="flex flex-col space-y-3">
                  <button onClick={() => generateReceipt(activeOrder)} className="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-lg">Download Nota Digital</button>
-                 <button onClick={() => setActiveOrder(null)} className="w-full py-4 bg-gray-900 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-lg">Tutup</button>
+                 <button onClick={() => setActiveOrder(null)} className="w-full py-4 bg-gray-900 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-lg">Kembali</button>
                </div>
             </div>
           </div>
@@ -474,47 +479,153 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     </div>
   );
 
-  // --- RENDER HOME SCREEN ---
+  // --- VIEW: HOME (SUPER APP STYLE) ---
   if (viewMode === 'home') return (
     <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-24 text-left">
-      <div className="p-6 space-y-6 text-left">
-        <div className="bg-white p-8 rounded-[40px] border border-gray-150 shadow-sm space-y-5 animate-in fade-in slide-in-from-top-4 duration-500">
-           <div className="flex justify-between items-center">
+      <div className="p-6 space-y-6">
+        {/* WELCOME BANNER */}
+        <div className="bg-[#034F2A] p-7 rounded-[40px] shadow-xl relative overflow-hidden text-white">
+           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/10 rounded-full -translate-y-16 translate-x-16 pointer-events-none"></div>
+           <div className="relative z-10 flex justify-between items-start">
               <div>
-                 <h3 className="text-xl font-black tracking-tight leading-none text-gray-800">Halo, {profile?.nama}!</h3>
-                 <p className="text-[11px] text-gray-400 mt-2 font-bold uppercase tracking-widest opacity-70">Sobat Ololu Lumajang</p>
+                 <h3 className="text-xl font-black tracking-tight leading-none">Halo, {profile?.nama}!</h3>
+                 <p className="text-[10px] text-emerald-100/70 mt-2 font-bold uppercase tracking-widest leading-relaxed">Mau pergi kemana hari ini? <br/> Ololu siap melayani Anda.</p>
               </div>
-              <div className="w-14 h-14 bg-[#E6F4EC] rounded-2xl flex items-center justify-center text-3xl shadow-inner">👋</div>
+              <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-2xl shadow-inner">👋</div>
            </div>
-           <button onClick={() => { setViewMode('booking'); selectSubLayanan('ojek'); }} className="w-full py-5 bg-[#046A38] text-white font-black rounded-3xl uppercase text-xs tracking-[0.2em] border-b-8 border-emerald-900 shadow-2xl active:scale-95 transition-all">Mulai Pesan Sekarang</button>
-           {isSuperUser && <button onClick={() => onRoleChange('admin')} className="w-full py-3.5 bg-amber-500 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-md">Dashboard Administrator</button>}
+           {isSuperUser && (
+             <button onClick={() => onRoleChange('admin')} className="mt-6 w-full py-3 bg-[#D4AF37] text-[#034F2A] font-black rounded-2xl uppercase text-[9px] tracking-widest flex items-center justify-center space-x-2 shadow-lg">
+                <ShieldCheck size={14} />
+                <span>Dashboard Administrator</span>
+             </button>
+           )}
         </div>
+
+        {/* SERVICES GRID */}
+        <div className="grid grid-cols-4 gap-4 px-1">
+           {[
+             { id: 'ojek', label: 'Ojek Motor', icon: <Bike size={24} />, color: 'bg-emerald-500' },
+             { id: 'mobil', label: 'Ololu Car', icon: <Car size={24} />, color: 'bg-blue-500' },
+             { id: 'makanan', label: 'Food Antar', icon: <ShoppingBag size={24} />, color: 'bg-amber-500' },
+             { id: 'kirim', label: 'Kirim Paket', icon: <Package size={24} />, color: 'bg-indigo-500' },
+             { id: 'belanja', label: 'Belanja', icon: <ShoppingCart size={24} />, color: 'bg-rose-500' },
+             { id: 'wisata', label: 'Cargo', icon: <MapIcon size={24} />, color: 'bg-purple-500' },
+             { id: 'market', label: 'Market', icon: <Store size={24} />, color: 'bg-orange-500' },
+             { id: 'all', label: 'Lainnya', icon: <Plus size={24} />, color: 'bg-gray-400' },
+           ].map(serv => (
+             <button key={serv.id} onClick={() => selectSubLayanan(serv.id)} className="flex flex-col items-center space-y-2 group">
+                <div className={`${serv.color} text-white w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg group-active:scale-90 transition-transform`}>
+                   {serv.icon}
+                </div>
+                <span className="text-[10px] font-black text-gray-700 text-center leading-tight">{serv.label}</span>
+             </button>
+           ))}
+        </div>
+
+        {/* RADAR MAP */}
         <LiveDriversMap config={config} />
       </div>
+
+      {/* BOTTOM NAV */}
       <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[420px] bg-white border-t border-gray-100 flex justify-around items-center h-20 z-50 shadow-[0_-10px_25px_rgba(0,0,0,0.05)] px-6">
-        <button onClick={() => setViewMode('home')} className="flex flex-col items-center space-y-1 text-[#046A38]"><Home size={24} /><span className="text-[9px] font-black uppercase">Beranda</span></button>
-        <button onClick={() => setViewMode('history')} className="flex flex-col items-center space-y-1 text-gray-300"><History size={24} /><span className="text-[9px] font-black uppercase">Riwayat</span></button>
+        <button onClick={() => setViewMode('home')} className="flex flex-col items-center space-y-1 text-[#046A38]"><Home size={26} /><span className="text-[9px] font-black uppercase">Beranda</span></button>
+        <button onClick={() => setViewMode('history')} className="flex flex-col items-center space-y-1 text-gray-300"><History size={26} /><span className="text-[9px] font-black uppercase">Riwayat</span></button>
+        <button onClick={() => setViewMode('profile')} className="flex flex-col items-center space-y-1 text-gray-300"><User size={26} /><span className="text-[9px] font-black uppercase">Profil</span></button>
+      </nav>
+    </div>
+  );
+
+  // --- VIEW: HISTORY ---
+  if (viewMode === 'history') return (
+    <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-24 text-left">
+       <div className="bg-[#034F2A] text-white p-5 border-b-2 border-[#D4AF37] shadow-xl sticky top-0 z-40 flex items-center space-x-3">
+          <History size={20} className="text-[#D4AF37]" />
+          <h1 className="text-base font-black uppercase tracking-widest">Riwayat Pesanan</h1>
+       </div>
+       <div className="p-4 space-y-3">
+          {historyOrders.length === 0 ? (
+            <div className="p-16 text-center text-gray-400">
+               <History size={48} className="mx-auto opacity-20 mb-4" />
+               <p className="text-xs font-bold uppercase tracking-widest">Belum ada riwayat</p>
+            </div>
+          ) : (
+            historyOrders.map(p => (
+              <div key={p.id} className="bg-white p-5 rounded-3xl border border-gray-150 shadow-sm space-y-3">
+                 <div className="flex justify-between items-start">
+                    <div>
+                       <div className="flex items-center space-x-2"><p className="text-sm font-black text-gray-800">#{p.nomorPesanan}</p><span className={`text-[8px] font-black px-2 py-0.5 rounded-lg text-white ${p.status === 'selesai' ? 'bg-emerald-500' : p.status === 'dibatalkan' ? 'bg-red-500' : 'bg-amber-400'}`}>{p.status.toUpperCase()}</span></div>
+                       <p className="text-[10px] text-gray-400 font-bold mt-1">{new Date(p.waktuDibuat).toLocaleString('id-ID')}</p>
+                    </div>
+                    <p className="text-sm font-black text-[#046A38]">Rp {p.totalBayarAkhir?.toLocaleString()}</p>
+                 </div>
+                 <div className="text-[11px] text-gray-600 font-medium space-y-1.5 pt-2 border-t border-dashed">
+                    <p className="flex items-start space-x-2"><MapPin size={12} className="text-emerald-500 shrink-0 mt-0.5" /><span className="truncate">{p.asalAlamat}</span></p>
+                    <p className="flex items-start space-x-2"><ArrowRight size={12} className="text-blue-500 shrink-0 mt-0.5" /><span className="truncate">{p.daftarTujuan[p.daftarTujuan.length-1].alamat}</span></p>
+                 </div>
+                 {p.status === 'selesai' && (
+                   <button onClick={() => generateReceipt(p)} className="w-full py-3 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center justify-center space-x-2 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-600 transition-all">
+                      <FileText size={14} />
+                      <span>Cetak e-Nota Digital</span>
+                   </button>
+                 )}
+              </div>
+            ))
+          )}
+       </div>
+       <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[420px] bg-white border-t border-gray-100 flex justify-around items-center h-20 z-50 shadow-[0_-10px_25px_rgba(0,0,0,0.05)] px-6">
+        <button onClick={() => setViewMode('home')} className="flex flex-col items-center space-y-1 text-gray-300"><Home size={24} /><span className="text-[9px] font-black uppercase">Beranda</span></button>
+        <button onClick={() => setViewMode('history')} className="flex flex-col items-center space-y-1 text-[#046A38]"><History size={24} /><span className="text-[9px] font-black uppercase">Riwayat</span></button>
         <button onClick={() => setViewMode('profile')} className="flex flex-col items-center space-y-1 text-gray-300"><User size={24} /><span className="text-[9px] font-black uppercase">Profil</span></button>
       </nav>
     </div>
   );
 
-  // --- RENDER BOOKING SCREEN ---
+  // --- VIEW: PROFILE ---
+  if (viewMode === 'profile') return (
+    <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-24 text-left">
+       <div className="bg-[#034F2A] p-10 rounded-b-[60px] shadow-2xl relative overflow-hidden text-center text-white">
+          <div className="absolute top-0 left-0 w-full h-full bg-emerald-400/5 pointer-events-none"></div>
+          <div className="w-28 h-28 bg-white/20 rounded-[40px] flex items-center justify-center mx-auto border-4 border-white/30 shadow-2xl mb-5 text-5xl">👤</div>
+          <h2 className="text-2xl font-black tracking-tight">{profile?.nama}</h2>
+          <p className="text-emerald-100/70 text-sm font-bold uppercase tracking-widest mt-1">{profile?.nomorHp}</p>
+       </div>
+       <div className="p-8 space-y-6">
+          <div className="bg-white p-6 rounded-[40px] border border-gray-150 shadow-sm divide-y divide-gray-100">
+             <div className="py-4 flex justify-between items-center"><span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Saldo Dompet</span><span className="text-sm font-black text-[#B8941F]">Rp 0</span></div>
+             <div className="py-4 flex justify-between items-center"><span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Perjalanan</span><span className="text-sm font-black text-gray-700">{historyOrders.length} Trip</span></div>
+             <div className="py-4 flex justify-between items-center"><span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Status Member</span><span className="text-[10px] font-black bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full uppercase tracking-tighter">Verified</span></div>
+          </div>
+          <button onClick={onLogout} className="w-full py-5 bg-red-50 text-red-600 font-black rounded-[32px] uppercase text-xs tracking-widest flex items-center justify-center space-x-3 shadow-sm active:scale-95 transition-all">
+             <LogOut size={18} />
+             <span>Keluar Aplikasi</span>
+          </button>
+       </div>
+       <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[420px] bg-white border-t border-gray-100 flex justify-around items-center h-20 z-50 shadow-[0_-10px_25px_rgba(0,0,0,0.05)] px-6">
+        <button onClick={() => setViewMode('home')} className="flex flex-col items-center space-y-1 text-gray-300"><Home size={24} /><span className="text-[9px] font-black uppercase">Beranda</span></button>
+        <button onClick={() => setViewMode('history')} className="flex flex-col items-center space-y-1 text-gray-300"><History size={24} /><span className="text-[9px] font-black uppercase">Riwayat</span></button>
+        <button onClick={() => setViewMode('profile')} className="flex flex-col items-center space-y-1 text-[#046A38]"><User size={24} /><span className="text-[9px] font-black uppercase">Profil</span></button>
+      </nav>
+    </div>
+  );
+
+  // --- VIEW: BOOKING (MULTI-STOP) ---
   const breakdown = getTarifBreakdown();
   return (
     <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen text-left pb-24">
       <div className="bg-[#034F2A] text-white p-5 rounded-b-[40px] border-b-2 border-[#D4AF37] flex justify-between items-center shadow-xl sticky top-0 z-40">
-        <div className="flex items-center space-x-3"><div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-xl shadow-inner">📍</div><h1 className="text-base font-black uppercase tracking-widest">Buat Pesanan</h1></div>
+        <div className="flex items-center space-x-3"><div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-xl shadow-inner">📍</div><h1 className="text-base font-black uppercase tracking-widest">{subLayanan.toUpperCase()}</h1></div>
         <button onClick={() => setViewMode('home')} className="bg-white/10 px-4 py-2 rounded-xl text-[10px] font-black tracking-widest hover:bg-red-500 transition-all">BATAL</button>
       </div>
 
       <div className="p-5 space-y-5 animate-in fade-in duration-300 text-left">
         <div className="bg-white p-6 rounded-[32px] border border-gray-150 shadow-sm space-y-6">
+          {/* PICKUP */}
           <div className="space-y-1.5">
-             <label className="text-[10px] font-black text-emerald-700 uppercase tracking-widest ml-1 text-left block">Titik Penjemputan</label>
+             <label className="text-[10px] font-black text-emerald-700 uppercase tracking-widest ml-1 block">Titik Penjemputan / Toko</label>
              <button onClick={() => setMapPickerTarget('asal')} className="w-full p-4 bg-gray-50 border-2 border-transparent hover:border-emerald-500 rounded-2xl text-left flex items-center justify-between transition-all"><div className="flex items-center space-x-3 min-w-0"><MapPin size={20} className="text-emerald-600" /><span className="text-xs font-bold text-gray-800 truncate">{asalAlamat}</span></div><ChevronRight size={18} className="text-gray-300" /></button>
           </div>
 
+          {/* STOPS */}
           <div className="space-y-4 pt-2 border-t-2 border-dashed text-left">
             <div className="flex justify-between items-center ml-1"><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tujuan Pengantaran</label><span className="text-[9px] font-black text-gray-300 uppercase">{stops.length} Lokasi</span></div>
             {stops.map((s, i) => (
@@ -526,12 +637,20 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
             {stops.length < 5 && (<button onClick={handleAddStop} className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-[10px] font-black text-gray-400 uppercase tracking-widest hover:border-emerald-500 hover:text-emerald-600 transition-all flex items-center justify-center space-x-2 bg-white shadow-xs"><Plus size={16} /><span>Tambah Perhentian</span></button>)}
           </div>
 
-          <div className="pt-4 border-t-2 border-dashed flex justify-between items-end text-left">
-            <div>
-               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Estimasi Biaya</span>
-               <div className="flex items-baseline space-x-2"><span className="text-3xl font-black text-[#B8941F]">Rp {breakdown.total.toLocaleString('id-ID')}</span><span className="text-[10px] font-black text-gray-300 uppercase tracking-tighter">({Math.ceil(routeDistance || 1)} KM)</span></div>
-            </div>
-            <div className="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100 flex items-center space-x-2"><span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">{pembayaranTunai ? '💵 TUNAI' : '📱 DOMPET'}</span></div>
+          {/* PRICING BREAKDOWN */}
+          <div className="pt-4 border-t-2 border-dashed space-y-3">
+             <div className="space-y-1">
+                <div className="flex justify-between text-[10px] font-black uppercase text-gray-400"><span>Tarif Perjalanan ({Math.ceil(routeDistance || 1)} KM)</span><span>Rp {(breakdown.total - breakdown.multi - breakdown.malam).toLocaleString()}</span></div>
+                {breakdown.multi > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-emerald-600"><span>Biaya Mampir ({stops.length - 1}x)</span><span>+ Rp {breakdown.multi.toLocaleString()}</span></div>}
+                {breakdown.malam > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-amber-600"><span>Surcharge Malam Hari</span><span>+ Rp {breakdown.malam.toLocaleString()}</span></div>}
+             </div>
+             <div className="flex justify-between items-end">
+                <div>
+                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Estimasi</span>
+                   <p className="text-3xl font-black text-[#B8941F] tracking-tighter">Rp {breakdown.total.toLocaleString('id-ID')}</p>
+                </div>
+                <button onClick={()=>setPembayaranTunai(!pembayaranTunai)} className="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100 flex items-center space-x-2 shadow-sm active:scale-95 transition-all"><Tag size={12} className="text-emerald-600" /><span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">{pembayaranTunai ? '💵 TUNAI' : '📱 DOMPET'}</span></button>
+             </div>
           </div>
         </div>
 
@@ -541,12 +660,12 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       {/* MAP PICKER MODAL */}
       {mapPickerTarget && (
         <div className="fixed inset-0 z-[500] bg-white flex flex-col text-left">
-          <div className="bg-[#034F2A] text-white p-5 flex justify-between items-center shadow-lg"><h3 className="font-black uppercase tracking-[0.2em]">Pilih Lokasi Peta</h3><button onClick={() => setMapPickerTarget(null)} className="p-1 bg-white/10 rounded-full"><X size={32} /></button></div>
+          <div className="bg-[#034F2A] text-white p-5 flex justify-between items-center shadow-lg"><h3 className="font-black uppercase tracking-[0.2em]">Pilih Lokasi Peta</h3><button onClick={() => setMapPickerTarget(null)} className="p-1 bg-white/10 rounded-full text-white"><X size={32} /></button></div>
           <div className="p-5 border-b shadow-sm"><MapPickerSearch query={mapSearchQuery} setQuery={setMapSearchQuery} suggestions={suggestions} setSuggestions={setSuggestions} config={config} onSelectSuggestion={(s:any) => { setTempLat(s.lat); setTempLng(s.lng); setTempAlamat(s.name); setMapSearchQuery(s.name); setSuggestions([]); }} /></div>
           <div className="flex-1 relative bg-gray-100 shadow-inner">
             <APIProvider apiKey={config?.googleMapsKey || GOOGLE_MAPS_KEY}>
-              <Map center={{ lat: tempLat, lng: tempLng }} defaultZoom={14} mapId="PICKER_MAP_PRO">
-                <AdvancedMarker position={{ lat: tempLat, lng: tempLng }} draggable onDragEnd={(e) => { if(e.latLng) { setTempLat(e.latLng.lat()); setTempLng(e.latLng.lng()); } }}><Pin scale={1.3} /></AdvancedMarker>
+              <Map center={{ lat: tempLat, lng: tempLng }} defaultZoom={14} mapId="PICKER_MAP_PRO_PASSENGER">
+                <AdvancedMarker position={{ lat: tempLat, lng: tempLng }} draggable onDragEnd={(e:any) => { if(e.latLng) { setTempLat(e.latLng.lat()); setTempLng(e.latLng.lng()); } }}><Pin scale={1.3} /></AdvancedMarker>
               </Map>
             </APIProvider>
           </div>
