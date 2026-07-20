@@ -74,6 +74,44 @@ function MapRecenterController({ lat, lng }: { lat: number; lng: number }) {
   return null;
 }
 
+function LiveDriversMap({ config }: { config: any }) {
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = ololuRealtime.subscribeToDriversOnline((state) => {
+      const active: any[] = [];
+      Object.keys(state).forEach(id => {
+        const p = state[id]?.[0];
+        if (p?.lat && p?.lng) active.push({ id, nama: p.nama, lat: p.lat, lng: p.lng });
+      });
+      setDrivers(active);
+    });
+    const watchId = navigator.geolocation.watchPosition((pos) => setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude }), null, { enableHighAccuracy: true });
+    return () => { unsubscribe(); navigator.geolocation.clearWatch(watchId); };
+  }, []);
+
+  return (
+    <div className="bg-white p-4 rounded-3xl border border-gray-150 shadow-sm space-y-3">
+      <div className="flex justify-between items-center px-1">
+        <h3 className="text-sm font-black uppercase tracking-tight flex items-center space-x-2">
+          <Compass size={16} className="text-emerald-600" />
+          <span>Driver Sekitar</span>
+        </h3>
+        <div className="bg-[#E6F4EC] px-2.5 py-1 rounded-full text-[#034F2A] text-[10px] font-black uppercase tracking-widest">🛵 {drivers.length} Online</div>
+      </div>
+      <div className="h-48 rounded-2xl overflow-hidden border bg-gray-50 relative shadow-inner">
+        <APIProvider apiKey={config?.googleMapsKey || GOOGLE_MAPS_KEY}>
+          <Map defaultCenter={KOORDINAT_LUMAJANG} center={userLoc || KOORDINAT_LUMAJANG} defaultZoom={14} mapId="LIVE_MAP_PASSENGER" disableDefaultUI>
+            {userLoc && <AdvancedMarker position={userLoc}><Pin background="#046A38" scale={0.8} /></AdvancedMarker>}
+            {drivers.map(d => (<AdvancedMarker key={d.id} position={{ lat: d.lat, lng: d.lng }}><div className="bg-white p-1 rounded-full shadow-lg border-2 border-[#0A8A4E] w-8 h-8 flex items-center justify-center text-lg">🛵</div></AdvancedMarker>))}
+          </Map>
+        </APIProvider>
+      </div>
+    </div>
+  );
+}
+
 function MapPickerSearch({ query, setQuery, onSelectSuggestion, suggestions, setSuggestions, config }: any) {
   const [isSearching, setIsSearching] = useState(false);
   const [sessionToken, setSessionToken] = useState<any>(null);
@@ -179,6 +217,14 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   const handleAddStop = () => { if (stops.length < 5) setStops([...stops, { id: `stop-${Date.now()}`, alamat: 'Tentukan tujuan...', lat: KOORDINAT_LUMAJANG.lat, lng: KOORDINAT_LUMAJANG.lng, items: [] }]); else alert("Maksimal 5 tujuan!"); };
   const handleRemoveStop = (id: string) => { if (stops.length > 1) setStops(stops.filter(s => s.id !== id)); };
 
+  const selectSubLayanan = (sub: any) => {
+    setSubLayanan(sub);
+    if (sub === 'ojek') setSelectedLayanan(pilihanKendaraan === 'mobil' ? 'mobil' : 'ojek');
+    else if (sub === 'kirim') setSelectedLayanan('paket');
+    else if (sub === 'wisata') setSelectedLayanan('barang_besar');
+    else setSelectedLayanan('makanan');
+  };
+
   const handlePesan = async () => {
     if (!profile) return; const b = getTarifBreakdown();
     const o = await OloluStore.buatPesanan({
@@ -205,7 +251,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
            <button onClick={() => { setViewMode('booking'); selectSubLayanan('ojek'); }} className="w-full py-5 bg-[#046A38] text-white font-black rounded-3xl uppercase text-xs tracking-[0.2em] border-b-8 border-emerald-900 shadow-2xl active:scale-95 transition-all">Mulai Pesan Sekarang</button>
            {isSuperUser && <button onClick={() => onRoleChange('admin')} className="w-full py-3.5 bg-amber-500 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest shadow-md">Dashboard Administrator</button>}
         </div>
-        <LiveDriversMap />
+        <LiveDriversMap config={config} />
       </div>
       <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[420px] bg-white border-t border-gray-100 flex justify-around items-center h-20 z-50 shadow-[0_-10px_25px_rgba(0,0,0,0.05)] px-6">
         <button onClick={() => setViewMode('home')} className="flex flex-col items-center space-y-1 text-[#046A38]"><Home size={24} /><span className="text-[9px] font-black uppercase">Beranda</span></button>
