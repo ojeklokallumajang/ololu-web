@@ -445,25 +445,78 @@ export default function AdminView() {
         {/* TAB 5: ORDER AUDIT */}
         {activeTab === 'pesanan' && (
            <div className="space-y-3 animate-in fade-in duration-300 text-left text-gray-800">
-             <h3 className="text-[10px] font-black text-gray-700 uppercase tracking-widest px-1">Riwayat & Logistik Order</h3>
+             <div className="flex justify-between items-center px-1 text-gray-800">
+                <h3 className="text-[10px] font-black text-gray-700 uppercase tracking-widest">Riwayat & Logistik Order</h3>
+                <button onClick={syncData} className="p-1 text-gray-400 hover:text-[#046A38]"><Radio size={14} className={loading ? 'animate-spin' : ''} /></button>
+             </div>
              <div className="space-y-2.5 text-gray-800 text-left">
-               {pesananList.slice(0, 100).map(p => (
-                <div key={p.id} className="bg-white p-4 rounded-2xl border flex items-center justify-between shadow-xs group hover:border-[#046A38] transition-all text-gray-800 text-left">
-                  <div className="space-y-1 text-left">
-                    <div className="flex items-center space-x-2 text-gray-800"><p className="text-sm font-black tracking-tighter">#{p.nomorPesanan}</p><span className={`text-[8px] font-black px-2 py-0.5 rounded-lg uppercase text-white ${p.status === 'selesai' ? 'bg-emerald-500' : 'bg-amber-400'}`}>{p.status.replace('_',' ')}</span></div>
-                    <p className="text-[10px] text-gray-500 font-black mt-0.5 uppercase tracking-tight text-gray-500">{p.jenisLayanan} • {p.namaPenumpang}</p>
-                    <p className="text-[9px] text-gray-400 font-bold text-gray-400">{new Date(p.waktuDibuat).toLocaleString('id-ID')}</p>
-                  </div>
-                  <div className="text-right flex flex-col items-end space-y-1 text-gray-800">
-                    <p className="text-sm font-black text-[#046A38]">Rp {p.totalBayarAkhir?.toLocaleString('id-ID')}</p>
-                    <div className="flex space-x-1.5 text-gray-800">
-                      <button onClick={() => setSelectedOrder(p)} className="text-[9px] font-black text-blue-600 uppercase hover:underline">Detail Audit</button>
+               {pesananList.length === 0 ? <div className="p-20 text-center text-gray-400 text-xs italic bg-white rounded-[40px] border-2 border-dashed">Belum ada riwayat order.</div> :
+                 pesananList.slice(0, 150).map(p => (
+                  <div key={p.id} className="bg-white p-4 rounded-2xl border flex items-center justify-between shadow-xs group hover:border-[#046A38] transition-all text-gray-800 text-left">
+                    <div className="space-y-1 text-left">
+                      <div className="flex items-center space-x-2 text-gray-800"><p className="text-sm font-black tracking-tighter">#{p.nomorPesanan}</p><span className={`text-[8px] font-black px-2 py-0.5 rounded-lg uppercase text-white ${p.status === 'selesai' ? 'bg-emerald-500' : 'bg-amber-400'}`}>{p.status.replace('_',' ')}</span></div>
+                      <p className="text-[10px] text-gray-500 font-black mt-0.5 uppercase tracking-tight text-gray-500">{p.jenisLayanan} • {p.namaPenumpang}</p>
+                      <p className="text-[9px] text-gray-400 font-bold text-gray-400">{new Date(p.waktuDibuat).toLocaleString('id-ID')}</p>
+                    </div>
+                    <div className="text-right flex flex-col items-end space-y-1 text-gray-800">
+                      <p className="text-sm font-black text-[#046A38]">Rp {p.totalBayarAkhir?.toLocaleString('id-ID')}</p>
+                      <div className="flex space-x-1.5 text-gray-800">
+                        <button onClick={() => setSelectedOrder(p)} className="text-[9px] font-black text-blue-600 uppercase hover:underline">Detail Audit</button>
+                      </div>
                     </div>
                   </div>
-                </div>
-               ))}
+                 ))
+               }
              </div>
            </div>
+        )}
+
+        {/* TAB 8: LAPORAN EXCEL */}
+        {activeTab === 'laporan' && (
+          <div className="space-y-6 animate-in fade-in duration-300 text-left text-gray-800">
+            <div className="bg-white p-7 rounded-[40px] border border-gray-150 shadow-sm space-y-6 text-gray-800">
+              <div className="flex items-center space-x-4 border-b pb-5 text-gray-800">
+                <div className="bg-emerald-50 p-3 rounded-2xl text-[#046A38] shadow-inner text-emerald-600"><Calendar size={24} /></div>
+                <div className="text-left"><h3 className="text-base font-black text-gray-800 uppercase leading-none">Laporan Keuangan Excel</h3><p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-widest text-gray-400">Digital Records Archive</p></div>
+              </div>
+              <div className="space-y-5 text-gray-800">
+                <div className="space-y-3 text-gray-800">
+                   <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 text-gray-400">Laporan Cepat</h4>
+                   <div className="grid grid-cols-2 gap-3 text-white">
+                      <button onClick={() => downloadFinancialReport(`Laporan_Hari_Ini`, pesananList, sopirList, profilList, transaksiList)} className="flex items-center justify-center space-x-2 py-4 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-wider shadow-lg active:scale-95 transition-all text-white"><Download size={16} /><span>Hari Ini</span></button>
+                      <button onClick={() => { const now = new Date(); const start = new Date(now.setDate(now.getDate()-7)); downloadFinancialReport(`Laporan_Mingguan`, pesananList, sopirList, profilList, transaksiList, start, new Date()); }} className="flex items-center justify-center space-x-2 py-4 border-2 border-emerald-600 text-emerald-700 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-50 active:scale-95 transition-all text-emerald-700"><Download size={16} /><span>Mingguan</span></button>
+                   </div>
+                </div>
+
+                <div className="space-y-3 pt-2 text-gray-800">
+                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 text-gray-400">Arsip Bulanan (3 Bulan)</h4>
+                  <div className="space-y-2 text-gray-800">
+                    {[0, 1, 2].map(offset => {
+                      const d = new Date();
+                      d.setMonth(d.getMonth() - offset);
+                      const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                      const start = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0);
+                      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
+                      const fileLabel = `Laporan_Bulanan_${d.getFullYear()}_${d.getMonth()+1}`;
+                      return (
+                        <button
+                          key={offset}
+                          onClick={() => downloadFinancialReport(fileLabel, pesananList, sopirList, profilList, transaksiList, start, end)}
+                          className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-emerald-50 border border-gray-100 rounded-2xl group transition-all text-gray-800"
+                        >
+                          <div className="flex items-center space-x-3 text-gray-800">
+                            <div className="p-2 bg-white rounded-xl shadow-sm text-[#B8941F] group-hover:text-[#046A38] transition-colors"><Calendar size={18} /></div>
+                            <span className="text-xs font-black text-gray-700 group-hover:text-[#046A38] uppercase transition-colors">{label}</span>
+                          </div>
+                          <Download size={18} className="text-gray-300 group-hover:text-[#046A38] transition-colors" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* TAB 6: SOS */}
