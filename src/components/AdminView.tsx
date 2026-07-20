@@ -117,7 +117,7 @@ export default function AdminView() {
   const syncData = async () => {
     setLoading(true);
     try {
-      const [pesanan, sopir, users, settings, logs, admins, emergency, transactions] = await Promise.all([
+      const results = await Promise.allSettled([
         OloluStore.getAllPesanan(),
         OloluStore.getAllSopir(),
         OloluStore.getAllUsers(),
@@ -128,15 +128,17 @@ export default function AdminView() {
         OloluStore.getAllTransactions()
       ]);
 
-      setPesananList(pesanan || []);
-      setSopirList(sopir || []);
-      setProfilList(users || []);
-      setConfig(settings);
-      setTempConfig(settings);
-      setAuditLogs(logs || []);
-      setAdminList(admins || []);
-      setEmergencyList(emergency || []);
-      setTransaksiList(transactions || []);
+      if (results[0].status === 'fulfilled') setPesananList(results[0].value || []);
+      if (results[1].status === 'fulfilled') setSopirList(results[1].value || []);
+      if (results[2].status === 'fulfilled') setProfilList(results[2].value || []);
+      if (results[3].status === 'fulfilled') {
+        setConfig(results[3].value);
+        setTempConfig(results[3].value);
+      }
+      if (results[4].status === 'fulfilled') setAuditLogs(results[4].value || []);
+      if (results[5].status === 'fulfilled') setAdminList(results[5].value || []);
+      if (results[6].status === 'fulfilled') setEmergencyList(results[6].value || []);
+      if (results[7].status === 'fulfilled') setTransaksiList(results[7].value || []);
 
     } catch (err) {
       console.error("Dashboard Sync Failure:", err);

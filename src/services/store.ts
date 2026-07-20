@@ -400,8 +400,12 @@ export const OloluStore = {
   },
 
   async getAllTransactions(): Promise<TransaksiDompet[]> {
-    const { data } = await getSupabase()!.from('wallet_transactions').select('*, profiles:id_sopir(nama)').order('created_at', { ascending: false });
-    return (data || []).map(d => ({ id: d.id, idSopir: d.id_sopir, namaSopir: d.profiles?.nama || 'Sopir', jenis: d.jenis, jumlah: d.jumlah, saldoAwal: d.saldo_awal, saldoAkhir: d.saldo_akhir, deskripsi: d.deskripsi, statusTarik: d.status_tarik, buktiTransfer: d.bukti_transfer, timestamp: d.created_at } as any));
+    const { data } = await getSupabase()!.from('wallet_transactions').select('*, driver_details(profiles(nama))').order('created_at', { ascending: false });
+    return (data || []).map(d => {
+      const driverProfile = d.driver_details?.profiles;
+      const namaSopir = Array.isArray(driverProfile) ? driverProfile[0]?.nama : driverProfile?.nama;
+      return { id: d.id, idSopir: d.id_sopir, namaSopir: namaSopir || 'Mitra', jenis: d.jenis, jumlah: d.jumlah, saldoAwal: d.saldo_awal, saldoAkhir: d.saldo_akhir, deskripsi: d.deskripsi, statusTarik: d.status_tarik, buktiTransfer: d.bukti_transfer, timestamp: d.created_at } as any;
+    });
   },
 
   async prosesTransaksi(txId: string, status: 'disetujui' | 'ditolak', alasan?: string) {
@@ -480,10 +484,15 @@ export const OloluStore = {
   },
 
   async getAllSopir(): Promise<DetailSopir[]> {
-    const { data } = await getSupabase()!.from('driver_details').select('*, profiles(nama, nomor_hp)');
+    const { data } = await getSupabase()!.from('driver_details').select('*, profiles(nama, nomor_hp, is_suspended)');
     return (data || []).map(d => {
       const m = mapDriver(d);
-      if (m) { (m as any).nama = d.profiles?.nama || 'Sopir'; (m as any).nomorHp = d.profiles?.nomor_hp || ''; }
+      const profileData = Array.isArray(d.profiles) ? d.profiles[0] : d.profiles;
+      if (m) {
+        (m as any).nama = profileData?.nama || 'Sopir';
+        (m as any).nomorHp = profileData?.nomor_hp || '';
+        (m as any).isSuspended = !!profileData?.is_suspended;
+      }
       return m;
     }).filter(Boolean) as DetailSopir[];
   },
