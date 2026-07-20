@@ -330,7 +330,10 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
 
   const getTarifBreakdown = () => {
     if (!config) return { total: 0, commission: 10, base: 0, perKm: 0, min: 0, multi: 0, malam: 0, itemSur: 0 };
-    const dist = routeDistance || 0;
+
+    // PEMBULATAN JARAK KE ATAS (Sesuai Request: 2.1 -> 3KM, 2.4 -> 3KM)
+    const dist = Math.ceil(routeDistance || 0);
+
     let s = 0, m = 0, perKm = 0, base = 0, comm = 10, perKmJauh = 0, batasJauh = 999;
     const serv = selectedLayanan;
 
@@ -342,7 +345,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     s = config[`${serv}BiayaPerStop`] || 0;
     comm = config[`${serv}PersenJasa`] || 10;
 
-    // Formula Ojol Presisi: (Jarak Rute Sebenarnya * Harga per KM) + Tarif Dasar
+    // Formula Ojol: (Jarak Bulat Ke Atas * Harga per KM) + Tarif Dasar
     const meteredCost = dist <= batasJauh ? (dist * perKm) : (dist * perKmJauh);
     const tripCost = base + meteredCost;
 
@@ -367,7 +370,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
     // Gunakan Math.ceil (bulat ke atas) agar driver tidak rugi kembalian/bensin.
     const roundedTotal = Math.ceil(total / 1000) * 1000;
 
-    return { total: roundedTotal, commission: comm, base, perKm, min: m, multi, malam: malamSur, itemSur: itemSurcharge };
+    return { total: roundedTotal, commission: comm, base, perKm, min: m, multi, malam: malamSur, itemSur: itemSurcharge, dist };
   };
 
   const handleAddStop = () => { if (stops.length < 5) setStops([...stops, { id: `stop-${Date.now()}`, alamat: 'Tentukan tujuan...', lat: KOORDINAT_LUMAJANG.lat, lng: KOORDINAT_LUMAJANG.lng, items: [] }]); else alert("Maksimal 5 tujuan!"); };
@@ -397,7 +400,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   const handlePesan = async () => {
     if (!profile) return; const b = getTarifBreakdown();
     const o = await OloluStore.buatPesanan({
-      jenisLayanan: selectedLayanan, idPenumpang: profile.id, asalAlamat, asalLat, asalLng, itemsAwal, jarakKm: routeDistance || 1,
+      jenisLayanan: selectedLayanan, idPenumpang: profile.id, asalAlamat, asalLat, asalLng, itemsAwal, jarakKm: b.dist,
       tarifDasar: b.base, tarifPerKm: b.perKm, tarifMinimum: b.min, tambahanTujuan: b.multi, tambahanItem: b.itemSur, biayaLayananPersen: b.commission, biayaMalamTambahan: b.malam, totalBayarAkhir: b.total, pembayaranTunai, tarifPerjalananMurni: b.total - b.multi - b.malam - b.itemSur
     }, stops.map((s, i) => ({ ...s, urutan: i + 1 })));
     if (o) { OloluStore.setLocalOrderLock({ orderId: o.id, role: 'penumpang' }); setActiveOrder(o as any); }
@@ -571,7 +574,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
           </div>
 
           <div className="pt-4 border-t-2 border-dashed space-y-3 text-left">
-             <div className="space-y-1 text-left"><div className="flex justify-between text-[10px] font-black uppercase text-gray-400"><span>Tarif Layanan ({(routeDistance || 0).toFixed(1)} KM)</span><span>Rp {(breakdown.total - breakdown.multi - breakdown.malam - breakdown.itemSur).toLocaleString()}</span></div>{breakdown.multi > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-emerald-600"><span>Multi-Stop ({stops.length - 1}x)</span><span>+ Rp {breakdown.multi.toLocaleString()}</span></div>}{breakdown.itemSur > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-amber-600"><span>Biaya Item (&gt;5)</span><span>+ Rp {breakdown.itemSur.toLocaleString()}</span></div>}{breakdown.malam > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-amber-600"><span>Shift Malam</span><span>+ Rp {breakdown.malam.toLocaleString()}</span></div>}</div>
+             <div className="space-y-1 text-left"><div className="flex justify-between text-[10px] font-black uppercase text-gray-400"><span>Tarif Layanan ({breakdown.dist} KM)</span><span>Rp {(breakdown.total - breakdown.multi - breakdown.malam - breakdown.itemSur).toLocaleString()}</span></div>{breakdown.multi > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-emerald-600"><span>Multi-Stop ({stops.length - 1}x)</span><span>+ Rp {breakdown.multi.toLocaleString()}</span></div>}{breakdown.itemSur > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-amber-600"><span>Biaya Item (&gt;5)</span><span>+ Rp {breakdown.itemSur.toLocaleString()}</span></div>}{breakdown.malam > 0 && <div className="flex justify-between text-[10px] font-black uppercase text-amber-600"><span>Shift Malam</span><span>+ Rp {breakdown.malam.toLocaleString()}</span></div>}</div>
              <div className="flex justify-between items-end text-left text-gray-800"><div><span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Total Estimasi</span><p className="text-3xl font-black text-[#B8941F] tracking-tighter mt-1">Rp {breakdown.total.toLocaleString('id-ID')}</p></div><button onClick={()=>setPembayaranTunai(!pembayaranTunai)} className="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100 flex items-center space-x-2 active:scale-95 transition-all text-emerald-700 shadow-sm"><Tag size={12} className="text-emerald-600" /><span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">{pembayaranTunai ? '💵 TUNAI' : '📱 DOMPET'}</span></button></div>
           </div>
         </div>
