@@ -125,14 +125,49 @@ function MapPickerSearch({ query, setQuery, onSelectSuggestion, suggestions, set
     return () => clearTimeout(t);
   }, [query]);
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (!query.trim() || query.length < 3) { setSuggestions([]); return; }
+
+    // --- GOOGLE MAPS LINK DETECTION ---
+    if (query.includes('google.com/maps') || query.includes('maps.app.goo.gl') || query.includes('goo.gl/maps')) {
+      // Regex for coordinates in full URL: @-8.123,113.123
+      const coordRegex = /@(-?\d+\.\d+),(-?\d+\.\d+)/;
+      const match = query.match(coordRegex);
+      if (match) {
+        const lat = parseFloat(match[1]);
+        const lng = parseFloat(match[2]);
+        onSelectSuggestion({ name: "Lokasi dari Link Maps", description: "Koordinat: " + lat + ", " + lng, lat, lng });
+        setQuery("Lokasi dari Link Maps");
+        setSuggestions([]);
+        return;
+      }
+
+      // If it's a short link or doesn't have coordinates, we try to use it as a query in findPlaceFromQuery
+      if (window.google?.maps?.places) {
+        setIsSearching(true);
+        const ds = new google.maps.places.PlacesService(document.createElement('div'));
+        ds.findPlaceFromQuery({ query, fields: ['name', 'geometry', 'formatted_address'] }, (results, status) => {
+          setIsSearching(false);
+          if (status === 'OK' && results?.[0]?.geometry?.location) {
+            const loc = results[0].geometry.location;
+            onSelectSuggestion({ name: results[0].name, description: results[0].formatted_address, lat: loc.lat(), lng: loc.lng() });
+            setQuery(results[0].name || "Lokasi dari Link");
+            setSuggestions([]);
+          }
+        });
+        return;
+      }
+    }
+
     if (window.google?.maps?.places) {
       setIsSearching(true);
       new google.maps.places.AutocompleteService().getPlacePredictions({
         input: query, sessionToken, componentRestrictions: { country: 'id' },
         locationRestriction: { north: -7.9, south: -8.3, east: 113.4, west: 113.1 }
-      }, (p, s) => { setIsSearching(false); if (s === 'OK' && p) setSuggestions(p.map(x => ({ id: x.place_id, name: x.structured_formatting.main_text, description: x.description, isPrediction: true }))); });
+      }, (p, s) => {
+        setIsSearching(false);
+        if (s === 'OK' && p) setSuggestions(p.map(x => ({ id: x.place_id, name: x.structured_formatting.main_text, description: x.description, isPrediction: true })));
+      });
     }
   };
 
@@ -149,9 +184,33 @@ function MapPickerSearch({ query, setQuery, onSelectSuggestion, suggestions, set
   };
 
   return (
-    <div className="space-y-2 text-left text-gray-800">
-      <div className="relative"><input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari lokasi di Lumajang..." className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-2xl text-sm font-bold outline-none text-gray-800" /><div className="absolute right-4 top-4 text-gray-400">{isSearching ? <div className="w-4 h-4 border-2 border-t-[#046A38] rounded-full animate-spin"></div> : <Search size={20} />}</div></div>
-      {suggestions.length > 0 && (<div className="max-h-60 overflow-y-auto border-2 border-gray-100 rounded-2xl bg-white shadow-2xl divide-y text-gray-800">{suggestions.map((s, i) => (<button key={i} onClick={() => handleSelect(s)} className="w-full text-left p-4 hover:bg-emerald-50 flex items-start space-x-3 transition-colors text-gray-800"><div className="bg-emerald-100 p-2 rounded-xl text-[#046A38]"><MapPin size={18} /></div><div className="flex-1 min-w-0"><span className="font-black text-gray-800 block text-xs truncate">{s.name}</span><span className="text-[10px] text-gray-500 truncate block">{s.description}</span></div></button>))}</div>)}
+    <div className="space-y-2 text-left text-gray-800 relative">
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Nama tempat, alamat, atau link Google Maps..."
+          className="w-full p-4 bg-gray-50 border-2 border-transparent focus:border-[#046A38] rounded-2xl text-sm font-bold outline-none text-gray-800"
+        />
+        <div className="absolute right-4 top-4 text-gray-400">
+          {isSearching ? <div className="w-4 h-4 border-2 border-t-[#046A38] rounded-full animate-spin"></div> : <Search size={20} />}
+        </div>
+      </div>
+
+      {suggestions.length > 0 && (
+        <div className="absolute left-0 right-0 top-full mt-2 z-[1000] max-h-60 overflow-y-auto border-2 border-gray-100 rounded-2xl bg-white shadow-2xl divide-y text-gray-800 animate-in fade-in slide-in-from-top-2 duration-200">
+          {suggestions.map((s, i) => (
+            <button key={i} onClick={() => handleSelect(s)} className="w-full text-left p-4 hover:bg-emerald-50 flex items-start space-x-3 transition-colors text-gray-800">
+              <div className="bg-emerald-100 p-2 rounded-xl text-[#046A38]"><MapPin size={18} /></div>
+              <div className="flex-1 min-w-0">
+                <span className="font-black text-gray-800 block text-xs truncate">{s.name}</span>
+                <span className="text-[10px] text-gray-500 truncate block">{s.description}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -422,7 +481,84 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
 
       {/* MAP PICKER MODAL */}
       {mapPickerTarget && (
-        <div className="fixed inset-0 z-[500] bg-white flex flex-col text-left text-gray-800"><div className="bg-[#034F2A] text-white p-5 flex justify-between items-center shadow-lg text-white"><h3 className="font-black uppercase tracking-[0.2em] text-white leading-none">Pilih Lokasi</h3><button onClick={() => setMapPickerTarget(null)} className="p-1 bg-white/10 rounded-full text-white"><X size={32} /></button></div><div className="p-5 border-b shadow-sm"><MapPickerSearch query={mapSearchQuery} setQuery={setMapSearchQuery} suggestions={suggestions} setSuggestions={setSuggestions} config={config} onSelectSuggestion={(s:any) => { setTempLat(s.lat); setTempLng(s.lng); setTempAlamat(s.name); setMapSearchQuery(s.name); setSuggestions([]); }} /></div><div className="flex-1 relative bg-gray-100 shadow-inner"><APIProvider apiKey={config?.googleMapsKey || GOOGLE_MAPS_KEY}><Map center={{ lat: tempLat, lng: tempLng }} defaultZoom={14} mapId="PICKER_MAP_PRO_PASSENGER"><AdvancedMarker position={{ lat: tempLat, lng: tempLng }} draggable onDragEnd={(e:any) => { if(e.latLng) { setTempLat(e.latLng.lat()); setTempLng(e.latLng.lng()); } }}><Pin scale={1.3} /></AdvancedMarker></Map></APIProvider></div><div className="p-6 bg-white border-t shadow-2xl text-left"><button onClick={() => { if (mapPickerTarget === 'asal') { setAsalLat(tempLat); setAsalLng(tempLng); setAsalAlamat(tempAlamat); } else { setStops(stops.map(s => s.id === mapPickerTarget ? { ...s, lat: tempLat, lng: tempLng, alamat: tempAlamat } : s)); } setMapPickerTarget(null); setMapSearchQuery(''); }} className="w-full py-5 bg-[#034F2A] text-white font-black rounded-3xl uppercase text-xs tracking-widest shadow-2xl border-b-4 border-emerald-900 active:scale-95 text-white leading-none flex items-center justify-center">GUNAKAN ALAMAT INI</button></div></div>
+        <div className="fixed inset-0 z-[1500] bg-white flex flex-col text-left text-gray-800 animate-in fade-in duration-300">
+          <div className="bg-[#034F2A] text-white p-5 flex justify-between items-center shadow-lg">
+            <div className="flex items-center space-x-3">
+               <MapIcon size={20} />
+               <h3 className="font-black uppercase tracking-widest text-sm">Tentukan Lokasi</h3>
+            </div>
+            <button onClick={() => setMapPickerTarget(null)} className="p-2 bg-white/10 rounded-full hover:bg-white/20 transition-all">
+               <X size={24} />
+            </button>
+          </div>
+
+          <div className="p-5 border-b shadow-sm space-y-4">
+             <MapPickerSearch
+               query={mapSearchQuery}
+               setQuery={setMapSearchQuery}
+               suggestions={suggestions}
+               setSuggestions={setSuggestions}
+               config={config}
+               onSelectSuggestion={(s:any) => {
+                 setTempLat(s.lat);
+                 setTempLng(s.lng);
+                 setTempAlamat(s.name);
+                 setMapSearchQuery(s.name);
+                 setSuggestions([]);
+               }}
+             />
+             <button
+               onClick={() => {
+                 navigator.geolocation.getCurrentPosition((pos) => {
+                   setTempLat(pos.coords.latitude);
+                   setTempLng(pos.coords.longitude);
+                   setTempAlamat(`Lokasi Saya (${pos.coords.latitude.toFixed(5)})`);
+                   setMapSearchQuery('');
+                 });
+               }}
+               className="w-full py-3 bg-emerald-50 text-emerald-700 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center space-x-2 border border-emerald-100 active:scale-95 transition-all"
+             >
+                <Navigation size={14} className="fill-current" />
+                <span>Gunakan Lokasi Saat Ini</span>
+             </button>
+          </div>
+
+          <div className="flex-1 relative bg-gray-100 shadow-inner">
+            <APIProvider apiKey={config?.googleMapsKey || GOOGLE_MAPS_KEY} libraries={['places']}>
+              <Map
+                center={{ lat: tempLat, lng: tempLng }}
+                defaultZoom={15}
+                mapId="PICKER_MAP_PRO_PASSENGER"
+                disableDefaultUI
+              >
+                <AdvancedMarker position={{ lat: tempLat, lng: tempLng }} draggable onDragEnd={(e:any) => { if(e.latLng) { setTempLat(e.latLng.lat()); setTempLng(e.latLng.lng()); setTempAlamat(`Lokasi Kustom (${e.latLng.lat().toFixed(5)})`); } }}>
+                   <Pin scale={1.3} background="#046A38" borderColor="#fff" />
+                </AdvancedMarker>
+              </Map>
+            </APIProvider>
+
+            {/* ADDRESS OVERLAY ON MAP */}
+            <div className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-md p-4 rounded-3xl border shadow-2xl space-y-3">
+               <div className="flex items-start space-x-3">
+                  <div className="bg-emerald-100 p-2 rounded-xl text-emerald-600"><MapPin size={20} /></div>
+                  <div className="min-w-0 flex-1">
+                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Lokasi Terpilih</span>
+                     <p className="text-xs font-bold text-gray-800 truncate">{tempAlamat || "Geser pin ke lokasi..."}</p>
+                  </div>
+               </div>
+               <button
+                 onClick={() => {
+                   if (mapPickerTarget === 'asal') { setAsalLat(tempLat); setAsalLng(tempLng); setAsalAlamat(tempAlamat); }
+                   else { setStops(stops.map(s => s.id === mapPickerTarget ? { ...s, lat: tempLat, lng: tempLng, alamat: tempAlamat } : s)); }
+                   setMapPickerTarget(null); setMapSearchQuery('');
+                 }}
+                 className="w-full py-4 bg-[#034F2A] text-white font-black rounded-2xl uppercase text-xs tracking-widest shadow-xl border-b-4 border-emerald-900 active:scale-95"
+               >
+                 KONFIRMASI LOKASI INI
+               </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
