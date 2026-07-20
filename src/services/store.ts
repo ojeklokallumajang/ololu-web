@@ -555,6 +555,9 @@ export const OloluStore = {
       tambahan_tujuan: orderData.tambahanTujuan || 0,
       tambahan_item: orderData.tambahanItem || 0,
       biaya_layanan_persen: orderData.biayaLayananPersen || 10,
+      biaya_tunggu_total: orderData.biayaTungguTotal || 0,
+      biaya_malam_tambahan: orderData.biayaMalamTambahan || 0,
+      durasi_menit: orderData.durasiMenit || 0,
       total_bayar_akhir: orderData.totalBayarAkhir,
       pembayaran_tunai: orderData.pembayaranTunai,
       status: 'mencari_sopir'
