@@ -474,7 +474,12 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
       <div className="p-6 space-y-6 text-left">
         <div className="bg-[#034F2A] p-7 rounded-[40px] shadow-xl relative overflow-hidden text-white text-left">
            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/10 rounded-full -translate-y-16 translate-x-16 pointer-events-none text-white"></div>
-           <div className="relative z-10 flex justify-between items-start text-white"><div><h3 className="text-xl font-black tracking-tight leading-none text-white">Halo, {profile?.nama}!</h3><p className="text-[10px] text-emerald-100/70 mt-2 font-bold uppercase tracking-widest leading-relaxed text-white">Butuh pengantaran atau <br/> titip belanja hari ini?</p></div><div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-2xl shadow-inner text-white">👋</div></div>
+           <div className="relative z-10 flex justify-between items-start text-white">
+              <div><h3 className="text-xl font-black tracking-tight leading-none text-white">Halo, {profile?.nama}!</h3><p className="text-[10px] text-emerald-100/70 mt-2 font-bold uppercase tracking-widest leading-relaxed text-white">Butuh pengantaran atau <br/> titip belanja hari ini?</p></div>
+              <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center overflow-hidden shadow-inner text-white">
+                 {profile?.fotoProfil ? <img src={profile.fotoProfil} className="w-full h-full object-cover" /> : <span className="text-2xl">👋</span>}
+              </div>
+           </div>
            {isSuperUser && <button onClick={() => onRoleChange('admin')} className="mt-6 w-full py-3 bg-[#D4AF37] text-[#034F2A] font-black rounded-2xl uppercase text-[9px] tracking-widest flex items-center justify-center space-x-2 shadow-lg text-emerald-900"><ShieldCheck size={14} /><span>DASHBOARD ADMIN</span></button>}
         </div>
 
@@ -519,11 +524,29 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
   // --- VIEW: PROFILE ---
   if (viewMode === 'profile') return (
     <div className="max-w-md mx-auto bg-[#FAFBF9] min-h-screen pb-24 text-left text-gray-800">
-       <div className="bg-[#034F2A] p-10 rounded-b-[60px] shadow-2xl relative overflow-hidden text-center text-white text-left"><div className="w-28 h-28 bg-white/20 rounded-[40px] flex items-center justify-center mx-auto border-4 border-white/30 shadow-2xl mb-5 text-5xl text-white">👤</div><h2 className="text-2xl font-black tracking-tight text-white">{profile?.nama}</h2><p className="text-emerald-100/70 text-sm font-bold uppercase tracking-widest mt-1 text-white">{profile?.nomorHp}</p></div>
+       <div className="bg-[#034F2A] p-10 rounded-b-[60px] shadow-2xl relative overflow-hidden text-center text-white text-left">
+          {profile?.fotoProfil ? (
+             <div className="w-28 h-28 bg-white rounded-[40px] border-4 border-white/30 shadow-2xl mx-auto mb-5 overflow-hidden">
+                <img src={profile.fotoProfil} className="w-full h-full object-cover" alt="Foto Profil" />
+             </div>
+          ) : (
+             <div className="w-28 h-28 bg-white/20 rounded-[40px] flex items-center justify-center mx-auto border-4 border-white/30 shadow-2xl mb-5 text-5xl text-white">👤</div>
+          )}
+          <h2 className="text-2xl font-black tracking-tight text-white">{profile?.nama}</h2>
+          <p className="text-emerald-100/70 text-sm font-bold uppercase tracking-widest mt-1 text-white">{profile?.nomorHp}</p>
+       </div>
        <div className="p-8 space-y-6 text-gray-800 text-left"><div className="bg-white p-6 rounded-[40px] border border-gray-150 shadow-sm divide-y divide-gray-100 text-gray-800"><div className="py-4 flex justify-between items-center text-gray-800"><span className="text-xs font-bold text-gray-400 uppercase tracking-widest text-gray-400">Total Perjalanan</span><span className="text-sm font-black text-gray-700 text-gray-800">{historyOrders.length} Trip</span></div><div className="py-4 flex justify-between items-center text-gray-800"><span className="text-xs font-bold text-gray-400 uppercase tracking-widest text-gray-400">Status Akun</span><span className="text-[10px] font-black bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full uppercase text-emerald-700">Verified</span></div></div><button onClick={onLogout} className="w-full py-5 bg-red-50 text-red-600 font-black rounded-[32px] uppercase text-xs tracking-widest flex items-center justify-center space-x-3 active:scale-95 transition-all text-red-600"><LogOut size={18} /><span>Keluar Aplikasi</span></button></div>
        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[420px] bg-white border-t border-gray-100 flex justify-around items-center h-20 z-50 shadow-[0_-10px_25px_rgba(0,0,0,0.05)] px-6 text-gray-800"><button onClick={() => setViewMode('home')} className="flex flex-col items-center space-y-1 text-gray-300 text-gray-800"><Home size={24} /><span className="text-[9px] font-black uppercase">Beranda</span></button><button onClick={() => setViewMode('history')} className="flex flex-col items-center space-y-1 text-gray-300 text-gray-800"><History size={24} /><span className="text-[9px] font-black uppercase">Riwayat</span></button><button onClick={() => setViewMode('profile')} className="flex flex-col items-center space-y-1 text-[#046A38] text-gray-800"><User size={24} /><span className="text-[9px] font-black uppercase">Profil</span></button></nav>
     </div>
   );
+
+  // --- LOGIC: DYNAMIC LABELS BASED ON SERVICE ---
+  const labels = useMemo(() => {
+    const s = selectedLayanan;
+    if (s === 'makanan' || s === 'belanja' || s === 'market') return { asal: 'Resto / Toko Tujuan', asalPlaceholder: 'Pilih Resto / Toko Belanja...', tujuan: 'Alamat Pengantaran' };
+    if (s === 'paket' || s === 'cargo') return { asal: 'Lokasi Pengambilan Paket', asalPlaceholder: 'Cari titik jemput paket...', tujuan: 'Alamat Penerima' };
+    return { asal: 'Lokasi Penjemputan', asalPlaceholder: 'Cari lokasi jemput Anda...', tujuan: 'Tujuan Pengantaran' };
+  }, [selectedLayanan]);
 
   // --- RENDER: BOOKING ---
   const breakdown = getTarifBreakdown();
@@ -536,8 +559,8 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
 
           {/* ORIGIN / PICKUP */}
           <div className="space-y-3 text-left">
-             <label className="text-[10px] font-black text-emerald-700 uppercase tracking-widest ml-1 block">Penjemputan / Toko Utama</label>
-             <button onClick={() => setMapPickerTarget('asal')} className="w-full p-4 bg-gray-50 border-2 border-transparent hover:border-emerald-500 rounded-2xl text-left flex items-center justify-between transition-all text-gray-800"><div className="flex items-center space-x-3 min-w-0 text-gray-800"><MapPin size={20} className="text-emerald-600" /><span className="text-xs font-bold text-gray-800 truncate">{asalAlamat}</span></div><ChevronRight size={18} className="text-gray-300" /></button>
+             <label className="text-[10px] font-black text-emerald-700 uppercase tracking-widest ml-1 block">{labels.asal}</label>
+             <button onClick={() => setMapPickerTarget('asal')} className="w-full p-4 bg-gray-50 border-2 border-transparent hover:border-emerald-500 rounded-2xl text-left flex items-center justify-between transition-all text-gray-800"><div className="flex items-center space-x-3 min-w-0 text-gray-800"><MapPin size={20} className="text-emerald-600" /><span className="text-xs font-bold text-gray-800 truncate">{asalAlamat === 'Pilih lokasi penjemputan...' ? labels.asalPlaceholder : asalAlamat}</span></div><ChevronRight size={18} className="text-gray-300" /></button>
 
              {/* LIST BARANG ORIGIN */}
              <div className="space-y-2 text-left">
@@ -552,7 +575,7 @@ export default function PassengerView({ onNotifyAdminPanic, onLogout, onRoleChan
 
           {/* STOPS */}
           <div className="space-y-4 pt-2 border-t-2 border-dashed text-left text-gray-800">
-            <div className="flex justify-between items-center ml-1 text-gray-800"><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-gray-400">Tujuan & Mampir</label><span className="text-[9px] font-black text-gray-300 uppercase text-gray-300">{stops.length} Lokasi</span></div>
+            <div className="flex justify-between items-center ml-1 text-gray-800"><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-gray-400">{labels.tujuan}</label><span className="text-[9px] font-black text-gray-300 uppercase text-gray-300">{stops.length} Lokasi</span></div>
             {stops.map((s, i) => (
               <div key={s.id} className="space-y-2 text-left text-gray-800">
                 <div className="flex space-x-2 animate-in slide-in-from-left-2 duration-300 text-gray-800 text-left">
